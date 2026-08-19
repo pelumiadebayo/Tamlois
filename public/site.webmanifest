@@ -1,0 +1,9 @@
+{
+  "name": "Tamlois Naturals & Trichology Clinic",
+  "short_name": "Tamlois",
+  "start_url": "./#/",
+  "display": "standalone",
+  "background_color": "#f7f8f3",
+  "theme_color": "#174b35",
+  "icons": [{ "src": "./logo.png", "sizes": "any", "type": "image/svg+xml" }]
+}

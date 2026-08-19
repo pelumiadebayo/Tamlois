@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+# The production build appends an absolute sitemap URL from SITE_URL.

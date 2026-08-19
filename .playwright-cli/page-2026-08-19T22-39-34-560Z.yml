@@ -1,0 +1,5 @@
+- generic [active] [ref=f2e1]:
+  - link "Skip to main content" [ref=f2e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - status [ref=f2e4]:
+    - generic [ref=f2e7]: Loading page

@@ -1,0 +1,524 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-20T00:21:42.9946547+01:00",
+  "title": "Design System: Tamlois Naturals & Trichology Clinic",
+  "extensions": {
+    "colorMeta": {
+      "forest-950": {
+        "role": "primary",
+        "displayName": "Deep Consultation Forest",
+        "canonical": "#0d2d21",
+        "tonalRamp": [
+          "#071b14",
+          "#0d2d21",
+          "#123d2c",
+          "#174b35",
+          "#1e6144",
+          "#599076",
+          "#a9c8b4",
+          "#eef4ef"
+        ]
+      },
+      "forest-900": {
+        "role": "primary",
+        "displayName": "Inverse Forest",
+        "canonical": "#123d2c",
+        "tonalRamp": [
+          "#071b14",
+          "#0d2d21",
+          "#123d2c",
+          "#174b35",
+          "#1e6144",
+          "#599076",
+          "#a9c8b4",
+          "#eef4ef"
+        ]
+      },
+      "forest-800": {
+        "role": "primary",
+        "displayName": "Clinic Forest",
+        "canonical": "#174b35",
+        "tonalRamp": [
+          "#071b14",
+          "#0d2d21",
+          "#123d2c",
+          "#174b35",
+          "#1e6144",
+          "#599076",
+          "#a9c8b4",
+          "#eef4ef"
+        ]
+      },
+      "forest-700": {
+        "role": "primary",
+        "displayName": "Operating Forest",
+        "canonical": "#1e6144",
+        "tonalRamp": [
+          "#071b14",
+          "#0d2d21",
+          "#123d2c",
+          "#174b35",
+          "#1e6144",
+          "#599076",
+          "#a9c8b4",
+          "#eef4ef"
+        ]
+      },
+      "forest-100": {
+        "role": "primary",
+        "displayName": "Botanical Mist",
+        "canonical": "#dce9df",
+        "tonalRamp": [
+          "#071b14",
+          "#0d2d21",
+          "#123d2c",
+          "#174b35",
+          "#1e6144",
+          "#599076",
+          "#a9c8b4",
+          "#eef4ef"
+        ]
+      },
+      "forest-50": {
+        "role": "primary",
+        "displayName": "Quiet Botanical",
+        "canonical": "#eef4ef",
+        "tonalRamp": [
+          "#071b14",
+          "#0d2d21",
+          "#123d2c",
+          "#174b35",
+          "#1e6144",
+          "#599076",
+          "#a9c8b4",
+          "#eef4ef"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Clinic Paper",
+        "canonical": "#f7f8f3",
+        "tonalRamp": [
+          "#25261f",
+          "#45473d",
+          "#696b60",
+          "#929389",
+          "#b9bab1",
+          "#d9dad3",
+          "#ebede7",
+          "#f7f8f3"
+        ]
+      },
+      "cream": {
+        "role": "secondary",
+        "displayName": "Ledger Cream",
+        "canonical": "#f1efe4",
+        "tonalRamp": [
+          "#27241a",
+          "#4b4739",
+          "#716b5b",
+          "#999282",
+          "#beb8aa",
+          "#ddd8cd",
+          "#ebe7dc",
+          "#f8f6ef"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "Working White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#242424",
+          "#494949",
+          "#707070",
+          "#999999",
+          "#bfbfbf",
+          "#dddddd",
+          "#f0f0f0",
+          "#ffffff"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#202823",
+        "tonalRamp": [
+          "#0c100e",
+          "#202823",
+          "#37443c",
+          "#5c6a61",
+          "#87938b",
+          "#b4bdb7",
+          "#dce1de",
+          "#f4f6f4"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Sage Grey",
+        "canonical": "#647168",
+        "tonalRamp": [
+          "#171c18",
+          "#2d352f",
+          "#465148",
+          "#647168",
+          "#869288",
+          "#adb6af",
+          "#d4dad5",
+          "#f1f4f2"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Ruled Line",
+        "canonical": "#ccd5ce",
+        "tonalRamp": [
+          "#18201a",
+          "#344038",
+          "#56635a",
+          "#7b887f",
+          "#a2aca5",
+          "#ccd5ce",
+          "#e4e9e5",
+          "#f5f7f5"
+        ]
+      },
+      "warm": {
+        "role": "tertiary",
+        "displayName": "Consent Ochre",
+        "canonical": "#bd7a42",
+        "tonalRamp": [
+          "#2d1708",
+          "#543014",
+          "#7c4b22",
+          "#a66731",
+          "#bd7a42",
+          "#d8a77c",
+          "#eed2ba",
+          "#fbf1e8"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Clinical Danger",
+        "canonical": "#a73535",
+        "tonalRamp": [
+          "#2a0909",
+          "#541515",
+          "#7c2525",
+          "#a73535",
+          "#c35d5d",
+          "#dfa0a0",
+          "#f0cccc",
+          "#faeeee"
+        ]
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field Stroke",
+        "canonical": "#aab7ae",
+        "tonalRamp": [
+          "#18201a",
+          "#303a33",
+          "#4d5a51",
+          "#6e7c72",
+          "#91a096",
+          "#aab7ae",
+          "#d6ddd8",
+          "#f3f6f4"
+        ]
+      },
+      "error-bg": {
+        "role": "tertiary",
+        "displayName": "Error Notice Field",
+        "canonical": "#fff0ec",
+        "tonalRamp": [
+          "#2e0d08",
+          "#57231a",
+          "#823a2e",
+          "#aa594b",
+          "#cf8274",
+          "#edb2a7",
+          "#f8d9d2",
+          "#fff0ec"
+        ]
+      },
+      "error-ink": {
+        "role": "tertiary",
+        "displayName": "Error Notice Ink",
+        "canonical": "#7d3028",
+        "tonalRamp": [
+          "#290906",
+          "#4d1813",
+          "#7d3028",
+          "#a54f45",
+          "#c9776d",
+          "#e3a79f",
+          "#f2d0cb",
+          "#fcf0ee"
+        ]
+      },
+      "warm-bg": {
+        "role": "tertiary",
+        "displayName": "Warm Notice Field",
+        "canonical": "#fff0df",
+        "tonalRamp": [
+          "#2c1707",
+          "#533014",
+          "#7c4b22",
+          "#a96a35",
+          "#cf8d55",
+          "#e9b884",
+          "#f7dcc0",
+          "#fff0df"
+        ]
+      },
+      "warm-ink": {
+        "role": "tertiary",
+        "displayName": "Warm Notice Ink",
+        "canonical": "#713f1b",
+        "tonalRamp": [
+          "#241104",
+          "#45250d",
+          "#713f1b",
+          "#98602f",
+          "#bd8550",
+          "#dcae7e",
+          "#efd2b1",
+          "#fbf0e2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Hero Display",
+        "purpose": "Homepage reassurance statements only."
+      },
+      "headline": {
+        "displayName": "Page Headline",
+        "purpose": "Route introductions and confirmation moments."
+      },
+      "title": {
+        "displayName": "Section Title",
+        "purpose": "Major public-page sections and editorial component headings."
+      },
+      "body": {
+        "displayName": "Care Copy",
+        "purpose": "Educational explanation, instructions, and operational content."
+      },
+      "label": {
+        "displayName": "Operational Label",
+        "purpose": "Navigation, fields, metadata, statuses, prices, and actions."
+      }
+    },
+    "shadows": [
+      {
+        "name": "hero-note",
+        "value": "0 18px 55px rgba(13,45,33,.14)",
+        "purpose": "Separates the appointment note where it overlaps hero photography."
+      },
+      {
+        "name": "modal-lift",
+        "value": "0 24px 80px rgba(13,45,33,.24)",
+        "purpose": "Separates a dialog or bottom sheet from its darkened page scrim."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.23, 1, .32, 1)",
+        "purpose": "Brisk, composed easing for tactile state changes."
+      },
+      {
+        "name": "press",
+        "value": "transform 160ms cubic-bezier(.23, 1, .32, 1)",
+        "purpose": "Buttons compress to scale(.97) on active press."
+      },
+      {
+        "name": "state-color",
+        "value": "background-color 180ms ease, color 180ms ease, border-color 180ms ease",
+        "purpose": "Default hover and selection feedback."
+      },
+      {
+        "name": "disclosure",
+        "value": "max-height 200ms ease, opacity 200ms ease",
+        "purpose": "Mobile navigation opening and closing."
+      },
+      {
+        "name": "image-hover",
+        "value": "transform 200ms ease-out",
+        "purpose": "Product imagery scales to 1.02 on precise-pointer hover."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Collapses animation and transition duration when reduced motion is requested."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single preferred action for booking, buying, saving, or advancing.",
+      "html": "<button class=\"ds-btn-primary\">Book a consultation</button>",
+      "css": ".ds-btn-primary { display:inline-flex; min-height:48px; align-items:center; justify-content:center; border:0; border-radius:999px; padding:12px 18px; background:var(--forest-800, #174b35); color:#fff; font-family:Manrope, ui-sans-serif, system-ui, sans-serif; font-size:.9rem; font-weight:700; line-height:1; cursor:pointer; transition:transform 160ms cubic-bezier(.23,1,.32,1), background-color 180ms ease; } .ds-btn-primary:hover { background:var(--forest-950, #0d2d21); } .ds-btn-primary:active { transform:scale(.97); } .ds-btn-primary:focus-visible { outline:3px solid #d98a49; outline-offset:3px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "An outlined alternative that remains clearly subordinate to the filled action.",
+      "html": "<button class=\"ds-btn-secondary\">Explore services</button>",
+      "css": ".ds-btn-secondary { display:inline-flex; min-height:48px; align-items:center; justify-content:center; border:1px solid var(--forest-800, #174b35); border-radius:999px; padding:12px 18px; background:transparent; color:var(--forest-900, #123d2c); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; font-size:.9rem; font-weight:700; line-height:1; cursor:pointer; transition:transform 160ms cubic-bezier(.23,1,.32,1), background-color 180ms ease; } .ds-btn-secondary:hover { background:var(--forest-50, #eef4ef); } .ds-btn-secondary:active { transform:scale(.97); } .ds-btn-secondary:focus-visible { outline:3px solid #d98a49; outline-offset:3px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A labelled 48px control for booking details and clinic operations.",
+      "html": "<label class=\"ds-field\"><span>Full name</span><input type=\"text\" placeholder=\"Your name\"></label>",
+      "css": ".ds-field { display:grid; gap:7px; color:var(--forest-950, #0d2d21); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; font-size:.82rem; font-weight:700; } .ds-field input { width:100%; min-height:48px; border:1px solid #aab7ae; border-radius:12px; background:#fff; padding:11.5px 13.6px; color:var(--ink, #202823); font:400 1rem/1.4 Manrope, ui-sans-serif, system-ui, sans-serif; transition:border-color 160ms ease, box-shadow 160ms ease; } .ds-field input::placeholder { color:var(--muted, #647168); } .ds-field input:hover { border-color:var(--forest-700, #1e6144); } .ds-field input:focus { border-color:var(--forest-700, #1e6144); box-shadow:0 0 0 3px rgba(30,97,68,.14); outline:0; } .ds-field input:focus-visible { outline:3px solid #d98a49; outline-offset:3px; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status",
+      "description": "A compact mode or availability label that does not compete with actions.",
+      "html": "<span class=\"ds-status\">Demo availability</span>",
+      "css": ".ds-status { display:inline-flex; min-height:28px; align-items:center; border-radius:999px; padding:3.2px 9.92px; background:var(--forest-100, #dce9df); color:var(--forest-950, #0d2d21); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; font-size:.72rem; font-weight:700; line-height:1; }"
+    },
+    {
+      "name": "Service Card",
+      "kind": "card",
+      "refersTo": "surface",
+      "description": "One bordered record joining service media, evidence, metadata, and actions without inner cards.",
+      "html": "<article class=\"ds-service-card\"><div class=\"ds-service-media\" role=\"img\" aria-label=\"Service image area\"><span>CARE IMAGE</span></div><div class=\"ds-service-copy\"><p class=\"ds-service-category\">Assessment</p><h3>Trichology consultation</h3><p class=\"ds-service-summary\">A focused review of your hair history, scalp concerns and current routine.</p><p class=\"ds-service-meta\">60 min &nbsp; · &nbsp; ₦25,000</p><div class=\"ds-service-actions\"><button class=\"ds-service-secondary\">View service</button><button class=\"ds-service-primary\">Book now</button></div></div></article>",
+      "css": ".ds-service-card { display:grid; overflow:hidden; border:1px solid var(--line, #ccd5ce); border-radius:14px; background:#fff; color:var(--ink, #202823); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; } .ds-service-media { display:grid; min-height:150px; place-items:center; background:var(--forest-100, #dce9df); color:var(--forest-700, #1e6144); font-size:.7rem; font-weight:700; letter-spacing:.12em; } .ds-service-copy { display:flex; flex-direction:column; padding:20px; } .ds-service-category { margin:0; color:var(--forest-700, #1e6144); font-size:.75rem; font-weight:700; } .ds-service-card h3 { margin:8px 0 0; color:var(--forest-950, #0d2d21); font:400 1.5rem/1.2 'DM Serif Display', Georgia, serif; } .ds-service-summary { margin:8px 0 0; color:var(--muted, #647168); font-size:.875rem; line-height:1.5rem; } .ds-service-meta { margin:16px 0 0; color:var(--muted, #647168); font-size:.75rem; font-weight:600; } .ds-service-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:20px; } .ds-service-actions button { min-height:44px; border-radius:999px; padding:10px 16px; font:700 .82rem/1 Manrope, ui-sans-serif, system-ui, sans-serif; cursor:pointer; transition:background-color 180ms ease, transform 160ms cubic-bezier(.23,1,.32,1); } .ds-service-secondary { border:1px solid var(--forest-800, #174b35); background:transparent; color:var(--forest-900, #123d2c); } .ds-service-secondary:hover { background:var(--forest-50, #eef4ef); } .ds-service-primary { border:1px solid var(--forest-800, #174b35); background:var(--forest-800, #174b35); color:#fff; } .ds-service-primary:hover { background:var(--forest-950, #0d2d21); } .ds-service-actions button:active { transform:scale(.97); } .ds-service-actions button:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } @media (min-width:520px) { .ds-service-card { grid-template-columns:160px 1fr; } }"
+    },
+    {
+      "name": "Primary Navigation",
+      "kind": "nav",
+      "refersTo": "surface",
+      "description": "A compact paper bar with an active underline and a persistent booking action.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Primary navigation preview\"><a class=\"ds-brand\" href=\"#\"><span>T</span><strong>Tamlois</strong></a><div class=\"ds-nav-links\"><a class=\"ds-nav-active\" href=\"#\">Services</a><a href=\"#\">Concerns</a><a href=\"#\">About</a></div><a class=\"ds-nav-book\" href=\"#\">Book an appointment</a></nav>",
+      "css": ".ds-nav { display:flex; min-height:72px; align-items:center; justify-content:space-between; gap:20px; border-bottom:1px solid var(--line, #ccd5ce); background:rgba(247,248,243,.94); padding:12px 16px; color:var(--ink, #202823); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; } .ds-nav a { color:inherit; text-decoration:none; } .ds-brand { display:flex; align-items:center; gap:10px; font-size:.8rem; } .ds-brand span { display:grid; width:40px; height:40px; place-items:center; border-radius:12px; background:var(--forest-800, #174b35); color:#fff; font:400 1.5rem/1 'DM Serif Display', Georgia, serif; } .ds-nav-links { display:flex; align-items:center; gap:20px; font-size:.8125rem; font-weight:600; } .ds-nav-links a { padding:14px 0; } .ds-nav-links a:hover { color:var(--forest-700, #1e6144); } .ds-nav-links .ds-nav-active { color:var(--forest-800, #174b35); text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:8px; } .ds-nav-book { display:inline-flex; min-height:48px; align-items:center; border-radius:999px; background:var(--forest-800, #174b35); padding:12px 18px; color:#fff !important; font-size:.82rem; font-weight:700; } .ds-nav-book:hover { background:var(--forest-950, #0d2d21); } .ds-nav a:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } @media (max-width:700px) { .ds-nav-links { display:none; } .ds-nav-book { width:48px; padding:0; overflow:hidden; color:transparent !important; } .ds-nav-book::after { content:'+'; display:grid; width:48px; place-items:center; color:#fff; font-size:1.2rem; } }"
+    },
+    {
+      "name": "Booking Progress",
+      "kind": "custom",
+      "refersTo": "status",
+      "description": "The signature seven-step rail that keeps the policy-first guest booking flow oriented on wide screens.",
+      "html": "<div class=\"ds-progress\"><p>Step 3 of 7: Extras</p><ol><li class=\"ds-complete\"><button aria-label=\"Step 1 complete\"><span>✓</span><b>Category</b></button></li><li class=\"ds-complete\"><button aria-label=\"Step 2 complete\"><span>✓</span><b>Service</b></button></li><li class=\"ds-current\"><button aria-current=\"step\"><span>3</span><b>Extras</b></button></li><li><button disabled><span>4</span><b>Schedule</b></button></li><li><button disabled><span>5</span><b>Details</b></button></li><li><button disabled><span>6</span><b>Summary</b></button></li><li><button disabled><span>7</span><b>Payment</b></button></li></ol></div>",
+      "css": ".ds-progress { color:var(--forest-950, #0d2d21); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; } .ds-progress > p { margin:0 0 12px; font-size:.875rem; font-weight:700; } .ds-progress ol { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin:0; padding:0; list-style:none; } .ds-progress button { display:flex; width:100%; min-height:48px; align-items:center; justify-content:center; gap:8px; border:0; border-bottom:2px solid var(--line, #ccd5ce); background:transparent; color:inherit; font-family:inherit; cursor:pointer; } .ds-progress span { display:grid; width:32px; height:32px; flex:0 0 32px; place-items:center; border-radius:50%; background:var(--forest-100, #dce9df); font-size:.875rem; font-weight:700; } .ds-progress b { font-size:.7rem; } .ds-progress .ds-complete button { border-bottom-color:var(--forest-700, #1e6144); } .ds-progress .ds-current button { border-bottom-color:var(--forest-800, #174b35); } .ds-progress .ds-complete span, .ds-progress .ds-current span { background:var(--forest-800, #174b35); color:#fff; } .ds-progress button:hover:not(:disabled) { background:var(--forest-50, #eef4ef); } .ds-progress button:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } .ds-progress button:disabled { cursor:not-allowed; opacity:.75; } @media (max-width:767px) { .ds-progress ol { display:none; } }"
+    },
+    {
+      "name": "Booking Schedule",
+      "kind": "custom",
+      "refersTo": "surface",
+      "description": "A duration-aware calendar and time-slot chooser with explicit selected, blocked, and keyboard-focus states.",
+      "html": "<section class=\"ds-schedule\"><h3>Choose a date and start time</h3><div class=\"ds-schedule-grid\"><div><p>Available dates</p><div class=\"ds-days\" role=\"grid\"><button disabled><span>Sun</span><b>23</b></button><button class=\"ds-selected\" aria-selected=\"true\"><span>Mon</span><b>24</b></button><button><span>Tue</span><b>25</b></button></div></div><div><p>Monday, 24 August</p><div class=\"ds-times\"><button>09:00</button><button class=\"ds-selected\">10:30</button><button>13:00</button></div></div></div></section>",
+      "css": ".ds-schedule { border:1px solid var(--line, #ccd5ce); border-radius:14px; background:#fff; padding:24px; color:var(--forest-950, #0d2d21); font-family:Manrope,ui-sans-serif,system-ui,sans-serif; } .ds-schedule h3 { margin:0; font:400 1.6rem/1.15 'DM Serif Display',Georgia,serif; } .ds-schedule-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:24px; margin-top:22px; } .ds-schedule p { margin:0 0 10px; font-size:.78rem; font-weight:700; } .ds-days,.ds-times { display:flex; gap:8px; } .ds-days button,.ds-times button { min-height:48px; border:1px solid var(--line,#ccd5ce); border-radius:12px; background:#fff; color:var(--ink,#202823); font:600 .78rem/1 Manrope,ui-sans-serif,system-ui,sans-serif; cursor:pointer; } .ds-days button { display:grid; min-width:58px; place-items:center; padding:8px; } .ds-days span { color:var(--muted,#647168); font-size:.67rem; } .ds-days b { font-size:1rem; } .ds-times button { padding:0 14px; } .ds-schedule button.ds-selected { border-color:var(--forest-800,#174b35); background:var(--forest-800,#174b35); color:#fff; } .ds-schedule button:disabled { background:var(--paper,#f7f8f3); opacity:.48; cursor:not-allowed; } .ds-schedule button:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } @media(max-width:640px){.ds-schedule-grid{grid-template-columns:1fr}.ds-days{overflow-x:auto}.ds-times{flex-wrap:wrap}}"
+    },
+    {
+      "name": "Policy Gate",
+      "kind": "custom",
+      "refersTo": "surface",
+      "description": "The mandatory pre-step consent surface that makes policy scope, version, and acknowledgement explicit.",
+      "html": "<section class=\"ds-policy\"><div class=\"ds-policy-copy\"><span>Placeholder policy · bundle-x3djyt</span><h2>Before we reserve clinic time</h2><article><b>Appointment-only care</b><p>All clinic and salon services require an appointment.</p></article><article><b>Payment and deposits</b><p>Amount due now and remaining balance stay visible.</p></article></div><aside><h3>Your acknowledgement</h3><p>Consent records this policy version, time, and anonymous session.</p><label><input type=\"checkbox\"> I have read and agree to the policies shown here.</label><button>Start booking</button></aside></section>",
+      "css": ".ds-policy { display:grid; grid-template-columns:1.5fr .8fr; gap:28px; color:var(--forest-950,#0d2d21); font-family:Manrope,ui-sans-serif,system-ui,sans-serif; } .ds-policy-copy>span { display:inline-block; border-radius:999px; background:var(--warm-bg,#fff0df); padding:7px 11px; color:var(--warm-ink,#8f4c16); font-size:.7rem; font-weight:700; } .ds-policy h2 { margin:18px 0 22px; font:400 2.4rem/.98 'DM Serif Display',Georgia,serif; } .ds-policy article { border-top:1px solid var(--line,#ccd5ce); padding:16px 0; } .ds-policy article p { margin:7px 0 0; color:var(--muted,#647168); font-size:.8rem; line-height:1.4rem; } .ds-policy aside { align-self:start; border-radius:14px; background:var(--forest-950,#0d2d21); padding:24px; color:#fff; } .ds-policy h3 { margin:0; font:400 1.5rem/1.1 'DM Serif Display',Georgia,serif; } .ds-policy aside p { color:var(--forest-100,#dce9df); font-size:.78rem; line-height:1.35rem; } .ds-policy aside label { display:flex; gap:10px; margin:18px 0; border-radius:12px; background:rgba(255,255,255,.1); padding:14px; font-size:.78rem; line-height:1.35rem; } .ds-policy aside input { accent-color:var(--warm,#bd7a42); } .ds-policy aside button { width:100%; min-height:48px; border:0; border-radius:999px; background:#fff; color:var(--forest-950,#0d2d21); font-weight:700; cursor:pointer; } .ds-policy button:hover { background:var(--forest-50,#eef4ef); } .ds-policy input:focus-visible,.ds-policy button:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } @media(max-width:720px){.ds-policy{grid-template-columns:1fr}}"
+    },
+    {
+      "name": "Booking Summary",
+      "kind": "custom",
+      "refersTo": "surface",
+      "description": "The sticky desktop and collapsible mobile recap, including a prominent live hold countdown.",
+      "html": "<details class=\"ds-summary\" open><summary>Your booking <span>Hold 12:48</span></summary><dl><div><dt>Service</dt><dd>Trichology consultation</dd></div><div><dt>When</dt><dd>24 Aug · 10:30</dd></div><div><dt>Duration</dt><dd>75 minutes</dd></div><div><dt>Total</dt><dd>₦30,000</dd></div><div><dt>Due now</dt><dd>₦15,000</dd></div></dl><button>Edit selections</button></details>",
+      "css": ".ds-summary { border:1px solid var(--line,#ccd5ce); border-radius:14px; background:#fff; padding:20px; color:var(--forest-950,#0d2d21); font-family:Manrope,ui-sans-serif,system-ui,sans-serif; } .ds-summary summary { display:flex; min-height:44px; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; font:700 .9rem/1.2 Manrope,ui-sans-serif,system-ui,sans-serif; } .ds-summary summary span { border-radius:999px; background:var(--warm-bg,#fff0df); padding:7px 10px; color:var(--warm-ink,#8f4c16); font-size:.68rem; } .ds-summary dl { margin:12px 0 0; } .ds-summary dl div { display:flex; justify-content:space-between; gap:20px; border-top:1px solid var(--line,#ccd5ce); padding:11px 0; font-size:.77rem; } .ds-summary dt { color:var(--muted,#647168); } .ds-summary dd { margin:0; font-weight:700; text-align:right; } .ds-summary button { min-height:44px; border:1px solid var(--forest-800,#174b35); border-radius:999px; background:transparent; padding:10px 16px; color:var(--forest-800,#174b35); font-weight:700; cursor:pointer; } .ds-summary button:hover { background:var(--forest-50,#eef4ef); } .ds-summary button:focus-visible,.ds-summary summary:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } @media(min-width:768px){.ds-summary{position:sticky;top:92px}.ds-summary summary{cursor:default}.ds-summary summary::marker{content:''}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calm Care Ledger",
+    "overview": "Tamlois feels like an appointment ledger prepared by a thoughtful clinic: calm enough to lower anxiety, ordered enough to inspire trust, and human enough to welcome questions. Editorial serif statements explain the purpose of care while compact sans-serif controls make each next step practical and unambiguous.\n\nThe visual world is natural without becoming rustic. Deep forest ink, warm paper fields, crisp white working surfaces, fine ruled dividers, and direct portraiture create a composed clinic atmosphere. Public pages breathe generously; booking and admin surfaces increase density while preserving the same hierarchy and material language.\n\nDepth is restrained and motion is purposeful. The system relies on tone, rules, spacing, and typography before shadow; movement is brief feedback rather than spectacle. It rejects gradients, glassmorphism, ornamental wellness clichés, excessive decoration, and nested-card clutter.",
+    "keyCharacteristics": [
+      "Trust-first, calm, credible, and welcoming.",
+      "Editorial reassurance paired with operational clarity.",
+      "Deep forest, paper, cream, and white surfaces separated by fine rules.",
+      "Flat ledger structures with selective 12-14px rounding and pill actions.",
+      "Direct, consent-aware imagery centred on Black women and textured natural hair."
+    ],
+    "rules": [
+      {
+        "name": "The Forest Is Structural Rule",
+        "body": "Use deep green for identity, hierarchy, selection, and the next safe action; do not scatter it as decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm Note Rule",
+        "body": "Warm ochre appears only where provenance, consent, or caution needs a humane distinction from success and navigation states.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reassure, Then Operate Rule",
+        "body": "Serif type names the concern or promise; Manrope carries every instruction, value, control, and piece of evidence beneath it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Serif Boundary Rule",
+        "body": "Never use display type inside fields, buttons, tables, prices, or dense admin controls.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Container Rule",
+        "body": "Prefer one surface around a complete task or record; divide its contents with rules and spacing instead of adding cards inside cards.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Ledger Rule",
+        "body": "Resting content is separated by tone, a one-pixel rule, or spacing; shadow means physical overlap, not importance.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Radius Discipline Rule",
+        "body": "Use 12px for controls and 14px for content surfaces; reserve full pills for actions and compact status, not for large containers.",
+        "section": "shapes"
+      },
+      {
+        "name": "The One Obvious Next Step Rule",
+        "body": "Within a task or card, one action may be filled; alternatives remain outlined or quiet.",
+        "section": "components"
+      },
+      {
+        "name": "The Reservation Integrity Rule",
+        "body": "Policy acknowledgement, selected care, slot hold status, expiry, amount due, and confirmation state must remain explicit; never imply that time or payment is secured before the system says so.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do begin with the concern a client recognises and pair reassurance with a concrete next action.",
+      "Do use large serif headings against generous paper space, then switch to Manrope for every operational detail.",
+      "Do group related steps inside one ruled surface and use tonal section fields to organise long pages.",
+      "Do preserve 48px control heights, visible focus, clear selected states, and reduced-motion behavior.",
+      "Do use direct, consent-aware imagery that primarily represents Black women and textured natural hair.",
+      "Do label placeholder claims, prices, testimonials, contact details, and media visibly until verified.",
+      "Do show policy version, slot-hold countdown, and confirmation state at the point where each affects the booking decision.",
+      "Do keep the same booking summary available as a sticky desktop aside and a collapsible mobile surface."
+    ],
+    "donts": [
+      "Don't introduce gradients, glassmorphism, decorative blobs, floating ornaments, or generic spa motifs.",
+      "Don't nest cards inside cards or place every paragraph in a rounded container.",
+      "Don't use shadows on resting content; reserve them for true overlap such as notes, dialogs, and sheets.",
+      "Don't use the serif for controls, admin density, metadata, or body-length instructions.",
+      "Don't use green and warm ochre as competing accents or add a new accent without a semantic role.",
+      "Don't promise diagnosis, regrowth, guaranteed outcomes, or verification through visual styling."
+    ]
+  }
+}

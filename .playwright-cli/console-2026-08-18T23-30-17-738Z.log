@@ -1,0 +1,2 @@
+[     357ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4173/src/lib/analytics.ts:2
+[     360ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4173/src/lib/analytics.ts:2

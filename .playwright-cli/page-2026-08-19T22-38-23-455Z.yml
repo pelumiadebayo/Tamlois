@@ -1,0 +1,136 @@
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e8]:
+    - banner [ref=e9]:
+      - generic [ref=e10]:
+        - link "Tamlois home" [ref=e11] [cursor=pointer]:
+          - /url: "#/"
+          - generic [ref=e14]: Tamlois Naturals &Trichology Clinic
+        - navigation "Primary navigation" [ref=e15]:
+          - link "Services" [ref=e16] [cursor=pointer]:
+            - /url: "#/services"
+          - link "Hair & Scalp Concerns" [ref=e17] [cursor=pointer]:
+            - /url: "#/concerns"
+          - link "About" [ref=e18] [cursor=pointer]:
+            - /url: "#/about"
+          - link "Results" [ref=e19] [cursor=pointer]:
+            - /url: "#/results"
+          - link "Shop" [ref=e20] [cursor=pointer]:
+            - /url: "#/shop"
+          - link "Contact" [ref=e21] [cursor=pointer]:
+            - /url: "#/contact"
+        - link "Book an appointment" [ref=e23] [cursor=pointer]:
+          - /url: "#/booking"
+    - main [ref=e26]:
+      - generic [ref=e121]:
+        - generic [ref=e122]: Guest booking · no account needed
+        - heading "Reserve the right time for your care" [level=1] [ref=e123]
+        - paragraph [ref=e124]: Choose a category, service and compatible extras before selecting live availability. Your draft stays in this browser while you move between steps.
+      - generic [ref=e126]:
+        - list "Booking progress" [ref=e128]:
+          - listitem [ref=e129]:
+            - 'button "Step 1: Category" [ref=e130] [cursor=pointer]':
+              - generic [ref=e131]: "1"
+              - strong [ref=e132]: Category
+          - listitem [ref=e133]:
+            - 'button "Step 2: Service" [disabled] [ref=e134]':
+              - generic [ref=e135]: "2"
+              - strong [ref=e136]: Service
+          - listitem [ref=e137]:
+            - 'button "Step 3: Extras" [disabled] [ref=e138]':
+              - generic [ref=e139]: "3"
+              - strong [ref=e140]: Extras
+          - listitem [ref=e141]:
+            - 'button "Step 4: Schedule" [disabled] [ref=e142]':
+              - generic [ref=e143]: "4"
+              - strong [ref=e144]: Schedule
+          - listitem [ref=e145]:
+            - 'button "Step 5: Details" [disabled] [ref=e146]':
+              - generic [ref=e147]: "5"
+              - strong [ref=e148]: Details
+          - listitem [ref=e149]:
+            - 'button "Step 6: Summary" [disabled] [ref=e150]':
+              - generic [ref=e151]: "6"
+              - strong [ref=e152]: Summary
+          - listitem [ref=e153]:
+            - 'button "Step 7: Payment" [disabled] [ref=e154]':
+              - generic [ref=e155]: "7"
+              - strong [ref=e156]: Payment
+        - generic [ref=e157]:
+          - main [ref=e158]:
+            - generic [ref=e159]:
+              - heading "What kind of care are you booking?" [level=2] [ref=e160]
+              - paragraph [ref=e161]: Choose the category that best fits your intended appointment. You can change this later.
+              - generic [ref=e162]:
+                - button "Salon Natural-hair maintenance and restorative treatment appointments." [ref=e163] [cursor=pointer]:
+                  - text: Salon
+                  - generic [ref=e164]: Natural-hair maintenance and restorative treatment appointments.
+                - button "Trichology Consultation-led hair and scalp assessment or care." [ref=e165] [cursor=pointer]:
+                  - text: Trichology
+                  - generic [ref=e166]: Consultation-led hair and scalp assessment or care.
+            - button "Continue" [ref=e168] [cursor=pointer]
+          - complementary [ref=e171]:
+            - generic [ref=e172]:
+              - heading "Your booking" [level=2] [ref=e173]
+              - generic [ref=e174]: Guest
+            - generic [ref=e175]:
+              - generic [ref=e176]:
+                - term [ref=e177]: Category
+                - definition [ref=e178]: Not chosen
+              - generic [ref=e179]:
+                - term [ref=e180]: Service
+                - definition [ref=e181]: Not chosen
+              - generic [ref=e182]:
+                - term [ref=e183]: Extras
+                - definition [ref=e184]: None
+              - generic [ref=e185]:
+                - term [ref=e186]: Date
+                - definition [ref=e187]: Not chosen
+              - generic [ref=e188]:
+                - term [ref=e189]: Time
+                - definition [ref=e190]: Not chosen
+              - generic [ref=e191]:
+                - term [ref=e192]: Duration
+                - definition [ref=e193]: —
+              - generic [ref=e194]:
+                - term [ref=e195]: Subtotal
+                - definition [ref=e196]: —
+              - generic [ref=e197]:
+                - term [ref=e198]: Due now
+                - definition [ref=e199]: —
+            - paragraph [ref=e200]:
+              - strong [ref=e201]: "Clinic:"
+              - text: "[Clinic address to be confirmed]"
+        - button "Start over and clear draft" [ref=e202] [cursor=pointer]
+    - contentinfo [ref=e89]:
+      - generic [ref=e90]:
+        - generic [ref=e91]:
+          - link "Tamlois home" [ref=e92] [cursor=pointer]:
+            - /url: "#/"
+            - generic [ref=e95]: Tamlois Naturals &Trichology Clinic
+          - paragraph [ref=e96]: Professional trichology and natural hair care focused on healthy scalp, hair growth and hair-loss management through personalised, evidence-informed care.
+          - generic [ref=e97]: Contact details are placeholders
+        - generic [ref=e98]:
+          - heading "Visit and contact" [level=2] [ref=e99]
+          - generic [ref=e100]:
+            - paragraph [ref=e101]: "[Clinic address to be confirmed]"
+            - link "+234 000 000 0000" [ref=e102] [cursor=pointer]:
+              - /url: tel:+234 000 000 0000
+            - link "@tamlois_placeholder" [ref=e105] [cursor=pointer]:
+              - /url: "#"
+            - paragraph [ref=e109]: Monday-Saturday, 9:00 a.m.-6:00 p.m.Sunday closed. Appointments required.
+        - generic [ref=e110]:
+          - heading "Information" [level=2] [ref=e111]
+          - generic [ref=e112]:
+            - link "FAQ" [ref=e113] [cursor=pointer]:
+              - /url: "#/faq"
+            - link "Privacy" [ref=e114] [cursor=pointer]:
+              - /url: "#/privacy"
+            - link "Terms" [ref=e115] [cursor=pointer]:
+              - /url: "#/terms"
+            - link "Cancellation" [ref=e116] [cursor=pointer]:
+              - /url: "#/cancellation-policy"
+            - link "Admin" [ref=e117] [cursor=pointer]:
+              - /url: "#/admin/login"
+      - generic [ref=e118]: © 2026 Tamlois Natural & More | Tamlois Trichology Clinic. Placeholder website content.

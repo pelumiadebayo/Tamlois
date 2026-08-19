@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    function isActivePublicRecord() {
+      return resource.data.active == true;
+    }
+
+    // Public catalogue and policy reads are deliberately narrow. Drafts, guest
+    // identity, intake answers, holds and payment records are never public.
+    match /services/{id} {
+      allow read: if isActivePublicRecord() || isAdmin();
+      allow write: if isAdmin();
+    }
+    match /serviceExtras/{id} {
+      allow read: if isActivePublicRecord() || isAdmin();
+      allow write: if isAdmin();
+    }
+    match /serviceIntakeSchemas/{id} {
+      allow read: if isActivePublicRecord() || isAdmin();
+      allow write: if isAdmin();
+    }
+    match /bookingPolicies/{id} {
+      allow read: if isActivePublicRecord() || isAdmin();
+      allow write: if isAdmin();
+    }
+    match /businessSettings/public {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /businessSettings/{id} {
+      allow read, write: if isAdmin();
+    }
+    match /blockedPeriods/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // The secure booking API uses privileged server credentials for atomic hold,
+    // payment verification and booking creation. Browser clients cannot bypass it.
+    match /bookingHolds/{id} { allow read, write: if isAdmin(); }
+    match /bookings/{id} { allow read, write: if isAdmin(); }
+    match /bookingIntakeResponses/{id} { allow read, write: if isAdmin(); }
+    match /payments/{id} { allow read, write: if isAdmin(); }
+    match /paymentEvents/{id} { allow read, write: if isAdmin(); }
+    match /notifications/{id} { allow read, write: if isAdmin(); }
+
+    match /content/home-announcement {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /{collectionName}/{id} {
+      allow read: if collectionName in ['faqs', 'testimonials', 'results', 'content', 'productsCache']
+                  && (isActivePublicRecord() || isAdmin());
+      allow write: if collectionName in ['faqs', 'testimonials', 'results', 'content', 'productsCache'] && isAdmin();
+    }
+    match /leads/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['id', 'email', 'consent', 'createdAt', 'utm'])
+                    && request.resource.data.consent == true;
+      allow read, update, delete: if isAdmin();
+    }
+    match /enquiries/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['id', 'fullName', 'email', 'message', 'consent', 'createdAt'])
+                    && request.resource.data.fullName is string
+                    && request.resource.data.fullName.size() >= 2
+                    && request.resource.data.fullName.size() <= 100
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() <= 160
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() >= 5
+                    && request.resource.data.message.size() <= 2000
+                    && request.resource.data.consent == true;
+      allow read, update, delete: if isAdmin();
+    }
+    match /auditLogs/{id} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}
