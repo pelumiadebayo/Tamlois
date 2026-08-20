@@ -45,7 +45,7 @@ Firebase's web API key and project identifiers are browser configuration, not da
 1. Create the repository and push `main`.
 2. Select GitHub Actions as the Pages source.
 3. Allow Pages deployment permissions.
-4. Add `SITE_URL` and any browser-safe `VITE_*` values as repository variables.
+4. Add any browser-safe `VITE_*` values as repository variables. `SITE_URL` is optional while using the built-in `https://pelumiadebayo.github.io/Tamlois` fallback; set it when the custom domain is ready.
 5. Run `.github/workflows/deploy-pages.yml`.
 6. Confirm the `base: './'` build works at the repository subpath.
 7. If using a custom domain, add `public/CNAME`, configure DNS, wait for verification and enable HTTPS.
