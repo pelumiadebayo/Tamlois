@@ -25,7 +25,7 @@ describe("main service catalogue hydration", () => {
       "Scalp therapy",
       "Hair-loss management",
       "Hair treatments",
-      "Natural hair care",
+      "Natural hair care & styling",
     ]);
   });
 });

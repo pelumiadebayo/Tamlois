@@ -20,7 +20,7 @@ describe('availability calculation', () => {
     expect(slots).not.toContain('09:00'); expect(slots).not.toContain('10:00'); expect(slots).toContain('11:00');
   });
   it('honours minimum notice', () => {
-    const sameDayNow = new Date(2026, 7, 24, 9, 15);
+    const sameDayNow = new Date('2026-08-24T08:15:00.000Z');
     const slots = getAvailableSlots(monday, 45, { ...defaultSettings, minimumNoticeHours: 4 }, [], sameDayNow);
     expect(slots[0]).toBe('13:30');
   });

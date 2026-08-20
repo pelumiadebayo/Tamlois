@@ -307,3 +307,12 @@ Visit https://react.dev/link/error-boundaries to learn more about error boundari
 [77329631ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
 [77329986ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
 [77329987ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[78117045ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[78117407ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[78117411ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[78139262ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[78139621ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[78139623ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[78152222ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[78152581ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[78152583ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2

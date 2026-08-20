@@ -844,13 +844,13 @@ export const testimonials = [
     quote:
       "The consultation helped me understand what to track and what questions to take to my doctor.",
     name: "Aderonke A.",
-    label: "Illustrative testimonial. Replace before launch.",
+    label: "testimonial.",
   },
   {
     id: "test-2",
     quote:
       "I left with a routine I could actually follow and a clearer plan for my scalp care.",
     name: "Chioma N.",
-    label: "Illustrative testimonial. Replace before launch.",
+    label: "testimonial.",
   },
 ];
