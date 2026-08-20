@@ -38,8 +38,13 @@ import { appRepositories } from "../repositories/app";
 import { bookingConfigurationRepositories } from "../repositories/bookingConfigurationRepository";
 import { availabilityRepository } from "../repositories/availabilityRepository";
 import { contentRepository } from "../repositories/contentRepository";
+import {
+  galleryRepository,
+  homeOfferingRepository,
+} from "../repositories/homeContentRepository";
 import { updateBookingWithLockCleanup } from "../repositories/firestoreRepository";
 import { shopifyEnabled } from "../lib/adapters";
+import { homeOfferings as defaultHomeOfferings } from "../data/content";
 import type {
   BlockedPeriod,
   Booking,
@@ -47,6 +52,8 @@ import type {
   BookingStatus,
   BusinessSettings,
   IntakeQuestion,
+  GalleryItem,
+  HomeOffering,
   Service,
   ServiceExtra,
 } from "../types";
@@ -1852,10 +1859,48 @@ export function AdminAvailabilityPage() {
 
 export function AdminContentPage() {
   const [announcement, setAnnouncement] = useState("");
+  const [offerings, setOfferings] = useState<HomeOffering[]>([]);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    contentRepository.getAnnouncement().then(setAnnouncement);
+    Promise.all([
+      contentRepository.getAnnouncement(),
+      homeOfferingRepository.list(),
+      galleryRepository.list(),
+    ]).then(([nextAnnouncement, nextOfferings, nextGallery]) => {
+      setAnnouncement(nextAnnouncement);
+      setOfferings(
+        defaultHomeOfferings.map((fallback, index) => ({
+          ...(nextOfferings.find((item) => item.id === fallback.id) ||
+            fallback),
+          sequence: index + 1,
+          active: true,
+        })),
+      );
+      setGallery(nextGallery.sort((a, b) => a.order - b.order));
+    });
   }, []);
+  const updateOffering = (id: string, patch: Partial<HomeOffering>) =>
+    setOfferings((current) =>
+      current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    );
+  const updateGallery = (id: string, patch: Partial<GalleryItem>) =>
+    setGallery((current) =>
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...patch,
+              ...(("consentConfirmed" in patch && !patch.consentConfirmed) ||
+              ("placeholder" in patch && patch.placeholder) ||
+              ("consentRecordReference" in patch &&
+                !patch.consentRecordReference?.trim())
+                ? { isClientResult: false }
+                : {}),
+            }
+          : item,
+      ),
+    );
   return (
     <>
       <AdminHeading
@@ -1918,6 +1963,436 @@ export function AdminContentPage() {
             Demo content lives in the central data file until Firebase is
             configured.
           </p>
+        </section>
+        <section className="surface p-5 xl:col-span-2">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="font-bold">Homepage Care Loop</h2>
+              <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+                Edit the four core offers and their destinations. Motion timing
+                and care-path order remain fixed for accessibility and
+                consistency.
+              </p>
+            </div>
+            <button
+              className="btn btn-primary"
+              onClick={async () => {
+                await Promise.all(
+                  offerings.map((item) => homeOfferingRepository.save(item)),
+                );
+                setSaved(true);
+              }}
+            >
+              Save Care Loop
+            </button>
+          </div>
+          <div className="mt-6 rule-list">
+            {offerings.map((item) => (
+              <article key={item.id} className="grid gap-4 py-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="font-display text-2xl text-[var(--forest-950)]">
+                    {String(item.sequence).padStart(2, "0")} {item.eyebrow}
+                  </h3>
+                  <span className="status">Core path · always active</span>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="field">
+                    <label>Offering label</label>
+                    <input
+                      value={item.eyebrow}
+                      onChange={(event) =>
+                        updateOffering(item.id, { eyebrow: event.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Image focal point</label>
+                    <input
+                      value={item.image.focalPoint || "center"}
+                      onChange={(event) =>
+                        updateOffering(item.id, {
+                          image: {
+                            ...item.image,
+                            focalPoint: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Title</label>
+                  <input
+                    value={item.title}
+                    onChange={(event) =>
+                      updateOffering(item.id, { title: event.target.value })
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label>Short description</label>
+                  <textarea
+                    value={item.description}
+                    onChange={(event) =>
+                      updateOffering(item.id, {
+                        description: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="field">
+                    <label>Image URL</label>
+                    <input
+                      type="url"
+                      value={item.image.src}
+                      onChange={(event) =>
+                        updateOffering(item.id, {
+                          image: { ...item.image, src: event.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Image alt text</label>
+                    <input
+                      value={item.image.alt}
+                      onChange={(event) =>
+                        updateOffering(item.id, {
+                          image: { ...item.image, alt: event.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Primary CTA label</label>
+                    <input
+                      value={item.primaryCta.label}
+                      onChange={(event) =>
+                        updateOffering(item.id, {
+                          primaryCta: {
+                            ...item.primaryCta,
+                            label: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Primary CTA destination</label>
+                    <input
+                      value={item.primaryCta.href}
+                      onChange={(event) =>
+                        updateOffering(item.id, {
+                          primaryCta: {
+                            ...item.primaryCta,
+                            href: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Secondary CTA label</label>
+                    <input
+                      value={item.secondaryCta?.label || ""}
+                      onChange={(event) =>
+                        updateOffering(item.id, {
+                          secondaryCta: {
+                            label: event.target.value,
+                            href: item.secondaryCta?.href || "",
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Secondary CTA destination</label>
+                    <input
+                      value={item.secondaryCta?.href || ""}
+                      onChange={(event) =>
+                        updateOffering(item.id, {
+                          secondaryCta: {
+                            label: item.secondaryCta?.label || "Learn more",
+                            href: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="surface p-5 xl:col-span-2">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="font-bold">Gallery records</h2>
+              <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+                Public images use URL-backed records. Client results require
+                explicit consent confirmation before they can be marked as such.
+              </p>
+            </div>
+            <button
+              className="btn btn-secondary"
+              onClick={() =>
+                setGallery((current) => [
+                  ...current,
+                  {
+                    id: crypto.randomUUID(),
+                    image: "",
+                    category: "clinic",
+                    caption: "",
+                    alt: "",
+                    order: current.length + 1,
+                    featured: false,
+                    active: false,
+                    consentConfirmed: false,
+                    isClientResult: false,
+                    placeholder: true,
+                  },
+                ])
+              }
+            >
+              <Plus size={17} /> Add image record
+            </button>
+          </div>
+          <div className="mt-6 rule-list">
+            {gallery.map((item) => (
+              <article
+                key={item.id}
+                className="grid gap-4 py-6 lg:grid-cols-[180px_1fr]"
+              >
+                <div className="overflow-hidden rounded-[12px] bg-[var(--forest-100)]">
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt=""
+                      className="aspect-[4/3] h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="grid aspect-[4/3] place-items-center text-xs font-bold text-[var(--forest-700)]">
+                      Add image URL
+                    </div>
+                  )}
+                </div>
+                <div className="grid gap-4">
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="field md:col-span-2">
+                      <label>Image URL</label>
+                      <input
+                        type="url"
+                        value={item.image}
+                        onChange={(event) =>
+                          updateGallery(item.id, { image: event.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Category</label>
+                      <select
+                        value={item.category}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            category: event.target
+                              .value as GalleryItem["category"],
+                          })
+                        }
+                      >
+                        <option value="trichology">Trichology</option>
+                        <option value="natural-hair">Natural Hair</option>
+                        <option value="clinic">Clinic</option>
+                        <option value="products">Products</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Display order</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.order}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            order: Number(event.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="field">
+                      <label>Caption</label>
+                      <textarea
+                        value={item.caption}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            caption: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Alt text</label>
+                      <textarea
+                        value={item.alt}
+                        onChange={(event) =>
+                          updateGallery(item.id, { alt: event.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Related service ID (optional)</label>
+                      <input
+                        value={item.relatedServiceId || ""}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            relatedServiceId: event.target.value || undefined,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Consent record reference</label>
+                      <input
+                        value={item.consentRecordReference || ""}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            consentRecordReference:
+                              event.target.value || undefined,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-5 text-xs font-bold">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={item.active}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            active: event.target.checked,
+                          })
+                        }
+                      />{" "}
+                      Visible
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={item.featured}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            featured: event.target.checked,
+                          })
+                        }
+                      />{" "}
+                      Featured
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={item.placeholder}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            placeholder: event.target.checked,
+                          })
+                        }
+                      />{" "}
+                      Placeholder
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={item.consentConfirmed}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            consentConfirmed: event.target.checked,
+                          })
+                        }
+                      />{" "}
+                      Consent confirmed
+                    </label>
+                    <label
+                      title={
+                        !item.consentConfirmed ||
+                        !item.consentRecordReference?.trim() ||
+                        item.placeholder
+                          ? "Confirm consent, add its reference and remove placeholder status first"
+                          : undefined
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        disabled={
+                          !item.consentConfirmed ||
+                          !item.consentRecordReference?.trim() ||
+                          item.placeholder
+                        }
+                        checked={item.isClientResult}
+                        onChange={(event) =>
+                          updateGallery(item.id, {
+                            isClientResult: event.target.checked,
+                          })
+                        }
+                      />{" "}
+                      Genuine client result
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      className="btn btn-primary"
+                      onClick={async () => {
+                        if (
+                          item.isClientResult &&
+                          (!item.consentConfirmed ||
+                            !item.consentRecordReference?.trim() ||
+                            item.placeholder)
+                        )
+                          return;
+                        await galleryRepository.save(item);
+                        setSaved(true);
+                      }}
+                    >
+                      Save image
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={async () => {
+                        const archived = { ...item, active: false };
+                        await galleryRepository.save(archived);
+                        updateGallery(item.id, { active: false });
+                      }}
+                    >
+                      Archive
+                    </button>
+                    <button
+                      className="btn text-[var(--danger)]"
+                      onClick={async () => {
+                        await galleryRepository.remove(item.id);
+                        setGallery((current) =>
+                          current.filter(
+                            (candidate) => candidate.id !== item.id,
+                          ),
+                        );
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          {saved && (
+            <p
+              className="mt-4 text-sm font-bold text-[var(--forest-700)]"
+              role="status"
+            >
+              Content changes saved.
+            </p>
+          )}
         </section>
       </div>
     </>

@@ -13,18 +13,14 @@ export const bookingSchema = z.object({
   fullName: z.string().trim().min(2, "Enter your full name."),
   phone: z.string().trim().min(7, "Enter a valid phone number."),
   email: z.email("Enter a valid email address."),
-  preferredContact: z.enum(["phone", "whatsapp", "email"]),
-  concern: z.string().trim().min(2, "Tell us your main hair or scalp concern."),
-  hopes: z
-    .string()
-    .trim()
-    .min(2, "Tell us what you hope to get from the appointment."),
-  concernDuration: z
-    .string()
-    .min(1, "Choose how long this concern has been present."),
-  priorProfessionalTreatment: z
-    .string()
-    .min(1, "Choose whether you have had professional treatment."),
+  preferredContact: z.union([
+    z.enum(["phone", "whatsapp", "email"]),
+    z.literal(""),
+  ]),
+  concern: z.string().trim().max(2000, "Keep this answer under 2,000 characters."),
+  hopes: z.string().trim().max(2000, "Keep this answer under 2,000 characters."),
+  concernDuration: z.string().max(200),
+  priorProfessionalTreatment: z.string().max(500),
   productsTreatments: z
     .string()
     .max(800, "Keep this answer under 800 characters."),
@@ -174,17 +170,6 @@ export function validateImageFile(
     return "Use a JPG, PNG or WebP image.";
   if (file.size > maxBytes) return "Choose an image smaller than 5 MB.";
   return "";
-}
-
-export function intakeValueMissing(
-  value: string | string[] | boolean | undefined,
-) {
-  return (
-    value === undefined ||
-    value === "" ||
-    value === false ||
-    (Array.isArray(value) && value.length === 0)
-  );
 }
 
 export function sanitizeIntakeResponses(

@@ -9,6 +9,23 @@ service cloud.firestore {
       return resource.data.active == true;
     }
 
+    function isCanonicalHomeOffering(id) {
+      return request.resource.data.id == id &&
+        request.resource.data.active == true &&
+        ((id == 'trichology' && request.resource.data.sequence == 1) ||
+          (id == 'salon' && request.resource.data.sequence == 2) ||
+          (id == 'products' && request.resource.data.sequence == 3) ||
+          (id == 'gallery' && request.resource.data.sequence == 4));
+    }
+
+    function isPublishableGallery(data) {
+      return data.isClientResult != true ||
+        (data.consentConfirmed == true &&
+          data.placeholder == false &&
+          data.consentRecordReference is string &&
+          data.consentRecordReference.size() > 0);
+    }
+
     // Public catalogue and policy reads are deliberately narrow. Drafts, guest
     // identity, intake answers, holds and payment records are never public.
     match /services/{id} {
@@ -26,6 +43,18 @@ service cloud.firestore {
     match /bookingPolicies/{id} {
       allow read: if isActivePublicRecord() || isAdmin();
       allow write: if isAdmin();
+    }
+    match /homeOfferings/{id} {
+      allow read: if isActivePublicRecord() || isAdmin();
+      allow create, update: if isAdmin() && isCanonicalHomeOffering(id);
+      allow delete: if false;
+    }
+    match /gallery/{id} {
+      allow read: if isAdmin() ||
+        (isActivePublicRecord() && isPublishableGallery(resource.data));
+      allow create, update: if isAdmin() &&
+        isPublishableGallery(request.resource.data);
+      allow delete: if isAdmin();
     }
     match /businessSettings/public {
       allow read: if true;

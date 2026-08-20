@@ -124,6 +124,50 @@ export interface Product {
   variantId?: string;
 }
 
+export type HomeOfferingId = "trichology" | "salon" | "products" | "gallery";
+export interface HomeOffering {
+  id: HomeOfferingId;
+  sequence: number;
+  eyebrow: string;
+  title: string;
+  description: string;
+  primaryCta: { label: string; href: string };
+  secondaryCta?: { label: string; href: string };
+  image: {
+    src: string;
+    alt: string;
+    focalPoint?: string;
+    placeholder: boolean;
+  };
+  theme: {
+    backgroundToken: string;
+    foregroundToken: string;
+    accentToken: string;
+  };
+  active: boolean;
+}
+
+export type GalleryCategory =
+  | "trichology"
+  | "natural-hair"
+  | "clinic"
+  | "products";
+export interface GalleryItem {
+  id: string;
+  image: string;
+  category: GalleryCategory;
+  caption: string;
+  alt: string;
+  order: number;
+  featured: boolean;
+  active: boolean;
+  relatedServiceId?: string;
+  consentRecordReference?: string;
+  consentConfirmed: boolean;
+  isClientResult: boolean;
+  placeholder: boolean;
+}
+
 export interface PaymentSettings {
   enabledModes: PaymentMode[];
   defaultMode: PaymentMode;
@@ -208,7 +252,7 @@ export interface Booking {
   fullName: string;
   phone: string;
   email: string;
-  preferredContact: "phone" | "whatsapp" | "email";
+  preferredContact: "phone" | "whatsapp" | "email" | "";
   concern: string;
   hopes: string;
   concernDuration: string;
@@ -237,6 +281,7 @@ export interface Booking {
 
 export interface BookingDraft {
   sessionId: string;
+  flowVersion: number;
   step: number;
   policyConsent?: PolicyConsentRecord;
   category?: ServiceCategory;
@@ -273,6 +318,7 @@ export interface BookingHold {
   startTime: string;
   endTime: string;
   serviceId: string;
+  category?: ServiceCategory;
   lockIds: string[];
   expiresAt: string;
   status: "active" | "converted" | "expired" | "released";

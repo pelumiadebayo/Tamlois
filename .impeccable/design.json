@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-20T00:21:42.9946547+01:00",
+  "generatedAt": "2026-08-20T06:31:53.0252200+01:00",
   "title": "Design System: Tamlois Naturals & Trichology Clinic",
   "extensions": {
     "colorMeta": {
@@ -322,6 +322,11 @@
         "name": "modal-lift",
         "value": "0 24px 80px rgba(13,45,33,.24)",
         "purpose": "Separates a dialog or bottom sheet from its darkened page scrim."
+      },
+      {
+        "name": "care-loop-stage",
+        "value": "0 24px 70px rgba(13,45,33,.14)",
+        "purpose": "Separates the Care Loop's single changing editorial stage; mobile uses 0 18px 48px rgba(13,45,33,.12)."
       }
     ],
     "motion": [
@@ -354,13 +359,45 @@
         "name": "reduced-motion",
         "value": "0.01ms",
         "purpose": "Collapses animation and transition duration when reduced motion is requested."
+      },
+      {
+        "name": "care-loop-rotation",
+        "value": "6500ms",
+        "purpose": "Desktop reading interval before advancing through the canonical care-path order."
+      },
+      {
+        "name": "care-loop-image-reveal",
+        "value": "clip-path, filter, transform 620ms cubic-bezier(.23, 1, .32, 1)",
+        "purpose": "Controlled reveal for changing Care Loop media."
+      },
+      {
+        "name": "care-loop-copy-reveal",
+        "value": "opacity, transform 520ms cubic-bezier(.23, 1, .32, 1)",
+        "purpose": "Introduces changing Care Loop copy with a 10px rise."
+      },
+      {
+        "name": "care-loop-reduced-motion",
+        "value": "opacity 160ms ease",
+        "purpose": "Manual-only crossfade; autoplay and progress animation are disabled."
       }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" },
-      { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" },
-      { "name": "xl", "value": "1280px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
     ]
   },
   "components": [
@@ -397,12 +434,12 @@
       "css": ".ds-status { display:inline-flex; min-height:28px; align-items:center; border-radius:999px; padding:3.2px 9.92px; background:var(--forest-100, #dce9df); color:var(--forest-950, #0d2d21); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; font-size:.72rem; font-weight:700; line-height:1; }"
     },
     {
-      "name": "Service Card",
+      "name": "Care Loop",
       "kind": "card",
       "refersTo": "surface",
-      "description": "One bordered record joining service media, evidence, metadata, and actions without inner cards.",
-      "html": "<article class=\"ds-service-card\"><div class=\"ds-service-media\" role=\"img\" aria-label=\"Service image area\"><span>CARE IMAGE</span></div><div class=\"ds-service-copy\"><p class=\"ds-service-category\">Assessment</p><h3>Trichology consultation</h3><p class=\"ds-service-summary\">A focused review of your hair history, scalp concerns and current routine.</p><p class=\"ds-service-meta\">60 min &nbsp; · &nbsp; ₦25,000</p><div class=\"ds-service-actions\"><button class=\"ds-service-secondary\">View service</button><button class=\"ds-service-primary\">Book now</button></div></div></article>",
-      "css": ".ds-service-card { display:grid; overflow:hidden; border:1px solid var(--line, #ccd5ce); border-radius:14px; background:#fff; color:var(--ink, #202823); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; } .ds-service-media { display:grid; min-height:150px; place-items:center; background:var(--forest-100, #dce9df); color:var(--forest-700, #1e6144); font-size:.7rem; font-weight:700; letter-spacing:.12em; } .ds-service-copy { display:flex; flex-direction:column; padding:20px; } .ds-service-category { margin:0; color:var(--forest-700, #1e6144); font-size:.75rem; font-weight:700; } .ds-service-card h3 { margin:8px 0 0; color:var(--forest-950, #0d2d21); font:400 1.5rem/1.2 'DM Serif Display', Georgia, serif; } .ds-service-summary { margin:8px 0 0; color:var(--muted, #647168); font-size:.875rem; line-height:1.5rem; } .ds-service-meta { margin:16px 0 0; color:var(--muted, #647168); font-size:.75rem; font-weight:600; } .ds-service-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:20px; } .ds-service-actions button { min-height:44px; border-radius:999px; padding:10px 16px; font:700 .82rem/1 Manrope, ui-sans-serif, system-ui, sans-serif; cursor:pointer; transition:background-color 180ms ease, transform 160ms cubic-bezier(.23,1,.32,1); } .ds-service-secondary { border:1px solid var(--forest-800, #174b35); background:transparent; color:var(--forest-900, #123d2c); } .ds-service-secondary:hover { background:var(--forest-50, #eef4ef); } .ds-service-primary { border:1px solid var(--forest-800, #174b35); background:var(--forest-800, #174b35); color:#fff; } .ds-service-primary:hover { background:var(--forest-950, #0d2d21); } .ds-service-actions button:active { transform:scale(.97); } .ds-service-actions button:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } @media (min-width:520px) { .ds-service-card { grid-template-columns:160px 1fr; } }"
+      "description": "Signature homepage navigator with one stable promise, four ordered routes, and one changing editorial stage.",
+      "html": "<section class=\"ds-loop\"><div class=\"ds-loop-intro\"><h2>Understand your scalp. Care for your hair with confidence.</h2><p>Personalised trichology, healthy-scalp care and professional natural-hair services.</p><div class=\"ds-loop-rail\"><button class=\"ds-loop-active\" aria-pressed=\"true\"><span>01</span>Natural Hair Salon<i></i></button><button><span>02</span>Trichology Care</button><button><span>03</span>Hair &amp; Scalp Products</button><button><span>04</span>Gallery &amp; Results</button></div><div class=\"ds-loop-controls\"><button aria-label=\"Pause Care Loop\">Pause</button><button aria-label=\"Show next offering\">Next</button></div></div><article class=\"ds-loop-stage\"><div class=\"ds-loop-media\" role=\"img\" aria-label=\"Nigerian woman with natural textured hair, licensed placeholder\"><svg viewBox=\"0 0 480 300\" aria-hidden=\"true\"><rect width=\"480\" height=\"300\" fill=\"#dce9df\"/><circle cx=\"240\" cy=\"135\" r=\"82\" fill=\"#174b35\"/><path d=\"M140 300c14-82 60-120 100-120s86 38 100 120\" fill=\"#123d2c\"/></svg><span>Licensed placeholder</span></div><div class=\"ds-loop-copy\"><small>NATURAL HAIR SALON</small><h3>Professional care for natural hair.</h3><p>Scalp-conscious salon services, hydration care and healthy-hair treatments for textured and natural hair.</p><div><a href=\"#\">Book salon care</a><a href=\"#\">Explore services</a></div></div></article></section>",
+      "css": ".ds-loop{display:grid;grid-template-columns:minmax(0,.92fr) minmax(390px,1.08fr);gap:40px;border-bottom:1px solid var(--line,#ccd5ce);background:var(--paper,#f7f8f3);padding:32px;color:var(--ink,#202823);font-family:Manrope,ui-sans-serif,system-ui,sans-serif}.ds-loop-intro{display:flex;flex-direction:column;justify-content:center}.ds-loop h2{margin:0;color:var(--forest-950,#0d2d21);font:400 clamp(2.6rem,5vw,5rem)/.93 'DM Serif Display',Georgia,serif;letter-spacing:-.035em}.ds-loop-intro>p{margin:22px 0 0;color:var(--muted,#647168);line-height:1.7}.ds-loop-rail{display:grid;margin-top:30px;border-top:1px solid var(--line,#ccd5ce)}.ds-loop-rail button{position:relative;display:grid;min-height:54px;grid-template-columns:44px 1fr;align-items:center;border:0;border-bottom:1px solid var(--line,#ccd5ce);background:transparent;color:var(--muted,#647168);font:650 .82rem/1.2 Manrope,ui-sans-serif,system-ui,sans-serif;text-align:left;cursor:pointer}.ds-loop-rail span{color:var(--forest-700,#1e6144);font-size:.68rem}.ds-loop-rail .ds-loop-active{background:rgba(220,233,223,.35);color:var(--forest-950,#0d2d21)}.ds-loop-rail i{position:absolute;inset:auto 0 -1px;height:2px;transform-origin:left;background:var(--forest-800,#174b35);animation:ds-loop-progress 6500ms linear forwards}.ds-loop-controls{display:flex;align-items:center;justify-content:space-between;margin-top:12px;color:var(--muted,#647168);font-size:.68rem;letter-spacing:.08em}.ds-loop-controls button{min-height:44px;border:0;background:transparent;color:var(--forest-800,#174b35);font-weight:750;cursor:pointer}.ds-loop-stage{display:grid;overflow:hidden;border-radius:14px;background:var(--forest-950,#0d2d21);box-shadow:0 24px 70px rgba(13,45,33,.14)}.ds-loop-media{position:relative;min-height:300px;overflow:hidden;animation:ds-loop-image-in 620ms cubic-bezier(.23,1,.32,1) both}.ds-loop-media svg{display:block;width:100%;height:100%;min-height:300px}.ds-loop-media>span{position:absolute;top:16px;right:16px;border-radius:999px;background:rgba(247,248,243,.92);padding:7px 10px;color:var(--forest-900,#123d2c);font-size:.63rem;font-weight:750}.ds-loop-copy{padding:28px;background:#fff;animation:ds-loop-copy-in 520ms cubic-bezier(.23,1,.32,1) both}.ds-loop-copy small{color:var(--forest-700,#1e6144);font-size:.7rem;font-weight:800;letter-spacing:.08em}.ds-loop-copy h3{margin:10px 0 0;color:var(--forest-950,#0d2d21);font:400 2.25rem/1 'DM Serif Display',Georgia,serif}.ds-loop-copy p{color:var(--muted,#647168);font-size:.86rem;line-height:1.6}.ds-loop-copy>div{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}.ds-loop-copy a{display:inline-flex;min-height:44px;align-items:center;border-radius:999px;padding:11px 16px;background:var(--forest-800,#174b35);color:#fff;font-size:.78rem;font-weight:750;text-decoration:none}.ds-loop-copy a+a{background:transparent;color:var(--forest-800,#174b35);text-decoration:underline;text-underline-offset:5px}.ds-loop button:hover,.ds-loop a:hover{color:var(--forest-950,#0d2d21)}.ds-loop button:focus-visible,.ds-loop a:focus-visible{outline:3px solid var(--warm,#bd7a42);outline-offset:3px}@keyframes ds-loop-progress{to{transform:scaleX(1)}}@keyframes ds-loop-image-in{from{clip-path:inset(100% 0 0);filter:blur(4px);transform:scale(.985)}to{clip-path:inset(0);filter:blur(0);transform:scale(1)}}@keyframes ds-loop-copy-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@media(max-width:767px){.ds-loop{grid-template-columns:1fr;padding:24px 16px}.ds-loop-stage{order:2}.ds-loop-rail{order:3;display:flex;overflow-x:auto;border-top:0}.ds-loop-rail button{min-width:max-content;grid-template-columns:30px auto;padding:0 14px}.ds-loop-controls{order:4}.ds-loop-copy a{width:100%;justify-content:center}}@media(prefers-reduced-motion:reduce){.ds-loop-rail i{animation:none}.ds-loop-media,.ds-loop-copy{animation:ds-loop-fade 160ms ease both}@keyframes ds-loop-fade{from{opacity:.75}to{opacity:1}}}"
     },
     {
       "name": "Primary Navigation",
@@ -416,9 +453,9 @@
       "name": "Booking Progress",
       "kind": "custom",
       "refersTo": "status",
-      "description": "The signature seven-step rail that keeps the policy-first guest booking flow oriented on wide screens.",
-      "html": "<div class=\"ds-progress\"><p>Step 3 of 7: Extras</p><ol><li class=\"ds-complete\"><button aria-label=\"Step 1 complete\"><span>✓</span><b>Category</b></button></li><li class=\"ds-complete\"><button aria-label=\"Step 2 complete\"><span>✓</span><b>Service</b></button></li><li class=\"ds-current\"><button aria-current=\"step\"><span>3</span><b>Extras</b></button></li><li><button disabled><span>4</span><b>Schedule</b></button></li><li><button disabled><span>5</span><b>Details</b></button></li><li><button disabled><span>6</span><b>Summary</b></button></li><li><button disabled><span>7</span><b>Payment</b></button></li></ol></div>",
-      "css": ".ds-progress { color:var(--forest-950, #0d2d21); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; } .ds-progress > p { margin:0 0 12px; font-size:.875rem; font-weight:700; } .ds-progress ol { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin:0; padding:0; list-style:none; } .ds-progress button { display:flex; width:100%; min-height:48px; align-items:center; justify-content:center; gap:8px; border:0; border-bottom:2px solid var(--line, #ccd5ce); background:transparent; color:inherit; font-family:inherit; cursor:pointer; } .ds-progress span { display:grid; width:32px; height:32px; flex:0 0 32px; place-items:center; border-radius:50%; background:var(--forest-100, #dce9df); font-size:.875rem; font-weight:700; } .ds-progress b { font-size:.7rem; } .ds-progress .ds-complete button { border-bottom-color:var(--forest-700, #1e6144); } .ds-progress .ds-current button { border-bottom-color:var(--forest-800, #174b35); } .ds-progress .ds-complete span, .ds-progress .ds-current span { background:var(--forest-800, #174b35); color:#fff; } .ds-progress button:hover:not(:disabled) { background:var(--forest-50, #eef4ef); } .ds-progress button:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } .ds-progress button:disabled { cursor:not-allowed; opacity:.75; } @media (max-width:767px) { .ds-progress ol { display:none; } }"
+      "description": "The signature six-step rail keeps the policy-first guest booking flow oriented; category deep links enter at Service after policy, and optional extras remain inside Service.",
+      "html": "<div class=\"ds-progress\"><p>Step 2 of 6: Service</p><ol><li class=\"ds-complete\"><button aria-label=\"Step 1 complete\"><span>✓</span><b>Category</b></button></li><li class=\"ds-current\"><button aria-current=\"step\"><span>2</span><b>Service</b></button></li><li><button disabled><span>3</span><b>Schedule</b></button></li><li><button disabled><span>4</span><b>Details</b></button></li><li><button disabled><span>5</span><b>Summary</b></button></li><li><button disabled><span>6</span><b>Payment</b></button></li></ol><section aria-label=\"Optional extras\"><h3>Optional extras</h3><label><input type=\"checkbox\"/>Clay detox <small>Demo extra · ₦8,500 · +30 minutes</small></label></section></div>",
+      "css": ".ds-progress { color:var(--forest-950, #0d2d21); font-family:Manrope, ui-sans-serif, system-ui, sans-serif; } .ds-progress > p { margin:0 0 12px; font-size:.875rem; font-weight:700; } .ds-progress ol { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin:0; padding:0; list-style:none; } .ds-progress button { display:flex; width:100%; min-height:48px; align-items:center; justify-content:center; gap:8px; border:0; border-bottom:2px solid var(--line, #ccd5ce); background:transparent; color:inherit; font-family:inherit; cursor:pointer; } .ds-progress span { display:grid; width:32px; height:32px; flex:0 0 32px; place-items:center; border-radius:50%; background:var(--forest-100, #dce9df); font-size:.875rem; font-weight:700; } .ds-progress b { font-size:.7rem; } .ds-progress .ds-complete button { border-bottom-color:var(--forest-700, #1e6144); } .ds-progress .ds-current button { border-bottom-color:var(--forest-800, #174b35); } .ds-progress .ds-complete span, .ds-progress .ds-current span { background:var(--forest-800, #174b35); color:#fff; } .ds-progress button:hover:not(:disabled) { background:var(--forest-50, #eef4ef); } .ds-progress button:focus-visible { outline:3px solid #d98a49; outline-offset:3px; } .ds-progress button:disabled { cursor:not-allowed; opacity:.75; } .ds-progress > section { margin-top:28px; border-top:1px solid var(--line, #ccd5ce); padding-top:20px; } .ds-progress h3 { margin:0 0 12px; font-family:Georgia, serif; font-size:1.5rem; font-weight:400; } .ds-progress label { display:flex; min-height:48px; align-items:center; gap:10px; border:1px solid var(--line, #ccd5ce); border-radius:14px; padding:14px; } .ds-progress label small { margin-left:auto; color:var(--forest-700, #1e6144); } @media (max-width:767px) { .ds-progress ol { display:none; } }"
     },
     {
       "name": "Booking Schedule",
@@ -453,7 +490,8 @@
       "Editorial reassurance paired with operational clarity.",
       "Deep forest, paper, cream, and white surfaces separated by fine rules.",
       "Flat ledger structures with selective 12-14px rounding and pill actions.",
-      "Direct, consent-aware imagery centred on Black women and textured natural hair."
+      "Direct, consent-aware imagery centred on Black women and textured natural hair.",
+      "Stable editorial promises paired with manually controllable, state-changing care routes."
     ],
     "rules": [
       {
@@ -492,6 +530,16 @@
         "section": "shapes"
       },
       {
+        "name": "The Stable Promise Rule",
+        "body": "The Care Loop may change evidence and routes, but never replace the page's core promise or force motion before the visitor can understand it.",
+        "section": "components"
+      },
+      {
+        "name": "The Care Path Order Rule",
+        "body": "Salon, Trichology, Products, then Gallery is a trust and navigation invariant; preserve that sequence across desktop rail, mobile selector, keyboard movement, analytics, and admin ordering.",
+        "section": "components"
+      },
+      {
         "name": "The One Obvious Next Step Rule",
         "body": "Within a task or card, one action may be filled; alternatives remain outlined or quiet.",
         "section": "components"
@@ -507,10 +555,14 @@
       "Do use large serif headings against generous paper space, then switch to Manrope for every operational detail.",
       "Do group related steps inside one ruled surface and use tonal section fields to organise long pages.",
       "Do preserve 48px control heights, visible focus, clear selected states, and reduced-motion behavior.",
+      "Do show policy version, slot-hold countdown, and confirmation state at the point where each affects the booking decision.",
+      "Do let Salon and Trichology Care Loop links skip Category after policy and show only the six canonical main-service cards for the known care path.",
+      "Do keep the same booking summary available as a sticky desktop aside and a collapsible mobile surface.",
       "Do use direct, consent-aware imagery that primarily represents Black women and textured natural hair.",
       "Do label placeholder claims, prices, testimonials, contact details, and media visibly until verified.",
-      "Do show policy version, slot-hold countdown, and confirmation state at the point where each affects the booking decision.",
-      "Do keep the same booking summary available as a sticky desktop aside and a collapsible mobile surface."
+      "Do preserve Salon, Trichology, Products, Gallery as the Care Loop's canonical path order on every input and viewport.",
+      "Do pause timed media when the visitor hovers, focuses, changes tabs, requests reduced motion, or selects a route manually.",
+      "Do keep Gallery placeholder badges and non-result language visible until consented, contextual client media exists."
     ],
     "donts": [
       "Don't introduce gradients, glassmorphism, decorative blobs, floating ornaments, or generic spa motifs.",
@@ -518,7 +570,8 @@
       "Don't use shadows on resting content; reserve them for true overlap such as notes, dialogs, and sheets.",
       "Don't use the serif for controls, admin density, metadata, or body-length instructions.",
       "Don't use green and warm ochre as competing accents or add a new accent without a semantic role.",
-      "Don't promise diagnosis, regrowth, guaranteed outcomes, or verification through visual styling."
+      "Don't promise diagnosis, regrowth, guaranteed outcomes, or verification through visual styling.",
+      "Don't present licensed stock, inspiration, or gallery imagery as a Tamlois client result."
     ]
   }
 }

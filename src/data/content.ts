@@ -2,6 +2,8 @@ import type {
   BookingPolicy,
   Concern,
   IntakeQuestion,
+  GalleryItem,
+  HomeOffering,
   Product,
   Service,
   ServiceExtra,
@@ -26,6 +28,182 @@ export const media = {
   },
 } as const;
 
+export const homeOfferings: HomeOffering[] = [
+  {
+    id: "trichology",
+    sequence: 2,
+    eyebrow: "Trichology Care",
+    title: "Clinical insight for healthier hair and scalp",
+    description:
+      "Personalised consultations, scalp analysis and evidence-informed care for shedding, thinning, scalp discomfort and hair-loss concerns.",
+    primaryCta: {
+      label: "Book a trichology consultation",
+      href: "/booking?category=trichology",
+    },
+    secondaryCta: {
+      label: "Explore trichology services",
+      href: "/services?category=trichology",
+    },
+    image: {
+      src: media.consultation.src,
+      alt: "Black woman in a calm hair and scalp consultation setting, licensed placeholder",
+      focalPoint: "center 32%",
+      placeholder: true,
+    },
+    theme: {
+      backgroundToken: "forest-950",
+      foregroundToken: "paper",
+      accentToken: "forest-100",
+    },
+    active: true,
+  },
+  {
+    id: "salon",
+    sequence: 1,
+    eyebrow: "Natural Hair Salon",
+    title: "Professional care & styling for natural hair",
+    description:
+      "Scalp-conscious salon services, hydration care and healthy-hair treatments & styling for textured and natural hair.",
+    primaryCta: {
+      label: "Book a salon service",
+      href: "/booking?category=salon",
+    },
+    secondaryCta: {
+      label: "Explore salon services",
+      href: "/services?category=salon",
+    },
+    image: {
+      src: media.hero.src,
+      alt: "Nigerian woman with healthy natural textured hair, licensed placeholder",
+      focalPoint: "center 28%",
+      placeholder: true,
+    },
+    theme: {
+      backgroundToken: "cream",
+      foregroundToken: "forest-950",
+      accentToken: "forest-800",
+    },
+    active: true,
+  },
+  {
+    id: "products",
+    sequence: 3,
+    eyebrow: "Hair & Scalp Products",
+    title: "Shop our Hair and Scalp Care Products",
+    description:
+      "Explore carefully selected healthy hair products that continues to support consistent care at home.",
+    primaryCta: { label: "Shop hair and scalp care", href: "/shop" },
+    secondaryCta: { label: "View featured products", href: "/shop" },
+    image: {
+      src: "https://images.pexels.com/photos/30595022/pexels-photo-30595022.jpeg?auto=compress&cs=tinysrgb&w=1400",
+      alt: "Refined hair-care product arrangement, licensed placeholder",
+      focalPoint: "center 52%",
+      placeholder: true,
+    },
+    theme: {
+      backgroundToken: "forest-50",
+      foregroundToken: "forest-950",
+      accentToken: "warm",
+    },
+    active: true,
+  },
+  {
+    id: "gallery",
+    sequence: 4,
+    eyebrow: "Gallery & Results",
+    title: "Explore our Gallery",
+    description:
+      "Care made visible, with honest context. Explore care environments and healthy-hair inspiration, including woven African natural-hair styling.",
+    primaryCta: { label: "Explore the gallery", href: "/gallery" },
+    secondaryCta: { label: "View client stories", href: "/results" },
+    image: {
+      src: "/gallery-image.jpg",
+      alt: "Woven natural hairstyle with neatly sectioned twists",
+      focalPoint: "center 34%",
+      placeholder: false,
+    },
+    theme: {
+      backgroundToken: "paper",
+      foregroundToken: "forest-950",
+      accentToken: "forest-700",
+    },
+    active: true,
+  },
+];
+
+export const galleryItems: GalleryItem[] = [
+  {
+    id: "gallery-consultation",
+    image: media.consultation.src,
+    category: "trichology",
+    caption:
+      "A calm consultation setting for discussing hair and scalp concerns.",
+    alt: "Black woman in a consultation setting, licensed placeholder",
+    order: 1,
+    featured: true,
+    active: true,
+    relatedServiceId: "svc-consult",
+    consentConfirmed: false,
+    isClientResult: false,
+    placeholder: true,
+  },
+  {
+    id: "gallery-natural-hair",
+    image: media.hero.src,
+    category: "natural-hair",
+    caption: "Healthy natural-hair texture presented as editorial inspiration.",
+    alt: "Nigerian woman with natural textured hair, licensed placeholder",
+    order: 2,
+    featured: true,
+    active: true,
+    relatedServiceId: "svc-natural",
+    consentConfirmed: false,
+    isClientResult: false,
+    placeholder: true,
+  },
+  {
+    id: "gallery-clinic",
+    image: media.practitioner.src,
+    category: "clinic",
+    caption: "Professional care in a focused clinic and salon environment.",
+    alt: "Black female hair professional in a studio, licensed placeholder",
+    order: 3,
+    featured: false,
+    active: true,
+    consentConfirmed: false,
+    isClientResult: false,
+    placeholder: true,
+  },
+  {
+    id: "gallery-products",
+    image:
+      "https://images.pexels.com/photos/30595022/pexels-photo-30595022.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    category: "products",
+    caption:
+      "A clean placeholder arrangement for hair and scalp care products.",
+    alt: "Hair-care products on a clean surface, licensed placeholder",
+    order: 4,
+    featured: true,
+    active: true,
+    consentConfirmed: false,
+    isClientResult: false,
+    placeholder: true,
+  },
+  {
+    id: "gallery-confidence",
+    image: media.results.src,
+    category: "natural-hair",
+    caption: "Natural-hair confidence imagery; not a verified Tamlois result.",
+    alt: "Smiling Black woman with natural hair, licensed placeholder",
+    order: 5,
+    featured: false,
+    active: true,
+    consentConfirmed: false,
+    isClientResult: false,
+    placeholder: true,
+  },
+];
+
 const serviceImage = media.consultation.src;
 const baseService = {
   preparation:
@@ -41,6 +219,15 @@ const baseService = {
   imageAlt: "Professional hair and scalp consultation, placeholder image",
   placeholder: true as const,
 };
+
+export const bookingMainServiceIds = [
+  "svc-analysis",
+  "svc-consult",
+  "svc-therapy",
+  "svc-loss",
+  "svc-treatment",
+  "svc-natural",
+] as const;
 
 export const services: Service[] = [
   {
@@ -63,7 +250,7 @@ export const services: Service[] = [
     consultationRequired: false,
     depositRequired: true,
     depositAmount: 10000,
-    order: 1,
+    order: 2,
     variations: [
       { id: "first", name: "First consultation", price: 25000, duration: 60 },
       { id: "follow", name: "Follow-up review", price: 18000, duration: 45 },
@@ -88,7 +275,7 @@ export const services: Service[] = [
     consultationRequired: true,
     depositRequired: true,
     depositAmount: 8000,
-    order: 2,
+    order: 1,
     variations: [],
   },
   {
@@ -118,7 +305,7 @@ export const services: Service[] = [
     ...baseService,
     id: "svc-loss",
     slug: "hair-loss-management",
-    name: "Hair-loss management review",
+    name: "Hair-loss management",
     category: "trichology",
     type: "service",
     intakeSchemaId: "intake-trichology",
@@ -139,8 +326,8 @@ export const services: Service[] = [
   {
     ...baseService,
     id: "svc-treatment",
-    slug: "restorative-hair-treatment",
-    name: "Restorative hair treatment",
+    slug: "hair-treatments",
+    name: "Hair treatments",
     category: "salon",
     type: "service",
     featured: true,
@@ -162,12 +349,12 @@ export const services: Service[] = [
     ...baseService,
     id: "svc-natural",
     slug: "natural-hair-care",
-    name: "Natural hair care session",
+    name: "Natural hair care & styling",
     category: "salon",
     type: "service",
     intakeSchemaId: "intake-salon",
     summary:
-      "A calm wash, condition and maintenance session for textured natural hair.",
+      "A calm wash session for textured natural hair, plus styling.",
     description:
       "A placeholder maintenance service built around gentle handling, detangling, moisture and a manageable routine. Final inclusions must be confirmed by the clinic.",
     concerns: ["maintenance", "dryness", "tangling"],
@@ -177,6 +364,28 @@ export const services: Service[] = [
     depositRequired: true,
     depositAmount: 10000,
     order: 6,
+    variations: [],
+  },
+  {
+    ...baseService,
+    id: "svc-salon-demo",
+    slug: "demo-salon-booking",
+    name: "Demo Salon booking",
+    category: "salon",
+    type: "service",
+    intakeSchemaId: "intake-salon",
+    summary:
+      "A placeholder Salon service for testing the calendar and session-capacity flow.",
+    description:
+      "This test-only service lets reviewers complete the Salon booking journey. It is not confirmed clinic inventory and does not describe a real treatment package.",
+    concerns: ["booking-flow test"],
+    price: 15000,
+    duration: 60,
+    consultationRequired: false,
+    depositRequired: true,
+    depositAmount: 7500,
+    active: false,
+    order: 7,
     variations: [],
   },
   {
@@ -199,7 +408,7 @@ export const services: Service[] = [
     consultationRequired: false,
     depositRequired: true,
     depositAmount: 25000,
-    order: 7,
+    order: 8,
     variations: [],
   },
   {
@@ -226,11 +435,12 @@ export const services: Service[] = [
 
 export const serviceExtras: ServiceExtra[] = [
   {
-    id: "extra-steam",
-    name: "Hydration steam",
-    description: "A gentle steam stage added to a compatible salon treatment.",
-    price: 5000,
-    duration: 20,
+    id: "extra-wig-installation",
+    name: "Wig Installation Service",
+    description:
+      "A placeholder wig installation add-on for compatible Salon appointments.",
+    price: 2000,
+    duration: 30,
     compatibleServiceIds: ["svc-treatment", "svc-natural"],
     incompatibleExtraIds: [],
     active: true,
@@ -238,14 +448,14 @@ export const serviceExtras: ServiceExtra[] = [
     placeholder: true,
   },
   {
-    id: "extra-detangle",
-    name: "Extended detangling",
+    id: "extra-clay-detox",
+    name: "Clay detox",
     description:
-      "Additional time for careful detangling where the service allows it.",
-    price: 7000,
+      "A placeholder clay-based cleansing add-on for compatible Salon appointments.",
+    price: 8500,
     duration: 30,
     compatibleServiceIds: ["svc-treatment", "svc-natural"],
-    incompatibleExtraIds: ["extra-express"],
+    incompatibleExtraIds: [],
     active: true,
     order: 2,
     placeholder: true,
@@ -277,14 +487,14 @@ export const serviceExtras: ServiceExtra[] = [
     placeholder: true,
   },
   {
-    id: "extra-express",
-    name: "Express finish",
+    id: "extra-hair-trims",
+    name: "Hair Trims",
     description:
-      "A shorter finish option that cannot be combined with extended detangling.",
-    price: 3500,
-    duration: 10,
-    compatibleServiceIds: ["svc-natural"],
-    incompatibleExtraIds: ["extra-detangle"],
+      "A placeholder trim add-on for compatible Salon appointments.",
+    price: 5000,
+    duration: 15,
+    compatibleServiceIds: ["svc-treatment", "svc-natural"],
+    incompatibleExtraIds: [],
     active: true,
     order: 5,
     placeholder: true,
@@ -300,7 +510,7 @@ export const intakeQuestions: IntakeQuestion[] = [
     helpText:
       "Urgent or severe symptoms may need medical care before a clinic appointment.",
     type: "yes-no",
-    required: true,
+    required: false,
     order: 1,
     active: true,
   },
@@ -310,7 +520,7 @@ export const intakeQuestions: IntakeQuestion[] = [
     label: "Have you discussed this concern with a doctor or dermatologist?",
     type: "single-choice",
     options: ["Yes", "No", "Appointment booked"],
-    required: true,
+    required: false,
     order: 2,
     active: true,
   },
@@ -330,7 +540,7 @@ export const intakeQuestions: IntakeQuestion[] = [
     label:
       "Have you used relaxer, colour or another chemical service in the last 8 weeks?",
     type: "yes-no",
-    required: true,
+    required: false,
     order: 1,
     active: true,
   },
@@ -620,11 +830,11 @@ export const faqs = [
 ] as const;
 
 export const contact = {
-  address: "[Clinic address to be confirmed]",
-  phone: import.meta.env.VITE_BUSINESS_PHONE || "+234 000 000 0000",
-  whatsapp: import.meta.env.VITE_BUSINESS_WHATSAPP || "+234 000 000 0000",
-  email: import.meta.env.VITE_BUSINESS_EMAIL || "hello@example.com",
-  instagram: "@tamlois_placeholder",
+  address: "Road 2, Gowon Estate, Egbeda Lagos, Nigeria",
+  phone: import.meta.env.VITE_BUSINESS_PHONE || "+234 081 344 3908",
+  whatsapp: import.meta.env.VITE_BUSINESS_WHATSAPP || "+234 081 344 3908",
+  email: import.meta.env.VITE_BUSINESS_EMAIL || "hello@tamlois.com",
+  instagram: "@tamloisnaturalsmore",
   mapsUrl: import.meta.env.VITE_GOOGLE_MAPS_URL || "#",
 };
 

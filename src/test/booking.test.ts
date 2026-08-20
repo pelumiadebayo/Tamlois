@@ -20,13 +20,13 @@ import {
 import { defaultSettings } from "../lib/availability";
 
 describe("booking helpers", () => {
-  it("validates required customer fields and consent", () => {
+  it("requires only full name, phone and email in customer details", () => {
     expect(
       bookingSchema.safeParse({
         fullName: "",
         phone: "",
         email: "bad",
-        preferredContact: "email",
+        preferredContact: "",
         concern: "",
         hopes: "",
         concernDuration: "",
@@ -40,11 +40,11 @@ describe("booking helpers", () => {
         fullName: "Ada Okafor",
         phone: "08012345678",
         email: "ada@example.com",
-        preferredContact: "email",
-        concern: "shedding",
-        hopes: "A plan",
-        concernDuration: "3 months",
-        priorProfessionalTreatment: "No",
+        preferredContact: "",
+        concern: "",
+        hopes: "",
+        concernDuration: "",
+        priorProfessionalTreatment: "",
         productsTreatments: "",
         note: "",
       }).success,
@@ -73,22 +73,41 @@ describe("booking helpers", () => {
         item.compatibleServiceIds.includes("svc-consult"),
       ),
     ).toBe(true));
-  it("removes an incompatible extra when selecting another", () =>
+  it("provides the three named extras for each Salon service", () => {
+    const expected = [
+      ["Wig Installation Service", 2000],
+      ["Clay detox", 8500],
+      ["Hair Trims", 5000],
+    ];
+    for (const serviceId of ["svc-treatment", "svc-natural"]) {
+      expect(
+        compatibleExtras(serviceId, serviceExtras).map(({ name, price }) => [
+          name,
+          price,
+        ]),
+      ).toEqual(expected);
+    }
+  });
+  it("toggles a compatible Salon extra without removing another", () =>
     expect(
-      resolveExtraSelection("extra-express", ["extra-detangle"], serviceExtras),
-    ).toEqual(["extra-express"]));
+      resolveExtraSelection(
+        "extra-clay-detox",
+        ["extra-wig-installation"],
+        serviceExtras,
+      ),
+    ).toEqual(["extra-wig-installation", "extra-clay-detox"]));
   it("calculates duration, subtotal, deposit and balance together", () => {
     const totals = calculateBookingTotals(
       services.find((item) => item.id === "svc-natural")!,
-      [serviceExtras.find((item) => item.id === "extra-steam")!],
+      [serviceExtras.find((item) => item.id === "extra-clay-detox")!],
       "deposit_percentage",
       defaultSettings.payment,
     );
     expect(totals).toEqual({
-      subtotal: 29000,
-      totalDuration: 140,
-      amountDueNow: 14500,
-      balanceDue: 14500,
+      subtotal: 32500,
+      totalDuration: 150,
+      amountDueNow: 16250,
+      balanceDue: 16250,
     });
   });
   it("validates optional image type and size", () => {

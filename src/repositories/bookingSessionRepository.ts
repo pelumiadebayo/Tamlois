@@ -5,9 +5,14 @@ import { bookingLockIds } from "./firestoreRepository";
 const DRAFT_KEY = "tamlois-booking-draft-v2";
 const HOLD_KEY = "tamlois-booking-holds";
 const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const BOOKING_FLOW_VERSION = 3;
+
+const migrateLegacyStep = (step: number) =>
+  [0, 1, 1, 2, 3, 4, 5][Math.max(0, Math.min(6, step))] ?? 0;
 
 const newDraft = (): BookingDraft => ({
   sessionId: crypto.randomUUID(),
+  flowVersion: BOOKING_FLOW_VERSION,
   step: 0,
   extraIds: [],
   date: "",
@@ -34,13 +39,24 @@ export const bookingDraftRepository = {
         sessionStorage.removeItem(DRAFT_KEY);
         return newDraft();
       }
-      return parsed;
+      if (parsed.flowVersion === BOOKING_FLOW_VERSION) return parsed;
+      const migrated = {
+        ...parsed,
+        flowVersion: BOOKING_FLOW_VERSION,
+        step: migrateLegacyStep(parsed.step),
+      };
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(migrated));
+      return migrated;
     } catch {
       return newDraft();
     }
   },
   save(draft: BookingDraft) {
-    const next = { ...draft, updatedAt: new Date().toISOString() };
+    const next = {
+      ...draft,
+      flowVersion: BOOKING_FLOW_VERSION,
+      updatedAt: new Date().toISOString(),
+    };
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(next));
     return next;
   },
@@ -81,6 +97,7 @@ export const bookingHoldRepository = {
     intervalMinutes: number,
     bufferMinutes: number,
     holdMinutes: number,
+    capacity = 1,
   ) {
     const holds = readHolds();
     const lockIds = bookingLockIds(
@@ -90,12 +107,21 @@ export const bookingHoldRepository = {
       intervalMinutes,
       bufferMinutes,
     );
-    const conflict = holds.some(
+    const competingHolds = holds.filter(
       (hold) =>
-        hold.status === "active" &&
-        hold.sessionId !== input.sessionId &&
-        hold.lockIds.some((id) => lockIds.includes(id)),
+        hold.status === "active" && hold.sessionId !== input.sessionId,
     );
+    const conflict =
+      capacity > 1
+        ? competingHolds.filter(
+            (hold) =>
+              hold.date === input.date &&
+              hold.startTime === input.startTime &&
+              (hold.category === input.category || hold.endTime === input.endTime),
+          ).length >= capacity
+        : competingHolds.some((hold) =>
+            hold.lockIds.some((id) => lockIds.includes(id)),
+          );
     if (conflict)
       throw new Error(
         "That time was just held by another guest. Choose another available time.",

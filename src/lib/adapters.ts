@@ -29,7 +29,10 @@ export interface SecureBookingGateway {
     extraIds: string[];
     date: string;
     paymentMode?: string;
-  }): Promise<string[]>;
+  }): Promise<{
+    slots: string[];
+    sessions?: Array<{ startTime: string; remaining: number }>;
+  }>;
   releaseHold(holdId: string, sessionId: string): Promise<void>;
   initialisePayment(
     holdId: string,
@@ -84,11 +87,13 @@ export class HttpBookingGateway implements SecureBookingGateway {
     date: string;
     paymentMode?: string;
   }) {
-    const result = await this.request<{ slots: string[] }>(
+    return this.request<{
+      slots: string[];
+      sessions?: Array<{ startTime: string; remaining: number }>;
+    }>(
       "/availability",
       input,
     );
-    return result.slots;
   }
   async releaseHold(holdId: string, sessionId: string) {
     await this.request("/holds/release", { holdId, sessionId });

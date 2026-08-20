@@ -32,7 +32,7 @@ This is the launch-blocking checklist. Every value below is absent, illustrative
 7. Create the owner's account.
 8. Assign the `admin: true` custom claim using trusted Admin SDK code. The browser must never assign claims.
 9. Deploy `firestore.rules` and `firestore.indexes.json`.
-10. Seed `services`, `packages` and private `businessSettings` using an Admin SDK process.
+10. Seed `services`, `packages`, the four ordered `homeOfferings`, approved `gallery` records and private `businessSettings` using an Admin SDK process.
 11. Register the final domain with App Check, add the site key and test before enforcement.
 12. Add the GitHub Pages and custom domains to authorised domains.
 13. Use the emulator to test denied public booking reads, allowed active-content reads, booking creation and admin writes.
@@ -82,27 +82,29 @@ Choose a transactional provider such as Postmark, Resend, SendGrid or an approve
 
 ## Content replacement map
 
-| Placeholder | File or collection | Field/action |
-| --- | --- | --- |
-| Hero, practitioner, consultation and result images | `src/data/content.ts` | `media.*` URLs and alt text |
-| Source logo exports | missing input, then `public/` and `src/components/Layout.tsx` | Replace temporary `T` mark and `public/favicon.svg`; produce transparent full logo, icon PNG, favicon and optimised sizes from the real source |
-| Services, prices, durations, packages, clinical copy | `src/data/content.ts` then Firestore `services`/`packages` | Replace every record marked `placeholder: true` |
-| Service images | `src/data/content.ts` / admin media integration | `image`, `imageAlt` |
-| Concern education and referral copy | `src/data/content.ts` | `concerns` after clinical review |
-| Products and prices | `src/data/content.ts` or Shopify | `products` and commerce provider |
-| Testimonials | `src/data/content.ts` then `testimonials` | Replace all illustrative records |
-| Result stories and before/after media | `src/pages/ContentPages.tsx` then `results` | Add consented stories and capture context |
-| Address, phone, WhatsApp, email, Instagram, map | `src/data/content.ts` and environment variables | `contact` object and `VITE_BUSINESS_*` |
-| FAQ and policy answers | `src/data/content.ts` | `faqs` |
-| Privacy, terms and cancellation | `src/pages/ContentPages.tsx` / Firestore content | `LegalPage` content after legal review |
-| Booking interval, hours, closed days, notice, buffer, advance window | Admin Availability / `businessSettings/public` | Confirm clinic rules, then save through admin |
-| Blocked periods | Admin Availability / Firestore `blockedPeriods` plus public-safe settings | Add/remove blocks; private reasons stay out of the public settings document |
-| Owner biography | `src/pages/ContentPages.tsx`, `src/pages/Home.tsx` | Use only confirmed wording and credentials |
-| SEO base URL and sitemap | repository variable and `scripts/generate-sitemap.mjs` | `SITE_URL` |
-| Robots sitemap URL | `public/robots.txt` | Replace placeholder GitHub URL |
-| Social sharing image | `public/` and `src/components/SEO.tsx` | Add final OG image and `og:image` |
-| Lead guide asset and delivery | `src/components/LeadCapture.tsx` / Firestore `leads` | Add the final asset and server-side delivery provider |
-| Contact enquiries | `src/pages/ContentPages.tsx` / Firestore `enquiries` | Add admin notification and response workflow |
+| Placeholder                                                          | File or collection                                                        | Field/action                                                                                                                                   |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hero, practitioner, consultation and result images                   | `src/data/content.ts`                                                     | `media.*` URLs and alt text                                                                                                                    |
+| Care Loop offering copy, focal points and CTA destinations           | Admin Content / `homeOfferings`                                           | Replace licensed placeholder media and verify all four destinations; the canonical four-path order is protected                                |
+| Gallery media and captions                                           | Admin Content / `gallery`                                                 | Replace placeholders with clinic-owned media; mark a genuine client result only with documented consent                                        |
+| Source logo exports                                                  | missing input, then `public/` and `src/components/Layout.tsx`             | Replace temporary `T` mark and `public/favicon.svg`; produce transparent full logo, icon PNG, favicon and optimised sizes from the real source |
+| Services, prices, durations, packages, clinical copy                 | `src/data/content.ts` then Firestore `services`/`packages`                | Replace every record marked `placeholder: true`                                                                                                |
+| Service images                                                       | `src/data/content.ts` / admin media integration                           | `image`, `imageAlt`                                                                                                                            |
+| Concern education and referral copy                                  | `src/data/content.ts`                                                     | `concerns` after clinical review                                                                                                               |
+| Products and prices                                                  | `src/data/content.ts` or Shopify                                          | `products` and commerce provider                                                                                                               |
+| Testimonials                                                         | `src/data/content.ts` then `testimonials`                                 | Replace all illustrative records                                                                                                               |
+| Result stories and before/after media                                | `src/pages/ContentPages.tsx` then `results`                               | Add consented stories and capture context                                                                                                      |
+| Address, phone, WhatsApp, email, Instagram, map                      | `src/data/content.ts` and environment variables                           | `contact` object and `VITE_BUSINESS_*`                                                                                                         |
+| FAQ and policy answers                                               | `src/data/content.ts`                                                     | `faqs`                                                                                                                                         |
+| Privacy, terms and cancellation                                      | `src/pages/ContentPages.tsx` / Firestore content                          | `LegalPage` content after legal review                                                                                                         |
+| Booking interval, hours, closed days, notice, buffer, advance window | Admin Availability / `businessSettings/public`                            | Confirm clinic rules, then save through admin                                                                                                  |
+| Blocked periods                                                      | Admin Availability / Firestore `blockedPeriods` plus public-safe settings | Add/remove blocks; private reasons stay out of the public settings document                                                                    |
+| Owner biography                                                      | `src/pages/ContentPages.tsx`, `src/pages/Home.tsx`                        | Use only confirmed wording and credentials                                                                                                     |
+| SEO base URL and sitemap                                             | repository variable and `scripts/generate-sitemap.mjs`                    | `SITE_URL`                                                                                                                                     |
+| Robots sitemap URL                                                   | `public/robots.txt`                                                       | Replace placeholder GitHub URL                                                                                                                 |
+| Social sharing image                                                 | `public/` and `src/components/SEO.tsx`                                    | Add final OG image and `og:image`                                                                                                              |
+| Lead guide asset and delivery                                        | `src/components/LeadCapture.tsx` / Firestore `leads`                      | Add the final asset and server-side delivery provider                                                                                          |
+| Contact enquiries                                                    | `src/pages/ContentPages.tsx` / Firestore `enquiries`                      | Add admin notification and response workflow                                                                                                   |
 
 Current stock placeholders are free-to-use Pexels photographs by Umar Faruq, Chad Populis, Mikhail Nilov, Ali Drabo and Gaea CBD. Their source pages are documented in commit history and the central media configuration. Confirm the licence at launch and replace them with clinic-owned photography when available.
 

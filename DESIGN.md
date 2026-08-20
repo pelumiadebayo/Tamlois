@@ -161,6 +161,7 @@ Depth is restrained and motion is purposeful. The system relies on tone, rules, 
 - Deep forest, paper, cream, and white surfaces separated by fine rules.
 - Flat ledger structures with selective 12-14px rounding and pill actions.
 - Direct, consent-aware imagery centred on Black women and textured natural hair.
+- Stable editorial promises paired with manually controllable, state-changing care routes.
 
 ## Colors
 
@@ -226,18 +227,21 @@ The system uses a centred shell capped at 1240px with 1rem gutters on each side.
 
 Desktop compositions pair unequal columns rather than defaulting to symmetrical cards: editorial copy sits beside photography, a ledger list, or a working panel. Repeated collections use two columns for service cards and three for concerns or products where room permits. White space and section-level background changes establish hierarchy before containers do.
 
-At 1024px, primary navigation collapses, the persistent booking summary becomes sticky beside the task, and major split layouts stack below that width. At 768px, card media and content can sit side-by-side; below that point service cards stack, the seven-step rail is replaced by a compact current-step line, and the booking summary becomes a collapsible details surface above the form. At 640px, field grids and desktop booking copy collapse while 48px controls, horizontally scrollable calendar dates, and short slot labels remain usable. Dense admin surfaces may add columns at wider breakpoints but retain the same shell and controls.
+The homepage Care Loop is a signature expression of that asymmetric grammar: stable positioning copy occupies the narrower editorial column while a minimum-520px media-and-copy stage carries the changing offering. On mobile, the composition becomes one linear reading order—promise, introduction, active media and copy, then the manual offering selector and controls. The Gallery applies a dense 12-column editorial grid, allowing featured records to span eight columns beside four-column records before collapsing to one column below 768px.
+
+At 1024px, primary navigation collapses, the persistent booking summary becomes sticky beside the task, and major split layouts stack below that width. At 768px, card media and content can sit side-by-side; below that point service cards stack, the six-step rail is replaced by a compact current-step line, and the booking summary becomes a collapsible details surface above the form. At 640px, field grids and desktop booking copy collapse while 48px controls, horizontally scrollable calendar dates, and short slot labels remain usable. Dense admin surfaces may add columns at wider breakpoints but retain the same shell and controls.
 
 **The One Container Rule.** Prefer one surface around a complete task or record; divide its contents with rules and spacing instead of adding cards inside cards.
 
 ## Elevation & Depth
 
-The system is flat by default. Paper, cream, pale botanical, white, and deep forest create depth through tonal layering; one-pixel ruled borders provide structural separation. Shadows are reserved for a surface that physically overlaps content, such as the appointment note over the hero image or a modal over the page. Sticky navigation uses a lightly translucent paper fill and restrained backdrop blur only to preserve legibility during scroll.
+The system is flat by default. Paper, cream, pale botanical, white, and deep forest create depth through tonal layering; one-pixel ruled borders provide structural separation. Shadows are reserved for a surface that physically overlaps content, such as the appointment note over the hero image or a modal over the page, plus the Care Loop's singular editorial stage where media and copy behave as one changing object. Sticky navigation uses a lightly translucent paper fill and restrained backdrop blur only to preserve legibility during scroll.
 
 ### Shadow Vocabulary
 
 - **Hero Note** (`0 18px 55px rgba(13,45,33,.14)`): The small appointment note floating over hero photography.
 - **Modal Lift** (`0 24px 80px rgba(13,45,33,.24)`): Dialog and bottom-sheet separation from a darkened page scrim.
+- **Care Loop Stage** (`0 24px 70px rgba(13,45,33,.14)`): Diffuse separation for the single changing media-and-copy stage; mobile reduces this to `0 18px 48px rgba(13,45,33,.12)`.
 
 ### Named Rules
 
@@ -289,11 +293,13 @@ Desktop navigation sits in a 72px sticky paper bar. Manrope labels are small and
 
 ### Booking Progress
 
-The seven-step rail is a signature operational pattern: Category, Service, Extras, Schedule, Details, Summary, and Payment. Each segment has a ruled baseline and a 32px circular marker; current and complete steps use Clinic Forest, while future steps use Quiet Botanical. Completed steps remain available and future steps remain disabled. Below 768px the rail disappears in favour of a concise “Step n of 7 — Label” line, avoiding an unreadable miniature tracker.
+The six-step rail is a signature operational pattern: Category, Service, Schedule, Details, Summary, and Payment. A generic booking begins at Category. A Care Loop link carrying `category=salon` or `category=trichology` still presents policy acknowledgement first, then begins at Service with only that category’s canonical cards because the category decision is already known. Optional extras belong within Service, directly beneath the selected main service, and never receive a progress segment of their own. Each rail segment has a ruled baseline and a 32px circular marker; current and complete steps use Clinic Forest, while future steps use Quiet Botanical. Completed steps remain available and future steps remain disabled. Below 768px the rail disappears in favour of a concise “Step n of 6 — Label” line, avoiding an unreadable miniature tracker.
 
 ### Policy Gate
 
 Booking begins with a dedicated consent stage before any clinic time can be reserved. Policy summaries sit in one scrollable, ruled 14px surface with expandable full text; acknowledgement sits in an inverse Deep Consultation Forest panel that becomes sticky on large screens. The action stays disabled until the checkbox is selected, and the recorded policy version remains visible in the later summary.
+
+The booking catalogue exposes exactly six main services in canonical order: Scalp analysis, Trichology consultation, Scalp therapy, Hair-loss management, Hair treatments, and Natural hair care. Packages, inactive records, and internal demo-only services do not enter the main-service picker.
 
 ### Selection Panels
 
@@ -311,13 +317,37 @@ Once a schedule advances, an inline notice states that the slot is held and show
 
 The summary is persistent but adaptive. At 1024px and above it is a sticky pale-botanical aside with ruled label/value rows; below that breakpoint it becomes a collapsible white details surface above the task. Both versions show category, service, extras, schedule, duration, subtotal, amount due, and clinic address from the same content model. The dedicated review step adds edit links, policy version, preparation, and print/download actions without introducing a second visual language.
 
+### Care Loop
+
+The Care Loop is the homepage's signature editorial navigator. Its promise and introductory copy remain stable while media, offering label, headline, description, and actions change together. The canonical route order is **Salon, Trichology, Products, Gallery**; Salon is the default and the order does not change with imagery, campaign emphasis, or content availability. The Gallery route uses the bundled woven natural-hair image at `/gallery-image.jpg`.
+
+Desktop uses an asymmetric split with a vertical, ruled, numbered rail (`01`–`04`) beside one 14px stage. The active row receives a pale botanical wash, dark text, and a two-pixel progress line; a visible position counter and Pause/Play control sit below. Arrow keys move through the roving selector. The stage changes tone by offering but preserves the same media-over-copy structure and action hierarchy.
+
+Autoplay advances every 6.5 seconds on desktop only. It pauses on hover, keyboard focus, hidden browser tabs, explicit pause, and after manual selection; Play is the only explicit restart. Mobile is manual by default, places the active stage before a horizontally scrolling numbered selector, and permits deliberate swipe navigation. Focus, pause, and manual selection are behavioral states, not decorative animation triggers.
+
+Image entry uses a 620ms `clip-path` reveal with slight blur and scale; copy enters over 520ms with opacity and a 10px rise. Both use the system ease-out curve. Reduced motion disables autoplay and progress animation, makes the selector manual, and reduces change feedback to a short 160ms opacity crossfade.
+
+**The Stable Promise Rule.** The Care Loop may change evidence and routes, but never replace the page's core promise or force motion before the visitor can understand it.
+
+**The Care Path Order Rule.** Salon, Trichology, Products, then Gallery is a trust and navigation invariant; preserve that sequence across desktop rail, mobile selector, keyboard movement, analytics, and admin ordering.
+
+### Two-Path Decision
+
+The clinical-versus-salon choice is a flat, tone-led decision section rather than a pair of floating cards. It uses one cream field, shared block rules, a single vertical divider on desktop, and equal editorial weight. Each path contains a small uppercase label, serif need statement, short explanation, one filled booking action, and one quiet exploration link. On mobile the divider becomes a horizontal rule and the paths remain in clinical-then-salon order.
+
+### Gallery
+
+Gallery records use an editorial image grid rather than uniform commerce tiles. Featured or every-third records span eight columns with 420px media; standard records span four columns with 320px media. All collapse to one column with a 4:3 image on mobile. Public filters are All, Trichology, Natural Hair, and Clinic in a horizontally scrollable ruled row with a two-pixel active underline; product records remain outside the public gallery.
+
+Every temporary image carries an on-image **Licensed placeholder** badge. Page introduction and captions explicitly state that the imagery is not a verified Tamlois client result; future result media requires consent and honest context. Captions use an uppercase category, compact serif title, and an optional quiet route to related care.
+
 ### Care Ledger
 
 Ordered care sequences use a single white, ruled 14px panel with generous row height and green circular numerals. The ledger line texture or explicit dividers should structure the reading path without creating a card per step.
 
 ### Motion
 
-State transitions use the project ease-out curve (`cubic-bezier(.23, 1, .32, 1)`) and stay between 150-200ms. Motion is limited to color, border, opacity, small translation, image scale, and short disclosure height. Product imagery may scale to 1.02 on hover; links may translate an arrow by 4px; hoverable items may lift by no more than 3px. Reduced-motion collapses movement to near-instant state changes.
+Ordinary state transitions use the project ease-out curve (`cubic-bezier(.23, 1, .32, 1)`) and stay between 150-200ms. Motion is limited to color, border, opacity, small translation, image scale, and short disclosure height. Product imagery may scale to 1.02 on hover; links may translate an arrow by 4px; hoverable items may lift by no more than 3px. The Care Loop is the deliberate exception: a 6.5-second reading interval drives 520-620ms transform, opacity, and clip-path transitions with explicit pause and manual control. Reduced motion removes autoplay and progress movement, leaving only a short crossfade.
 
 **The One Obvious Next Step Rule.** Within a task or card, one action may be filled; alternatives remain outlined or quiet.
 
@@ -335,6 +365,9 @@ State transitions use the project ease-out curve (`cubic-bezier(.23, 1, .32, 1)`
 - **Do** keep the same booking summary available as a sticky desktop aside and a collapsible mobile surface.
 - **Do** use direct, consent-aware imagery that primarily represents Black women and textured natural hair.
 - **Do** label placeholder claims, prices, testimonials, contact details, and media visibly until verified.
+- **Do** preserve Salon, Trichology, Products, Gallery as the Care Loop's canonical path order on every input and viewport.
+- **Do** pause timed media when the visitor hovers, focuses, changes tabs, requests reduced motion, or selects a route manually.
+- **Do** keep Gallery placeholder badges and non-result language visible until consented, contextual client media exists.
 
 ### Don't:
 
@@ -344,3 +377,4 @@ State transitions use the project ease-out curve (`cubic-bezier(.23, 1, .32, 1)`
 - **Don't** use the serif for controls, admin density, metadata, or body-length instructions.
 - **Don't** use green and warm ochre as competing accents or add a new accent without a semantic role.
 - **Don't** promise diagnosis, regrowth, guaranteed outcomes, or verification through visual styling.
+- **Don't** present licensed stock, inspiration, or gallery imagery as a Tamlois client result.

@@ -16,13 +16,27 @@ describe("guest booking session repository", () => {
       ...draft,
       category: "salon",
       step: 2,
-      extraIds: ["extra-steam"],
+      extraIds: ["extra-wig-installation"],
     });
     expect(bookingDraftRepository.load()).toMatchObject({
       sessionId: draft.sessionId,
+      flowVersion: 3,
       category: "salon",
       step: 2,
-      extraIds: ["extra-steam"],
+      extraIds: ["extra-wig-installation"],
+    });
+  });
+
+  it("migrates the former Extras and later steps into the six-step flow", () => {
+    const draft = bookingDraftRepository.fresh();
+    const { flowVersion: _flowVersion, ...legacyDraft } = draft;
+    sessionStorage.setItem(
+      "tamlois-booking-draft-v2",
+      JSON.stringify({ ...legacyDraft, step: 3 }),
+    );
+    expect(bookingDraftRepository.load()).toMatchObject({
+      flowVersion: 3,
+      step: 2,
     });
   });
 
@@ -102,6 +116,41 @@ describe("guest booking session repository", () => {
     );
     expect(bookingHoldRepository.get(first.id)?.status).toBe("released");
     expect(bookingHoldRepository.get(second.id)?.status).toBe("active");
+  });
+
+  it("allows three Salon holds in one session and rejects a fourth", () => {
+    for (const sessionId of ["one", "two", "three"]) {
+      bookingHoldRepository.create(
+        {
+          sessionId,
+          date: "2030-09-02",
+          startTime: "09:00",
+          endTime: "12:00",
+          serviceId: "svc-natural",
+          category: "salon",
+        },
+        30,
+        15,
+        15,
+        3,
+      );
+    }
+    expect(() =>
+      bookingHoldRepository.create(
+        {
+          sessionId: "four",
+          date: "2030-09-02",
+          startTime: "09:00",
+          endTime: "12:00",
+          serviceId: "svc-natural",
+          category: "salon",
+        },
+        30,
+        15,
+        15,
+        3,
+      ),
+    ).toThrow(/held by another guest/);
   });
 
   it("expires stale holds and converts successful ones", () => {

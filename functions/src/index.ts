@@ -171,6 +171,24 @@ function lockIds(
   return ids;
 }
 
+const SALON_SESSIONS = [
+  { startTime: "09:00", endTime: "12:00", capacity: 3 },
+  { startTime: "12:00", endTime: "15:00", capacity: 3 },
+  { startTime: "15:00", endTime: "18:00", capacity: 3 },
+] as const;
+
+function salonSession(startTime: string) {
+  return SALON_SESSIONS.find((session) => session.startTime === startTime);
+}
+
+function salonCapacityLockIds(date: string, startTime: string) {
+  return Array.from(
+    { length: 3 },
+    (_, index) =>
+      `salon--${date}--${startTime.replace(":", "-")}--${index + 1}`,
+  );
+}
+
 function requestOrigin(req: Request) {
   return typeof req.headers.origin === "string" ? req.headers.origin : "";
 }
@@ -301,39 +319,58 @@ async function createHold(body: Json) {
     extraIds,
     draft.paymentMode,
   );
-  validateSchedule(date, startTime, selection.duration, selection.settings);
+  const isSalon = selection.service.category === "salon";
+  const selectedSalonSession = isSalon ? salonSession(startTime) : undefined;
+  if (isSalon && !selectedSalonSession)
+    throw new ApiError(409, "Choose an available Salon session.");
+  validateSchedule(
+    date,
+    startTime,
+    selectedSalonSession
+      ? minutes(selectedSalonSession.endTime) -
+          minutes(selectedSalonSession.startTime) -
+          selection.settings.bufferMinutes
+      : selection.duration,
+    selection.settings,
+  );
   const holdId = randomUUID();
   const expiresAt = Timestamp.fromMillis(
     Date.now() + selection.settings.holdMinutes * 60_000,
   );
-  const slots = lockIds(
-    date,
-    startTime,
-    selection.duration,
-    selection.settings.bookingInterval,
-    selection.settings.bufferMinutes,
-  );
+  const slots = selectedSalonSession
+    ? salonCapacityLockIds(date, startTime)
+    : lockIds(
+        date,
+        startTime,
+        selection.duration,
+        selection.settings.bookingInterval,
+        selection.settings.bufferMinutes,
+      );
+  let claimedSlots = slots;
   await db.runTransaction(async (transaction) => {
     const refs = slots.map((id) => db.doc(`bookingHolds/${id}`));
     const snapshots = await Promise.all(
       refs.map((ref) => transaction.get(ref)),
     );
-    if (
-      snapshots.some(
-        (snapshot) =>
-          snapshot.exists &&
-          (snapshot.data()?.status === "booked" ||
-            snapshot.data()?.expiresAt?.toMillis() > Date.now()),
-      )
-    ) {
+    const occupied = (snapshot: (typeof snapshots)[number]) =>
+      snapshot.exists &&
+      (snapshot.data()?.status === "booked" ||
+        snapshot.data()?.expiresAt?.toMillis() > Date.now());
+    const claimedRefs = selectedSalonSession
+      ? refs.filter((_ref, index) => !occupied(snapshots[index])).slice(0, 1)
+      : snapshots.some(occupied)
+        ? []
+        : refs;
+    if (!claimedRefs.length) {
       throw new ApiError(
         409,
         "That time was just reserved by another guest. Choose another slot.",
       );
     }
-    refs.forEach((ref) =>
+    claimedSlots = claimedRefs.map((ref) => ref.id);
+    claimedRefs.forEach((ref) =>
       transaction.set(ref, {
-        type: "slot",
+        type: selectedSalonSession ? "salon-capacity" : "slot",
         holdId,
         sessionId,
         date,
@@ -349,10 +386,13 @@ async function createHold(body: Json) {
       sessionId,
       date,
       startTime,
-      endTime: clock(minutes(startTime) + selection.duration),
+      endTime:
+        selectedSalonSession?.endTime ||
+        clock(minutes(startTime) + selection.duration),
       serviceId,
+      category: String(selection.service.category || ""),
       extraIds,
-      lockIds: slots,
+      lockIds: claimedSlots,
       expiresAt,
       status: "active",
       subtotal: selection.subtotal,
@@ -367,9 +407,12 @@ async function createHold(body: Json) {
     sessionId,
     date,
     startTime,
-    endTime: clock(minutes(startTime) + selection.duration),
+    endTime:
+      selectedSalonSession?.endTime ||
+      clock(minutes(startTime) + selection.duration),
     serviceId,
-    lockIds: slots,
+    category: String(selection.service.category || ""),
+    lockIds: claimedSlots,
     expiresAt: expiresAt.toDate().toISOString(),
     status: "active",
   };
@@ -384,6 +427,53 @@ async function availableSlots(body: Json) {
     extraIds,
     body.paymentMode,
   );
+  if (selection.service.category === "salon") {
+    const candidates = SALON_SESSIONS.filter((session) => {
+      try {
+        validateSchedule(
+          date,
+          session.startTime,
+          minutes(session.endTime) -
+            minutes(session.startTime) -
+            selection.settings.bufferMinutes,
+          selection.settings,
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    const sessionLocks = candidates.map((session) => ({
+      ...session,
+      ids: salonCapacityLockIds(date, session.startTime),
+    }));
+    const snapshots = await Promise.all(
+      sessionLocks
+        .flatMap((session) => session.ids)
+        .map((id) => db.doc(`bookingHolds/${id}`).get()),
+    );
+    const occupiedIds = new Set(
+      snapshots
+        .filter(
+          (snapshot) =>
+            snapshot.exists &&
+            (snapshot.data()?.status === "booked" ||
+              snapshot.data()?.expiresAt?.toMillis() > Date.now()),
+        )
+        .map((snapshot) => snapshot.id),
+    );
+    const sessions = sessionLocks.map((session) => ({
+      startTime: session.startTime,
+      remaining: session.ids.filter((id) => !occupiedIds.has(id)).length,
+    }));
+    return {
+      date,
+      slots: sessions
+        .filter((session) => session.remaining > 0)
+        .map((session) => session.startTime),
+      sessions,
+    };
+  }
   const candidates: string[] = [];
   for (
     let cursor = selection.settings.openingHour * 60;
@@ -649,37 +739,7 @@ async function submitBooking(body: Json) {
       "Booking policies changed. Review and accept the current policy set.",
     );
   }
-  const questions = await db
-    .collection("serviceIntakeSchemas")
-    .where("active", "==", true)
-    .get();
   const responses = (incoming.intakeResponses || {}) as Json;
-  for (const question of questions.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() }) as Json & { id: string },
-  )) {
-    if (
-      question.schemaId !== selection.service.intakeSchemaId ||
-      !question.required
-    )
-      continue;
-    const condition = question.condition as Json | undefined;
-    if (
-      condition &&
-      responses[String(condition.questionId)] !== condition.equals
-    )
-      continue;
-    const answer = responses[question.id];
-    if (
-      answer === undefined ||
-      answer === false ||
-      answer === "" ||
-      (Array.isArray(answer) && answer.length === 0)
-    )
-      throw new ApiError(
-        400,
-        `Required intake response is missing: ${question.label}`,
-      );
-  }
   const paymentReference = optionalText(incoming.paymentReference, 150);
   const requiresPayment = selection.amountDueNow > 0;
   if (requiresPayment) {
@@ -730,13 +790,12 @@ async function submitBooking(body: Json) {
     fullName: text(incoming.fullName, "Full name", 120),
     phone: text(incoming.phone, "Phone", 40),
     email: text(incoming.email, "Email", 254).toLowerCase(),
-    preferredContact: incoming.preferredContact,
-    concern: text(incoming.concern, "Concern", 2000),
-    hopes: text(incoming.hopes, "Goals", 2000),
-    concernDuration: text(incoming.concernDuration, "Concern duration", 200),
-    priorProfessionalTreatment: text(
+    preferredContact: optionalText(incoming.preferredContact, 20),
+    concern: optionalText(incoming.concern),
+    hopes: optionalText(incoming.hopes),
+    concernDuration: optionalText(incoming.concernDuration, 200),
+    priorProfessionalTreatment: optionalText(
       incoming.priorProfessionalTreatment,
-      "Prior treatment",
       500,
     ),
     productsTreatments: optionalText(incoming.productsTreatments),

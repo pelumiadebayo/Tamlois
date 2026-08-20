@@ -8,11 +8,45 @@ import {
   parse,
   startOfDay,
 } from "date-fns";
-import type { BlockedPeriod, Booking, BusinessSettings } from "../types";
+import type {
+  BlockedPeriod,
+  Booking,
+  BookingHold,
+  BusinessSettings,
+} from "../types";
+
+export const SALON_SESSIONS = [
+  {
+    id: "morning",
+    label: "Morning Session",
+    startTime: "09:00",
+    endTime: "12:00",
+    capacity: 3,
+  },
+  {
+    id: "afternoon",
+    label: "Afternoon Session",
+    startTime: "12:00",
+    endTime: "15:00",
+    capacity: 3,
+  },
+  {
+    id: "evening",
+    label: "Evening Session",
+    startTime: "15:00",
+    endTime: "18:00",
+    capacity: 3,
+  },
+] as const;
+
+export type SalonSessionAvailability = (typeof SALON_SESSIONS)[number] & {
+  remaining: number;
+  available: boolean;
+};
 
 export const defaultSettings: BusinessSettings = {
   timezone: "Africa/Lagos",
-  address: "[Clinic address to be confirmed]",
+  address: "Road 2, Gowon Estate, Egbeda Lagos, Nigeria",
   bookingInterval: 30,
   bufferMinutes: 15,
   minimumNoticeHours: 4,
@@ -63,6 +97,79 @@ const wallClockInTimeZone = (date: Date, timezone: string) => {
     value("second"),
   );
 };
+
+export function getSalonSessionAvailability(
+  date: Date,
+  settings: BusinessSettings = defaultSettings,
+  bookings: Booking[] = [],
+  holds: BookingHold[] = [],
+  now = new Date(),
+  currentSessionId?: string,
+): SalonSessionAvailability[] {
+  const clinicNow = wallClockInTimeZone(now, settings.timezone);
+  const dateValue = format(date, "yyyy-MM-dd");
+  const outsideWindow =
+    settings.closedDays.includes(date.getDay()) ||
+    isBefore(startOfDay(date), startOfDay(clinicNow)) ||
+    isAfter(
+      startOfDay(date),
+      addDays(startOfDay(clinicNow), settings.maximumAdvanceDays),
+    );
+  const fullDayBlock = settings.blockedPeriods.some(
+    (block) => block.date === dateValue && !block.start,
+  );
+  const minimumStart = addMinutes(clinicNow, settings.minimumNoticeHours * 60);
+
+  return SALON_SESSIONS.map((session) => {
+    const start = atTime(date, session.startTime);
+    const end = atTime(date, session.endTime);
+    const blocked = settings.blockedPeriods.some((period) => {
+      if (period.date !== dateValue || !period.start || !period.end)
+        return false;
+      return overlaps(
+        start,
+        end,
+        atTime(date, period.start),
+        atTime(date, period.end),
+      );
+    });
+    const bookedSpaces = bookings.filter(
+      (booking) =>
+        booking.category === "salon" &&
+        booking.date === dateValue &&
+        booking.startTime === session.startTime &&
+        !["cancelled", "expired"].includes(booking.status),
+    ).length;
+    const heldSpaces = holds.filter(
+      (hold) =>
+        hold.status === "active" &&
+        hold.sessionId !== currentSessionId &&
+        hold.date === dateValue &&
+        hold.startTime === session.startTime &&
+        (hold.category === "salon" || hold.endTime === session.endTime),
+    ).length;
+    const remaining = Math.max(
+      0,
+      session.capacity - bookedSpaces - heldSpaces,
+    );
+    const meetsNotice =
+      isAfter(start, minimumStart) || isEqual(start, minimumStart);
+    return {
+      ...session,
+      remaining,
+      available:
+        !outsideWindow &&
+        !fullDayBlock &&
+        !blocked &&
+        meetsNotice &&
+        remaining > 0,
+    };
+  });
+}
+
+export function salonSessionForTime(time: string) {
+  return SALON_SESSIONS.find((session) => session.startTime === time);
+}
 
 export function getAvailableSlots(
   date: Date,

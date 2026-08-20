@@ -4,7 +4,7 @@
 
 The booking client owns only anonymous, temporary workflow state. `BookingDraft` is kept in session storage, expires after 24 hours, and `BookingHold` is modelled locally for the demo. In Firebase mode, `functions/src/index.ts` exposes secure routes for atomic hold creation/release, booking submission, Paystack initialisation, server-side verification and signed webhook processing.
 
-The canonical Firestore collections are `services`, `serviceExtras`, `serviceIntakeSchemas`, `businessSettings`, `bookingPolicies`, `blockedPeriods`, `bookingHolds`, `bookings`, `bookingIntakeResponses`, `payments`, `paymentEvents`, `notifications`, and `auditLogs`. Final bookings snapshot the service, extras, address, policy version, deposit calculation and preparation guidance so future catalogue edits do not rewrite historical records.
+The canonical Firestore collections are `services`, `serviceExtras`, `serviceIntakeSchemas`, `businessSettings`, `bookingPolicies`, `blockedPeriods`, `bookingHolds`, `bookings`, `bookingIntakeResponses`, `payments`, `paymentEvents`, `notifications`, `homeOfferings`, `gallery`, and `auditLogs`. Final bookings snapshot the service, extras, address, policy version, deposit calculation and preparation guidance so future catalogue edits do not rewrite historical records.
 
 Guest management must use an unguessable management token through a rate-limited backend. There is intentionally no public lookup by reference, email or phone and no customer-auth route.
 
@@ -20,11 +20,13 @@ The application has three layers:
 
 UI components do not make privileged Firestore writes. Demo repositories use local storage; Firebase configuration repositories implement the same typed read contract, while bookings and holds go through `HttpBookingGateway`.
 
+`CareLoop` receives sorted active `HomeOffering` records from `homeContentRepository`; it owns only presentation state, autoplay and input handling. Manual selection stops autoplay, while reduced-motion and mobile media queries keep the experience manual from the start. `Gallery` consumes active `GalleryItem` records through the same repository boundary. Firestore permits public reads of active records but reserves writes for admins, including a rule-level consent check when a gallery item is marked as a client result.
+
 ## Booking availability
 
-Available times are computed, not stored. `getAvailableSlots` combines administrator-managed operating hours, closed days, service duration, booking interval, buffer time, minimum notice, advance window, full-day blocks, partial blocks and active bookings. Demo values persist locally; Firebase mode reads a public-safe `businessSettings/public` document while block reasons remain in the admin-only collection.
+Available times are computed, not stored. Trichology uses `getAvailableSlots`, which combines administrator-managed operating hours, closed days, service duration, booking interval, buffer time, minimum notice, advance window, full-day blocks, partial blocks and active bookings. Salon uses `getSalonSessionAvailability`: fixed 9:00–12:00, 12:00–15:00 and 15:00–18:00 sessions each expose three capacity spaces, subtract matching active bookings and checkout holds, and roll the result into the monthly calendar's per-day count. Demo values persist locally; Firebase mode reads a public-safe `businessSettings/public` document while block reasons remain in the admin-only collection.
 
-In demo mode the browser revalidates availability and creates local interval locks. In Firebase mode the public-safe availability route returns only currently free start times. The server reloads service, extras and public settings, rejects past, closed, blocked, off-grid, short-notice and over-advance requests, recomputes duration and price, then atomically claims deterministic interval documents for the appointment plus buffer. Release is transactionally session-owned and cannot delete converted booking locks. Booking submission revalidates the active policy bundle and required conditional intake, independently verifies Paystack when payment is due, creates the booking, and converts every lock in one transaction. App Check can be enforced and a persistent per-origin/IP quota protects the public routes.
+In demo mode the browser revalidates availability and creates local locks. In Firebase mode the public-safe availability route returns exact Trichology start times or Salon session counts. The server reloads service, extras and public settings, rejects past, closed, blocked, off-grid, short-notice and over-advance requests, and recomputes duration and price. Trichology atomically claims deterministic interval documents for the appointment plus buffer; Salon atomically claims one of three deterministic capacity documents for the selected session. Release is transactionally session-owned and cannot delete converted booking locks. Booking submission revalidates the active policy bundle and the required full name, phone and email, accepts optional conditional intake, independently verifies Paystack when payment is due, creates the booking, and converts every lock in one transaction. App Check can be enforced and a persistent per-origin/IP quota protects the public routes.
 
 ## Providers
 
@@ -37,7 +39,7 @@ No secret key belongs in Vite variables because all `VITE_*` values are included
 
 ## Data collections
 
-`services`, `serviceExtras`, `serviceIntakeSchemas`, `bookingPolicies`, `businessSettings`, `blockedPeriods`, `bookingHolds`, `bookings`, `bookingIntakeResponses`, `payments`, `paymentEvents`, `notifications`, `faqs`, `testimonials`, `results`, `content`, `leads`, `enquiries`, `productsCache`, and `auditLogs`.
+`services`, `serviceExtras`, `serviceIntakeSchemas`, `bookingPolicies`, `businessSettings`, `blockedPeriods`, `bookingHolds`, `bookings`, `bookingIntakeResponses`, `payments`, `paymentEvents`, `notifications`, `homeOfferings`, `gallery`, `faqs`, `testimonials`, `results`, `content`, `leads`, `enquiries`, `productsCache`, and `auditLogs`.
 
 ## SEO and hosting limits
 

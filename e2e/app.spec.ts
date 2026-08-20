@@ -12,21 +12,29 @@ async function acceptPolicy(page: Page, url = "/#/booking") {
 async function chooseSalonService(page: Page) {
   await page.getByTestId("category-salon").click();
   await page.getByRole("button", { name: /^Continue/ }).click();
-  await page.getByRole("button", { name: /Natural hair care session/ }).click();
-  await page.getByRole("button", { name: /^Continue/ }).click();
+  await page.getByRole("button", { name: /Natural hair care/ }).click();
 }
 
 async function chooseTrichologyService(page: Page) {
   await page.getByTestId("category-trichology").click();
   await page.getByRole("button", { name: /^Continue/ }).click();
   await page.getByRole("button", { name: /Trichology consultation/ }).click();
-  await page.getByRole("button", { name: /^Continue/ }).click();
 }
 
-async function chooseSchedule(page: Page) {
+async function chooseSchedule(
+  page: Page,
+  category: "salon" | "trichology" = "salon",
+) {
   await page.getByRole("button", { name: /^Continue/ }).click();
   await page.locator('[role="gridcell"]:not([disabled])').first().click();
-  await page.locator(".time-slot").first().click();
+  if (category === "salon") {
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /Morning Session/ })
+      .click();
+  } else {
+    await page.locator(".time-slot").first().click();
+  }
   await page.getByRole("button", { name: /^Continue/ }).click();
 }
 
@@ -34,19 +42,6 @@ async function fillSalonDetails(page: Page) {
   await page.getByLabel("Full name *").fill("Adaeze Nwosu");
   await page.getByLabel("Phone *").fill("08012345678");
   await page.getByLabel("Email *").fill("adaeze@example.com");
-  await page
-    .getByLabel("Main hair or scalp concern *")
-    .fill("Dryness and breakage");
-  await page
-    .getByLabel("What do you hope to get from this appointment? *")
-    .fill("A simple care routine");
-  await page
-    .getByLabel("How long has this been a concern? *")
-    .selectOption({ label: "3–12 months" });
-  await page
-    .getByLabel("Previous professional treatment? *")
-    .selectOption({ label: "No" });
-  await page.getByLabel(/Have you used relaxer/).selectOption({ label: "No" });
 }
 
 async function reachPayment(
@@ -56,28 +51,12 @@ async function reachPayment(
   await acceptPolicy(page);
   if (category === "salon") await chooseSalonService(page);
   else await chooseTrichologyService(page);
-  await chooseSchedule(page);
+  await chooseSchedule(page, category);
   if (category === "salon") await fillSalonDetails(page);
   else {
     await page.getByLabel("Full name *").fill("Amara Okafor");
     await page.getByLabel("Phone *").fill("08012345678");
     await page.getByLabel("Email *").fill("amara@example.com");
-    await page
-      .getByLabel("Main hair or scalp concern *")
-      .fill("Persistent shedding");
-    await page
-      .getByLabel("What do you hope to get from this appointment? *")
-      .fill("Understand safe next steps");
-    await page
-      .getByLabel("How long has this been a concern? *")
-      .selectOption({ label: "3–12 months" });
-    await page
-      .getByLabel("Previous professional treatment? *")
-      .selectOption({ label: "No" });
-    await page.getByLabel(/currently painful/).selectOption({ label: "No" });
-    await page
-      .getByLabel(/discussed this concern/)
-      .selectOption({ label: "No" });
   }
   await page.getByRole("button", { name: /^Continue/ }).click();
   await page.getByRole("button", { name: "Continue to payment" }).click();
@@ -93,7 +72,7 @@ test("1 policy acknowledgement is required before the stepper", async ({
   await expect(page.getByLabel("Booking progress")).toHaveCount(0);
 });
 
-test("2 policy consent opens the seven-step category screen", async ({
+test("2 policy consent opens the six-step category screen", async ({
   page,
 }) => {
   await acceptPolicy(page);
@@ -120,7 +99,14 @@ test("4 category filters services", async ({ page }) => {
   await page.getByTestId("category-salon").click();
   await page.getByRole("button", { name: /^Continue/ }).click();
   await expect(
-    page.getByRole("button", { name: /Natural hair care session/ }),
+    page.getByRole("button", { name: /Natural hair care/ }),
+  ).toBeVisible();
+  await expect(page.getByText("Demo service").first()).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Demo Salon booking/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /Hair treatments/ }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: /Trichology consultation/ }),
@@ -142,12 +128,25 @@ test("5 not-sure action selects general trichology consultation", async ({
 test("6 extras update duration and subtotal", async ({ page }) => {
   await acceptPolicy(page);
   await chooseSalonService(page);
-  await page.getByText("Hydration steam", { exact: true }).click();
   await expect(
-    page.getByRole("complementary").getByText("140 min"),
+    page.getByRole("button", { name: /Step 2: Service/ }),
+  ).toHaveAttribute("aria-current", "step");
+  await expect(
+    page.getByRole("button", { name: /Step 3: Extras/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Optional extras" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("complementary").getByText("₦29,000"),
+    page.getByText("Wig Installation Service", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Hair Trims", { exact: true })).toBeVisible();
+  await page.getByText("Clay detox", { exact: true }).click();
+  await expect(
+    page.getByRole("complementary").getByText("150 min"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("complementary").getByText("₦32,500"),
   ).toBeVisible();
 });
 
@@ -156,7 +155,7 @@ test("7 booking can continue without extras", async ({ page }) => {
   await chooseSalonService(page);
   await page.getByRole("button", { name: /^Continue/ }).click();
   await expect(
-    page.getByRole("heading", { name: "Choose a date and start time" }),
+    page.getByRole("heading", { name: "Choose a Salon session" }),
   ).toBeVisible();
 });
 
@@ -165,31 +164,60 @@ test("8 changing service clears later selections with an explanation", async ({
 }) => {
   await acceptPolicy(page);
   await chooseSalonService(page);
-  await page.getByText("Hydration steam", { exact: true }).click();
+  await page.getByText("Clay detox", { exact: true }).click();
   await page.getByRole("button", { name: /Step 2: Service/ }).click();
   await page
-    .getByRole("button", { name: /Restorative hair treatment/ })
+    .getByRole("button", { name: /Hair treatments/ })
     .click();
   await expect(page.getByText(/cleared extras and schedule/)).toBeVisible();
 });
 
-test("9 calendar disables Sunday and selects date before time", async ({
+test("9 Salon calendar shows combined spaces and opens the three-session picker", async ({
   page,
 }) => {
   await acceptPolicy(page);
   await chooseSalonService(page);
   await page.getByRole("button", { name: /^Continue/ }).click();
   await expect(page.locator('[role="gridcell"][disabled]')).not.toHaveCount(0);
-  await expect(page.locator(".time-slot")).toHaveCount(0);
-  await page.locator('[role="gridcell"]:not([disabled])').first().click();
-  await expect(page.locator(".time-slot").first()).toBeVisible();
+  const availableDay = page.locator('[role="gridcell"]:not([disabled])').first();
+  await expect(availableDay).toHaveAccessibleName(/9 spaces remaining/);
+  await availableDay.click();
+  const dialog = page.getByRole("dialog", { name: "Choose a session" });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("button", {
+      name: /Morning Session.*3 of 3 spaces left/,
+    }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("button", {
+      name: /Afternoon Session.*3 of 3 spaces left/,
+    }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("button", {
+      name: /Evening Session.*3 of 3 spaces left/,
+    }),
+  ).toBeVisible();
 });
 
-test("10 details continue remains disabled until required fields are valid", async ({ page }) => {
+test("9b Trichology retains precise calculated start times", async ({ page }) => {
+  await acceptPolicy(page);
+  await chooseTrichologyService(page);
+  await page.getByRole("button", { name: /^Continue/ }).click();
+  await page.locator('[role="gridcell"]:not([disabled])').first().click();
+  await expect(page.locator(".time-slot").first()).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Choose a session" })).toHaveCount(0);
+});
+
+test("10 details require only full name, phone and email", async ({ page }) => {
   await acceptPolicy(page);
   await chooseSalonService(page);
   await chooseSchedule(page);
   await expect(page.getByRole("button", { name: /^Continue/ })).toBeDisabled();
+  await expect(
+    page.getByLabel("Main hair or scalp concern (optional)"),
+  ).toBeVisible();
   await fillSalonDetails(page);
   await expect(page.getByRole("button", { name: /^Continue/ })).toBeEnabled();
 });
@@ -197,7 +225,7 @@ test("10 details continue remains disabled until required fields are valid", asy
 test("11 conditional trichology intake appears", async ({ page }) => {
   await acceptPolicy(page);
   await chooseTrichologyService(page);
-  await chooseSchedule(page);
+  await chooseSchedule(page, "trichology");
   await page
     .getByLabel(/discussed this concern/)
     .selectOption({ label: "Yes" });
@@ -209,7 +237,7 @@ test("12 optional photo rejects invalid type without upload", async ({
 }) => {
   await acceptPolicy(page);
   await chooseTrichologyService(page);
-  await chooseSchedule(page);
+  await chooseSchedule(page, "trichology");
   await page
     .locator("input[type=file]")
     .setInputFiles({
@@ -239,7 +267,7 @@ test("14 summary edits return to the selected section", async ({ page }) => {
   await page.getByRole("button", { name: /^Continue/ }).click();
   await page.getByRole("button", { name: "Edit schedule" }).click();
   await expect(
-    page.getByRole("heading", { name: "Choose a date and start time" }),
+    page.getByRole("heading", { name: "Choose a Salon session" }),
   ).toBeVisible();
 });
 
@@ -290,7 +318,7 @@ test("19 mobile shows compact step copy and collapsible summary", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await acceptPolicy(page);
-  await expect(page.getByText("Step 1 of 7 — Category")).toBeVisible();
+  await expect(page.getByText("Step 1 of 6 — Category")).toBeVisible();
   await expect(page.getByText("Booking summary")).toBeVisible();
 });
 

@@ -1,5 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { addDays, format, isBefore, parseISO, startOfDay } from "date-fns";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  addDays,
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isBefore,
+  isSameMonth,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from "date-fns";
 import {
   CalendarPlus,
   Check,
@@ -13,11 +27,13 @@ import {
   LockKeyhole,
   Printer,
   ShieldCheck,
+  Users,
   X,
 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { SEO } from "../components/SEO";
 import {
+  bookingMainServiceIds,
   bookingPolicies,
   intakeQuestions,
   serviceExtras,
@@ -31,7 +47,6 @@ import {
   currency,
   generateBookingReference,
   generateManagementToken,
-  intakeValueMissing,
   policyBundleVersion,
   resolveExtraSelection,
   sanitizeIntakeResponses,
@@ -42,6 +57,8 @@ import {
   defaultSettings,
   endTime,
   getAvailableSlots,
+  getSalonSessionAvailability,
+  salonSessionForTime,
 } from "../lib/availability";
 import { bookingRepository } from "../repositories/localRepository";
 import { publicBookingConfiguration } from "../repositories/bookingConfigurationRepository";
@@ -68,12 +85,12 @@ import type {
 const steps = [
   "Category",
   "Service",
-  "Extras",
   "Schedule",
   "Details",
   "Summary",
   "Payment",
 ] as const;
+const bookingMainServiceIdSet = new Set<string>(bookingMainServiceIds);
 const policyVersion = bookingPolicies[0].version;
 const PHOTO_UPLOADS_ENABLED =
   import.meta.env.VITE_ENABLE_CLIENT_PHOTO_UPLOADS === "true";
@@ -82,7 +99,7 @@ const emptyDetails: BookingFormData = {
   fullName: "",
   phone: "",
   email: "",
-  preferredContact: "whatsapp",
+  preferredContact: "",
   concern: "",
   hopes: "",
   concernDuration: "",
@@ -250,7 +267,7 @@ function Stepper({
   return (
     <div className="mb-8">
       <p className="mb-4 font-bold text-[var(--forest-950)] md:hidden">
-        Step {step + 1} of 7 — {steps[step]}
+        Step {step + 1} of {steps.length} — {steps[step]}
       </p>
       <ol className="booking-stepper" aria-label="Booking progress">
         {steps.map((label, index) => (
@@ -310,7 +327,7 @@ function BookingSummary({
     [
       "Time",
       service && time && date
-        ? `${time}–${endTime(time, parseISO(date), totals?.totalDuration || service.duration)}`
+        ? `${time}–${bookingEndTime(service, time, date, totals?.totalDuration || service.duration)}`
         : "Not chosen",
     ],
     ["Duration", totals ? `${totals.totalDuration} min` : "—"],
@@ -415,15 +432,26 @@ function ServiceStep({
   services,
   value,
   onChange,
+  extras,
+  selectedExtraIds,
+  onExtraToggle,
 }: {
   category?: ServiceCategory;
   services: Service[];
   value?: string;
   onChange: (service: Service) => void;
+  extras: ServiceExtra[];
+  selectedExtraIds: string[];
+  onExtraToggle: (id: string) => void;
 }) {
   const [details, setDetails] = useState<string>();
   const filtered = services
-    .filter((service) => service.active && service.category === category)
+    .filter(
+      (service) =>
+        service.active &&
+        service.category === category &&
+        bookingMainServiceIdSet.has(service.id),
+    )
     .sort((a, b) => a.order - b.order);
   return (
     <div>
@@ -471,6 +499,11 @@ function ServiceStep({
                     {service.featured && (
                       <span className="status ml-2 placeholder-badge">
                         Featured
+                      </span>
+                    )}
+                    {service.category === "salon" && service.placeholder && (
+                      <span className="status ml-2 placeholder-badge">
+                        Demo service
                       </span>
                     )}
                     <h3 className="mt-3 text-lg font-bold text-[var(--forest-950)]">
@@ -522,6 +555,13 @@ function ServiceStep({
           </Notice>
         )}
       </div>
+      {value && (
+        <ExtrasStep
+          available={extras}
+          selectedIds={selectedExtraIds}
+          onToggle={onExtraToggle}
+        />
+      )}
     </div>
   );
 }
@@ -536,11 +576,19 @@ function ExtrasStep({
   onToggle: (id: string) => void;
 }) {
   return (
-    <div>
-      <h2 className="booking-title">Add extras if they help</h2>
+    <section
+      className="mt-10 border-t border-[var(--line)] pt-8"
+      aria-labelledby="optional-extras-title"
+    >
+      <h2
+        id="optional-extras-title"
+        className="font-display text-3xl text-[var(--forest-950)]"
+      >
+        Optional extras
+      </h2>
       <p className="booking-copy">
-        Extras are optional. Compatible choices add time and price to your
-        appointment.
+        Add any useful options while choosing your service. Each selection
+        updates the appointment time and price; you can continue without one.
       </p>
       {available.length ? (
         <div className="mt-8 grid gap-4">
@@ -557,7 +605,14 @@ function ExtrasStep({
               />
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap justify-between gap-3 font-bold text-[var(--forest-950)]">
-                  <span>{extra.name}</span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span>{extra.name}</span>
+                    {extra.placeholder && (
+                      <span className="status placeholder-badge">
+                        Demo extra
+                      </span>
+                    )}
+                  </span>
                   <span>+{currency(extra.price)}</span>
                 </span>
                 <span className="mt-1 block text-sm leading-6 text-[var(--muted)]">
@@ -572,14 +627,10 @@ function ExtrasStep({
         </div>
       ) : (
         <Notice>
-          No compatible extras are available for this service. Continue without
-          extras.
+          This service has no optional extras. You can continue to scheduling.
         </Notice>
       )}
-      <p className="mt-6 text-sm font-bold text-[var(--forest-800)]">
-        You can continue without extras.
-      </p>
-    </div>
+    </section>
   );
 }
 
@@ -591,6 +642,7 @@ function ScheduleStep({
   date,
   time,
   liveSlots,
+  liveSalonSessions,
   onDate,
   onTime,
 }: {
@@ -601,11 +653,25 @@ function ScheduleStep({
   date: string;
   time: string;
   liveSlots?: string[] | null;
+  liveSalonSessions?: Array<{ startTime: string; remaining: number }>;
   onDate: (date: string) => void;
   onTime: (time: string) => void;
 }) {
   const totalDuration =
     service.duration + extras.reduce((sum, extra) => sum + extra.duration, 0);
+  if (service.category === "salon")
+    return (
+      <SalonScheduleStep
+        settings={settings}
+        bookings={bookings}
+        date={date}
+        time={time}
+        liveSessions={liveSalonSessions}
+        liveLoading={liveSlots === null}
+        onDate={onDate}
+        onTime={onTime}
+      />
+    );
   const dates = Array.from({ length: 21 }, (_, index) =>
     addDays(startOfDay(new Date()), index + 1),
   );
@@ -728,6 +794,280 @@ function ScheduleStep({
   );
 }
 
+function SalonScheduleStep({
+  settings,
+  bookings,
+  date,
+  time,
+  liveSessions,
+  liveLoading,
+  onDate,
+  onTime,
+}: {
+  settings: BusinessSettings;
+  bookings: Booking[];
+  date: string;
+  time: string;
+  liveSessions?: Array<{ startTime: string; remaining: number }>;
+  liveLoading: boolean;
+  onDate: (date: string) => void;
+  onTime: (time: string) => void;
+}) {
+  const firstBookableDay = addDays(startOfDay(new Date()), 1);
+  const lastBookableDay = addDays(
+    startOfDay(new Date()),
+    settings.maximumAdvanceDays,
+  );
+  const [visibleMonth, setVisibleMonth] = useState(() =>
+    startOfMonth(date ? parseISO(date) : firstBookableDay),
+  );
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const currentSessionId = bookingDraftRepository.load().sessionId;
+  const activeHolds = bookingHoldRepository.listActive();
+  const calendarDays = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(visibleMonth)),
+    end: endOfWeek(endOfMonth(visibleMonth)),
+  });
+  const selectedSessions = date
+    ? getSalonSessionAvailability(
+        parseISO(date),
+        settings,
+        bookings,
+        activeHolds,
+        new Date(),
+        currentSessionId,
+      ).map((session) => {
+        const remote = liveSessions?.find(
+          (candidate) => candidate.startTime === session.startTime,
+        );
+        if (!liveSessions) return session;
+        const remaining = remote?.remaining || 0;
+        return {
+          ...session,
+          remaining,
+          available: session.available && remaining > 0,
+        };
+      })
+    : [];
+  const selectedSession = salonSessionForTime(time);
+  const canMoveBack = isBefore(
+    startOfMonth(firstBookableDay),
+    startOfMonth(visibleMonth),
+  );
+  const canMoveForward = isBefore(
+    startOfMonth(visibleMonth),
+    startOfMonth(lastBookableDay),
+  );
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (pickerOpen && !dialog.open) dialog.showModal();
+    if (!pickerOpen && dialog.open) dialog.close();
+  }, [pickerOpen]);
+
+  const closePicker = () => setPickerOpen(false);
+
+  return (
+    <div>
+      <h2 className="booking-title">Choose a Salon session</h2>
+      <p className="booking-copy">
+        Each Salon day has three shared sessions with three spaces each. Choose
+        a date to see the live capacity for morning, afternoon and evening.
+      </p>
+
+      <section className="salon-calendar mt-8" aria-labelledby="salon-calendar-title">
+        <div className="salon-calendar-header">
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Show previous month"
+            disabled={!canMoveBack}
+            onClick={() => setVisibleMonth((month) => subMonths(month, 1))}
+          >
+            <ChevronLeft size={19} />
+          </button>
+          <h3 id="salon-calendar-title" className="font-display text-2xl text-[var(--forest-950)]">
+            {format(visibleMonth, "MMMM yyyy")}
+          </h3>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Show next month"
+            disabled={!canMoveForward}
+            onClick={() => setVisibleMonth((month) => addMonths(month, 1))}
+          >
+            <ChevronRight size={19} />
+          </button>
+        </div>
+
+        <div className="salon-calendar-weekdays" aria-hidden="true">
+          {Array.from({ length: 7 }, (_, index) => (
+            <span key={index}>{format(addDays(startOfWeek(new Date()), index), "EEE")}</span>
+          ))}
+        </div>
+        <div className="salon-calendar-grid" role="grid" aria-label={`Salon availability for ${format(visibleMonth, "MMMM yyyy")}`}>
+          {calendarDays.map((day) => {
+            const value = format(day, "yyyy-MM-dd");
+            const sessions = getSalonSessionAvailability(
+              day,
+              settings,
+              bookings,
+              activeHolds,
+              new Date(),
+              currentSessionId,
+            );
+            const localRemaining = sessions.reduce(
+              (sum, session) => sum + (session.available ? session.remaining : 0),
+              0,
+            );
+            const remaining =
+              value === date && liveSessions
+                ? liveSessions.reduce(
+                    (sum, session) => sum + session.remaining,
+                    0,
+                  )
+                : localRemaining;
+            const inVisibleMonth = isSameMonth(day, visibleMonth);
+            const disabled = !inVisibleMonth || remaining === 0;
+            const label = `${format(day, "EEEE, d MMMM yyyy")}: ${remaining} ${remaining === 1 ? "space" : "spaces"} remaining`;
+            return (
+              <button
+                role="gridcell"
+                type="button"
+                key={value}
+                disabled={disabled}
+                aria-label={label}
+                aria-selected={date === value}
+                className={`${date === value ? "is-selected" : ""} ${!inVisibleMonth ? "is-outside" : ""}`}
+                onClick={() => {
+                  onDate(value);
+                  setPickerOpen(true);
+                }}
+              >
+                <strong>{format(day, "d")}</strong>
+                {inVisibleMonth && (
+                  <small>
+                    <span className="salon-space-wide">
+                      {remaining ? `${remaining} ${remaining === 1 ? "space" : "spaces"}` : "Unavailable"}
+                    </span>
+                    <span className="salon-space-compact">
+                      {remaining ? `${remaining} left` : "—"}
+                    </span>
+                  </small>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {date && (
+        <div className="salon-selection-summary mt-5" aria-live="polite">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-[.12em] text-[var(--forest-700)]">
+              {selectedSession ? "Selected session" : "Date selected"}
+            </span>
+            <p className="mt-1 font-bold text-[var(--forest-950)]">
+              {format(parseISO(date), "EEEE, d MMMM yyyy")}
+            </p>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              {selectedSession
+                ? `${selectedSession.label}, ${formatSessionRange(selectedSession.startTime, selectedSession.endTime)}`
+                : "Choose one available session to continue."}
+            </p>
+          </div>
+          <button type="button" className="btn btn-secondary" onClick={() => setPickerOpen(true)}>
+            {selectedSession ? "Change session" : "Choose session"}
+          </button>
+        </div>
+      )}
+
+      <dialog
+        ref={dialogRef}
+        className="salon-session-dialog"
+        aria-labelledby="salon-session-title"
+        onClose={closePicker}
+        onCancel={closePicker}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closePicker();
+        }}
+      >
+        <div className="salon-session-panel">
+          <div className="flex items-start justify-between gap-5">
+            <div>
+              <span className="status">Salon availability</span>
+              <h3 id="salon-session-title" className="mt-3 font-display text-3xl text-[var(--forest-950)]">
+                Choose a session
+              </h3>
+              {date && (
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  {format(parseISO(date), "EEEE, d MMMM yyyy")}
+                </p>
+              )}
+            </div>
+            <button type="button" className="icon-button" aria-label="Close session picker" onClick={closePicker}>
+              <X size={19} />
+            </button>
+          </div>
+          <div className="mt-6 grid gap-3">
+            {selectedSessions.map((session) => (
+              <button
+                type="button"
+                className={`salon-session-option ${time === session.startTime ? "is-selected" : ""}`}
+                key={session.id}
+                disabled={liveLoading || !session.available}
+                aria-pressed={time === session.startTime}
+                onClick={() => {
+                  onTime(session.startTime);
+                  closePicker();
+                }}
+              >
+                <span>
+                  <strong>{session.label}</strong>
+                  <small>{formatSessionRange(session.startTime, session.endTime)}</small>
+                </span>
+                <span className="salon-session-capacity">
+                  <Users size={16} aria-hidden="true" />
+                  {liveLoading
+                    ? "Checking capacity…"
+                    : session.remaining === 0
+                    ? "Fully booked"
+                    : `${session.remaining} of ${session.capacity} ${session.remaining === 1 ? "space" : "spaces"} left${session.available ? "" : " · Unavailable"}`}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-5 text-xs leading-5 text-[var(--muted)]">
+            Capacity updates when bookings and active checkout holds change.
+          </p>
+        </div>
+      </dialog>
+    </div>
+  );
+}
+
+function formatSessionRange(start: string, end: string) {
+  const formatClock = (value: string) => {
+    const parsed = parseISO(`2000-01-01T${value}:00`);
+    const marker = format(parsed, "a") === "AM" ? "a.m." : "p.m.";
+    return `${format(parsed, "h:mm")} ${marker}`;
+  };
+  return `${formatClock(start)}–${formatClock(end)}`;
+}
+
+function bookingEndTime(
+  service: Service,
+  time: string,
+  date: string,
+  duration: number,
+) {
+  if (service.category === "salon")
+    return salonSessionForTime(time)?.endTime || time;
+  return endTime(time, parseISO(date), duration);
+}
+
 function IntakeFields({
   service,
   questions: allQuestions,
@@ -764,8 +1104,7 @@ function IntakeFields({
                 question.type === "multi-choice" ? undefined : question.id
               }
             >
-              {question.label}
-              {question.required ? " *" : ""}
+              {question.label} (optional)
             </label>
             {question.helpText && (
               <p className="text-xs leading-5 text-[var(--muted)]">
@@ -777,15 +1116,7 @@ function IntakeFields({
                 className="grid gap-2"
                 role="group"
                 aria-labelledby={`${question.id}-label`}
-                aria-required={question.required}
-                aria-invalid={
-                  question.required && intakeValueMissing(values[question.id])
-                }
-                aria-describedby={
-                  question.required && intakeValueMissing(values[question.id])
-                    ? `${question.id}-error`
-                    : undefined
-                }
+                aria-required="false"
               >
                 {(question.options || []).map((option) => {
                   const selected = Array.isArray(values[question.id])
@@ -818,15 +1149,6 @@ function IntakeFields({
                 <input
                   id={question.id}
                   type="checkbox"
-                  required={question.required}
-                  aria-invalid={
-                    question.required && intakeValueMissing(values[question.id])
-                  }
-                  aria-describedby={
-                    question.required && intakeValueMissing(values[question.id])
-                      ? `${question.id}-error`
-                      : undefined
-                  }
                   checked={Boolean(values[question.id])}
                   onChange={(event) =>
                     onChange(question.id, event.target.checked)
@@ -837,15 +1159,6 @@ function IntakeFields({
             ) : question.type === "long-text" ? (
               <textarea
                 id={question.id}
-                required={question.required}
-                aria-invalid={
-                  question.required && intakeValueMissing(values[question.id])
-                }
-                aria-describedby={
-                  question.required && intakeValueMissing(values[question.id])
-                    ? `${question.id}-error`
-                    : undefined
-                }
                 value={String(values[question.id] || "")}
                 onChange={(event) => onChange(question.id, event.target.value)}
               />
@@ -853,15 +1166,6 @@ function IntakeFields({
               question.type === "yes-no" ? (
               <select
                 id={question.id}
-                required={question.required}
-                aria-invalid={
-                  question.required && intakeValueMissing(values[question.id])
-                }
-                aria-describedby={
-                  question.required && intakeValueMissing(values[question.id])
-                    ? `${question.id}-error`
-                    : undefined
-                }
                 value={String(values[question.id] || "")}
                 onChange={(event) => onChange(question.id, event.target.value)}
               >
@@ -877,27 +1181,9 @@ function IntakeFields({
               <input
                 id={question.id}
                 type={question.type === "date" ? "date" : "text"}
-                required={question.required}
-                aria-invalid={
-                  question.required && intakeValueMissing(values[question.id])
-                }
-                aria-describedby={
-                  question.required && intakeValueMissing(values[question.id])
-                    ? `${question.id}-error`
-                    : undefined
-                }
                 value={String(values[question.id] || "")}
                 onChange={(event) => onChange(question.id, event.target.value)}
               />
-            )}
-            {question.required && intakeValueMissing(values[question.id]) && (
-              <span
-                id={`${question.id}-error`}
-                className="field-error"
-                role="alert"
-              >
-                This question is required.
-              </span>
             )}
           </div>
         ))}
@@ -947,8 +1233,8 @@ function DetailsStep({
     <div>
       <h2 className="booking-title">Tell us about you and your appointment</h2>
       <p className="booking-copy">
-        This information helps prepare the appointment. It is not used to
-        diagnose you online.
+        Full name, phone and email are required. Everything else is optional
+        and helps the clinic prepare; it is not used to diagnose you online.
       </p>
       <div className="mt-8 grid gap-5 md:grid-cols-2">
         <div className="field">
@@ -1009,67 +1295,44 @@ function DetailsStep({
           )}
         </div>
         <div className="field">
-          <label htmlFor="contact-method">Preferred contact *</label>
+          <label htmlFor="contact-method">Preferred contact (optional)</label>
           <select
             id="contact-method"
             value={details.preferredContact}
             onChange={(e) => set("preferredContact", e.target.value)}
           >
+            <option value="">No preference</option>
             <option value="whatsapp">WhatsApp</option>
             <option value="phone">Phone</option>
             <option value="email">Email</option>
           </select>
         </div>
         <div className="field md:col-span-2">
-          <label htmlFor="concern">Main hair or scalp concern *</label>
+          <label htmlFor="concern">Main hair or scalp concern (optional)</label>
           <textarea
             id="concern"
-            required
-            aria-invalid={Boolean(errorFor("concern"))}
-            aria-describedby={errorFor("concern") ? "concern-error" : undefined}
             value={details.concern}
             onChange={(e) => set("concern", e.target.value)}
-            onBlur={() => touch("concern")}
           />
-          {errorFor("concern") && (
-            <span id="concern-error" className="field-error">
-              {errorFor("concern")}
-            </span>
-          )}
         </div>
         <div className="field md:col-span-2">
           <label htmlFor="hopes">
-            What do you hope to get from this appointment? *
+            What do you hope to get from this appointment? (optional)
           </label>
           <textarea
             id="hopes"
-            required
-            aria-invalid={Boolean(errorFor("hopes"))}
-            aria-describedby={errorFor("hopes") ? "hopes-error" : undefined}
             value={details.hopes}
             onChange={(e) => set("hopes", e.target.value)}
-            onBlur={() => touch("hopes")}
           />
-          {errorFor("hopes") && (
-            <span id="hopes-error" className="field-error">
-              {errorFor("hopes")}
-            </span>
-          )}
         </div>
         <div className="field">
           <label htmlFor="concern-duration">
-            How long has this been a concern? *
+            How long has this been a concern? (optional)
           </label>
           <select
             id="concern-duration"
-            required
-            aria-invalid={Boolean(errorFor("concernDuration"))}
-            aria-describedby={
-              errorFor("concernDuration") ? "concernDuration-error" : undefined
-            }
             value={details.concernDuration}
             onChange={(e) => set("concernDuration", e.target.value)}
-            onBlur={() => touch("concernDuration")}
           >
             <option value="">Choose one</option>
             <option>Less than 3 months</option>
@@ -1077,42 +1340,24 @@ function DetailsStep({
             <option>More than 1 year</option>
             <option>Not applicable</option>
           </select>
-          {errorFor("concernDuration") && (
-            <span id="concernDuration-error" className="field-error">
-              {errorFor("concernDuration")}
-            </span>
-          )}
         </div>
         <div className="field">
           <label htmlFor="prior-treatment">
-            Previous professional treatment? *
+            Previous professional treatment? (optional)
           </label>
           <select
             id="prior-treatment"
-            required
-            aria-invalid={Boolean(errorFor("priorProfessionalTreatment"))}
-            aria-describedby={
-              errorFor("priorProfessionalTreatment")
-                ? "priorTreatment-error"
-                : undefined
-            }
             value={details.priorProfessionalTreatment}
             onChange={(e) => set("priorProfessionalTreatment", e.target.value)}
-            onBlur={() => touch("priorProfessionalTreatment")}
           >
             <option value="">Choose one</option>
             <option>Yes</option>
             <option>No</option>
           </select>
-          {errorFor("priorProfessionalTreatment") && (
-            <span id="priorTreatment-error" className="field-error">
-              {errorFor("priorProfessionalTreatment")}
-            </span>
-          )}
         </div>
         <div className="field md:col-span-2">
           <label htmlFor="products">
-            Current products, medication or treatments
+            Current products, medication or treatments (optional)
           </label>
           <textarea
             id="products"
@@ -1121,7 +1366,9 @@ function DetailsStep({
           />
         </div>
         <div className="field md:col-span-2">
-          <label htmlFor="note">Anything else the clinic should know?</label>
+          <label htmlFor="note">
+            Anything else the clinic should know? (optional)
+          </label>
           <textarea
             id="note"
             value={details.note}
@@ -1247,14 +1494,14 @@ function SummaryStep({
     [
       "Extras",
       extras.length ? extras.map((item) => item.name).join(", ") : "None",
-      2,
+      1,
     ],
     [
       "Schedule",
-      `${format(parseISO(date), "EEEE, d MMMM yyyy")} · ${time}–${endTime(time, parseISO(date), totals.totalDuration)}`,
-      3,
+      `${format(parseISO(date), "EEEE, d MMMM yyyy")} · ${time}–${bookingEndTime(service, time, date, totals.totalDuration)}`,
+      2,
     ],
-    ["Guest", `${details.fullName} · ${details.email} · ${details.phone}`, 4],
+    ["Guest", `${details.fullName} · ${details.email} · ${details.phone}`, 3],
   ] as const;
   return (
     <div>
@@ -1526,12 +1773,21 @@ export default function BookingPage() {
   const [paymentState, setPaymentState] =
     useState<PaymentStatus>("not-started");
   const [holdSeconds, setHoldSeconds] = useState(0);
-  const [liveSlots, setLiveSlots] = useState<string[] | null>(null);
+  const [liveAvailability, setLiveAvailability] = useState<{
+    slots: string[];
+    sessions?: Array<{ startTime: string; remaining: number }>;
+  } | null>(null);
   const bookingGateway = useMemo(() => {
     const endpoint = import.meta.env.VITE_BOOKING_API_URL;
     return endpoint ? new HttpBookingGateway(endpoint) : null;
   }, []);
   const deepLinkId = search.get("service") || undefined;
+  const deepLinkCategory =
+    search.get("category") === "trichology" ||
+    search.get("category") === "salon"
+      ? (search.get("category") as ServiceCategory)
+      : undefined;
+  const appliedDeepLink = useRef("");
   const activePolicyVersion = policiesCatalog.length
     ? policyBundleVersion(policiesCatalog)
     : policyVersion;
@@ -1571,7 +1827,7 @@ export default function BookingPage() {
         ]) => {
           setSettings(nextSettings);
           setBookings(nextBookings);
-          setExtrasCatalog(nextExtras);
+          setExtrasCatalog(nextExtras.length ? nextExtras : serviceExtras);
           setQuestionsCatalog(nextQuestions);
           setPoliciesCatalog(nextPolicies);
           setConfigurationState("ready");
@@ -1581,13 +1837,27 @@ export default function BookingPage() {
     analytics.track("booking_started");
   }, []);
   useEffect(() => {
-    if (!deepLinkId || !services.length || draft.serviceId) return;
-    const linked = services.find(
-      (item) => item.id === deepLinkId && item.active,
-    );
-    if (linked)
-      updateDraft({ category: linked.category, serviceId: linked.id, step: 1 });
-  }, [deepLinkId, services.length]);
+    const key = `${deepLinkId || ""}:${deepLinkCategory || ""}`;
+    if (key === ":" || appliedDeepLink.current === key || !services.length)
+      return;
+    const linked = deepLinkId
+      ? services.find((item) => item.id === deepLinkId && item.active)
+      : undefined;
+    if (deepLinkId && !linked) return;
+    if (draft.holdId) releaseCurrentHold(draft.holdId);
+    appliedDeepLink.current = key;
+    updateDraft({
+      category: linked?.category || deepLinkCategory,
+      serviceId: linked?.id,
+      extraIds: [],
+      date: "",
+      time: "",
+      holdId: undefined,
+      holdExpiresAt: undefined,
+      intakeResponses: {},
+      step: linked || deepLinkCategory ? 1 : 0,
+    });
+  }, [deepLinkCategory, deepLinkId, services.length]);
   useEffect(() => {
     if (!draft.holdExpiresAt) {
       setHoldSeconds(0);
@@ -1607,7 +1877,7 @@ export default function BookingPage() {
           holdId: undefined,
           holdExpiresAt: undefined,
           time: "",
-          step: 3,
+          step: 2,
         });
         setValidation(
           `Your ${settings.payment.holdMinutes}-minute hold expired. Please choose an available time again.`,
@@ -1621,11 +1891,11 @@ export default function BookingPage() {
 
   useEffect(() => {
     if (!firebaseEnabled || !bookingGateway || !service || !draft.date) {
-      setLiveSlots(null);
+      setLiveAvailability(null);
       return;
     }
     let active = true;
-    setLiveSlots(null);
+    setLiveAvailability(null);
     bookingGateway
       .getAvailability({
         serviceId: service.id,
@@ -1633,12 +1903,12 @@ export default function BookingPage() {
         date: draft.date,
         paymentMode,
       })
-      .then((slots) => {
-        if (active) setLiveSlots(slots);
+      .then((availability) => {
+        if (active) setLiveAvailability(availability);
       })
       .catch((error) => {
         if (!active) return;
-        setLiveSlots([]);
+        setLiveAvailability({ slots: [] });
         setValidation(
           error instanceof Error
             ? error.message
@@ -1718,9 +1988,10 @@ export default function BookingPage() {
             );
             updateDraft({
               policyConsent,
-              category: linked?.category,
-              serviceId: linked?.id,
-              step: linked ? 1 : 0,
+              category: linked?.category || deepLinkCategory || draft.category,
+              serviceId:
+                linked?.id || (deepLinkCategory ? undefined : draft.serviceId),
+              step: linked || deepLinkCategory ? 1 : draft.step,
             });
           }}
         />
@@ -1744,6 +2015,7 @@ export default function BookingPage() {
     });
   }
   function changeService(next: Service) {
+    if (draft.serviceId === next.id) return;
     if (draft.serviceId && draft.serviceId !== next.id)
       setNotice(
         "Changing service cleared extras and schedule so price, duration and availability stay accurate.",
@@ -1780,26 +2052,11 @@ export default function BookingPage() {
       return "Choose Salon or Trichology to continue.";
     if (draft.step === 1 && !service)
       return "Choose one main service to continue.";
-    if (draft.step === 3 && (!draft.date || !draft.time))
+    if (draft.step === 2 && (!draft.date || !draft.time))
       return "Choose an available date and start time.";
-    if (draft.step === 4) {
+    if (draft.step === 3) {
       const parsed = bookingSchema.safeParse(details);
       if (!parsed.success) return parsed.error.issues[0].message;
-      const required = questionsCatalog.filter(
-        (q) =>
-          q.active &&
-          q.schemaId === service?.intakeSchemaId &&
-          q.required &&
-          (!q.condition ||
-            draft.intakeResponses[q.condition.questionId] ===
-              q.condition.equals),
-      );
-      if (
-        required.some((question) =>
-          intakeValueMissing(draft.intakeResponses[question.id]),
-        )
-      )
-        return "Answer all required service questions.";
       if (photo && (photo.error || !photo.consent))
         return (
           photo.error || "Consent to private photo use or remove the photo."
@@ -1824,17 +2081,33 @@ export default function BookingPage() {
     const message = validateStep();
     setValidation(message);
     if (message) return;
-    if (draft.step === 3 && service && draft.date && draft.time) {
+    if (draft.step === 2 && service && draft.date && draft.time) {
       const duration =
         service.duration +
         selectedExtras.reduce((sum, extra) => sum + extra.duration, 0);
-      const currentSlots = getAvailableSlots(
-        parseISO(draft.date),
-        duration,
-        settings,
-        bookings,
-      );
-      if (!currentSlots.includes(draft.time)) {
+      const currentSlots =
+        service.category === "salon"
+          ? getSalonSessionAvailability(
+              parseISO(draft.date),
+              settings,
+              bookings,
+              bookingHoldRepository.listActive(draft.date),
+              new Date(),
+              draft.sessionId,
+            )
+              .filter((session) => session.available)
+              .map((session) => session.startTime)
+          : getAvailableSlots(
+              parseISO(draft.date),
+              duration,
+              settings,
+              bookings,
+            );
+      const remotelyAvailable =
+        !firebaseEnabled ||
+        liveAvailability === null ||
+        liveAvailability.slots.includes(draft.time);
+      if (!currentSlots.includes(draft.time) || !remotelyAvailable) {
         setValidation("That time is no longer available. Choose another slot.");
         updateDraft({ time: "" });
         return;
@@ -1851,17 +2124,24 @@ export default function BookingPage() {
                 sessionId: draft.sessionId,
                 date: draft.date,
                 startTime: draft.time,
-                endTime: endTime(draft.time, parseISO(draft.date), duration),
+                endTime: bookingEndTime(
+                  service,
+                  draft.time,
+                  draft.date,
+                  duration,
+                ),
                 serviceId: service.id,
+                category: service.category,
               },
               settings.bookingInterval,
               settings.bufferMinutes,
               settings.payment.holdMinutes,
+              service.category === "salon" ? 3 : 1,
             );
         updateDraft({
           holdId: hold.id,
           holdExpiresAt: hold.expiresAt,
-          step: 4,
+          step: 3,
         });
         return;
       } catch (error) {
@@ -1873,7 +2153,7 @@ export default function BookingPage() {
         return;
       }
     }
-    updateDraft({ step: Math.min(6, draft.step + 1) });
+    updateDraft({ step: Math.min(5, draft.step + 1) });
   }
 
   async function completeBooking(paid: boolean, verifiedReference?: string) {
@@ -1891,9 +2171,10 @@ export default function BookingPage() {
           lockIds: bookingLockIds(
             draft.date,
             draft.time,
-            endTime(
+            bookingEndTime(
+              service,
               draft.time,
-              parseISO(draft.date),
+              draft.date,
               service.duration +
                 selectedExtras.reduce((sum, extra) => sum + extra.duration, 0),
             ),
@@ -1905,7 +2186,7 @@ export default function BookingPage() {
     if (!hold || hold.status !== "active") {
       setValidation("Your time hold expired. Choose another available time.");
       updateDraft({
-        step: 3,
+        step: 2,
         time: "",
         holdId: undefined,
         holdExpiresAt: undefined,
@@ -1944,7 +2225,12 @@ export default function BookingPage() {
       preparationSnapshot: service.preparation,
       date: draft.date,
       startTime: draft.time,
-      endTime: endTime(draft.time, parseISO(draft.date), totals.totalDuration),
+      endTime: bookingEndTime(
+        service,
+        draft.time,
+        draft.date,
+        totals.totalDuration,
+      ),
       totalDuration: totals.totalDuration,
       subtotal: totals.subtotal,
       amountDueNow: paid ? totals.amountDueNow : 0,
@@ -2013,7 +2299,7 @@ export default function BookingPage() {
       const parsed = bookingSchema.safeParse(details);
       if (!parsed.success) {
         setValidation(parsed.error.issues[0].message);
-        updateDraft({ step: 4 });
+        updateDraft({ step: 3 });
         return;
       }
       try {
@@ -2058,7 +2344,7 @@ export default function BookingPage() {
     }
   }
 
-  const canContinue = draft.step < 6 && !validateStep();
+  const canContinue = draft.step < 5 && !validateStep();
   return (
     <>
       <SEO
@@ -2067,7 +2353,7 @@ export default function BookingPage() {
       />
       <section className="booking-shell page-hero">
         <div className="container-shell">
-          <span className="status">Guest booking · no account needed</span>
+          {/* <span className="status">Guest booking · no account needed</span> */}
           <h1 className="page-title mt-6">Reserve time for your care</h1>
           <p className="lede mt-5">
             Choose a category, service and extras, then select live
@@ -2084,7 +2370,7 @@ export default function BookingPage() {
               updateDraft({ step });
             }}
           />
-          {draft.step >= 4 && draft.holdId && holdSeconds > 0 && (
+          {draft.step >= 3 && draft.holdId && holdSeconds > 0 && (
             <div className="mb-5">
               <HoldCountdown
                 seconds={holdSeconds}
@@ -2139,16 +2425,12 @@ export default function BookingPage() {
                       services={services}
                       value={draft.serviceId}
                       onChange={changeService}
+                      extras={availableExtras}
+                      selectedExtraIds={draft.extraIds}
+                      onExtraToggle={toggleExtra}
                     />
                   )}
                   {draft.step === 2 && service && (
-                    <ExtrasStep
-                      available={availableExtras}
-                      selectedIds={draft.extraIds}
-                      onToggle={toggleExtra}
-                    />
-                  )}
-                  {draft.step === 3 && service && (
                     <ScheduleStep
                       service={service}
                       extras={selectedExtras}
@@ -2156,15 +2438,21 @@ export default function BookingPage() {
                       bookings={bookings}
                       date={draft.date}
                       time={draft.time}
-                      liveSlots={firebaseEnabled ? liveSlots : undefined}
+                      liveSlots={
+                        firebaseEnabled
+                          ? liveAvailability?.slots || null
+                          : undefined
+                      }
+                      liveSalonSessions={liveAvailability?.sessions}
                       onDate={(date) => {
                         setValidation("");
+                        setLiveAvailability(null);
                         updateDraft({ date, time: "" });
                       }}
                       onTime={(time) => updateDraft({ time })}
                     />
                   )}
-                  {draft.step === 4 && service && (
+                  {draft.step === 3 && service && (
                     <DetailsStep
                       service={service}
                       questions={questionsCatalog}
@@ -2184,7 +2472,7 @@ export default function BookingPage() {
                       onPhoto={setPhoto}
                     />
                   )}
-                  {draft.step === 5 && service && draft.date && draft.time && (
+                  {draft.step === 4 && service && draft.date && draft.time && (
                     <SummaryStep
                       service={service}
                       extras={selectedExtras}
@@ -2196,7 +2484,7 @@ export default function BookingPage() {
                       edit={(step) => updateDraft({ step })}
                     />
                   )}
-                  {draft.step === 6 && service && (
+                  {draft.step === 5 && service && (
                     <PaymentStep
                       service={service}
                       extras={selectedExtras}
@@ -2217,12 +2505,12 @@ export default function BookingPage() {
                       }
                     />
                   )}
-                  {validation && draft.step !== 6 && (
+                  {validation && draft.step !== 5 && (
                     <div className="mt-6">
                       <Notice tone="error">{validation}</Notice>
                     </div>
                   )}
-                  {draft.step < 6 && (
+                  {draft.step < 5 && (
                     <div className="no-print mt-9 flex items-center justify-between border-t border-[var(--line)] pt-6">
                       {draft.step > 0 ? (
                         <button
@@ -2239,14 +2527,14 @@ export default function BookingPage() {
                       ) : (
                         <span />
                       )}
-                      {draft.step < 6 && (
+                      {draft.step < 5 && (
                         <button
                           type="button"
                           className="btn btn-primary"
                           disabled={!canContinue}
                           onClick={next}
                         >
-                          {draft.step === 5
+                          {draft.step === 4
                             ? "Continue to payment"
                             : "Continue"}
                           <ChevronRight size={17} />
@@ -2346,7 +2634,7 @@ export function BookingConfirmationPage() {
               <h1 className="mt-7 font-display text-[clamp(2.6rem,6vw,4.7rem)] leading-none">
                 {confirmed
                   ? "Booking confirmed"
-                  : "Booking request received — awaiting confirmation"}
+                  : "Booking request received"}
               </h1>
               <p className="mt-5 max-w-2xl leading-7 text-[#dce9df]">
                 Reference{" "}
