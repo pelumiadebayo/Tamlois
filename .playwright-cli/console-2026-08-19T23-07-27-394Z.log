@@ -331,3 +331,25 @@ Visit https://react.dev/link/error-boundaries to learn more about error boundari
 [80710283ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
 [80710636ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
 [80710637ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[83128395ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[83128761ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[83128762ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[83367358ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[83367740ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[83367742ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[83425952ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[83426325ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[83426327ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[84440413ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[84440804ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[84440806ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[84692819ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[84693178ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[84693180ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[84701172ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[84701527ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[84701529ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[84787797ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:4174/@vite/client:864
+[84788347ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:4174/node_modules/.vite/deps/react-dom_client.js?v=803d69a2:20102
+[84788740ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2
+[84788742ms] [INFO] [analytics] booking_started {} @ http://127.0.0.1:4174/src/lib/analytics.ts?t=1787219353378:2

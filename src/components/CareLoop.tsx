@@ -42,6 +42,11 @@ const ctaEvents: Record<HomeOfferingId, AnalyticsEvent> = {
   gallery: "home_gallery_cta_clicked",
 };
 
+function resolveImageSource(source: string) {
+  if (!source.startsWith("/") || source.startsWith("//")) return source;
+  return `${import.meta.env.BASE_URL}${source.slice(1)}`;
+}
+
 export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
   const ordered = useMemo(
     () =>
@@ -66,20 +71,20 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
   const playControl = useRef<HTMLButtonElement>(null);
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const mobile = useMediaQuery("(max-width: 767px)");
+  const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
   const autoEnabled =
     playing &&
     (playOverride || (!hovered && !focused)) &&
     pageVisible &&
-    !reducedMotion &&
-    !mobile;
+    !reducedMotion;
   const active = ordered[activeIndex] || ordered[0];
 
   useEffect(() => {
     analytics.track("home_loop_viewed");
   }, []);
   useEffect(() => {
-    if (reducedMotion || mobile) setPlaying(false);
-  }, [mobile, reducedMotion]);
+    if (reducedMotion) setPlaying(false);
+  }, [reducedMotion]);
   useEffect(() => {
     const visibility = () => setPageVisible(!document.hidden);
     document.addEventListener("visibilitychange", visibility);
@@ -118,8 +123,8 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
   function advanceAndResume() {
     const nextIndex = (activeIndex + 1) % ordered.length;
     setActiveIndex(nextIndex);
-    setPlaying(!mobile && !reducedMotion);
-    setPlayOverride(!mobile && !reducedMotion);
+    setPlaying(!reducedMotion);
+    setPlayOverride(!reducedMotion);
     setManualAnnouncement(true);
     analytics.track("home_loop_manually_selected", {
       offering: ordered[nextIndex].id,
@@ -132,10 +137,13 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
       className="care-loop"
       aria-label="Tamlois Care Loop"
       onMouseEnter={() => {
+        if (!canHover) return;
         setHovered(true);
         setPlayOverride(false);
       }}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={() => {
+        if (canHover) setHovered(false);
+      }}
       onFocus={(event) => {
         setFocused(true);
         if (event.target !== playControl.current) setPlayOverride(false);
@@ -245,7 +253,7 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
               aria-label={playing ? "Pause Care Loop" : "Play Care Loop"}
               aria-pressed={!playing}
               title={playing ? "Pause Care Loop" : "Play Care Loop"}
-              disabled={reducedMotion || mobile}
+              disabled={reducedMotion}
             >
               {playing ? <Pause size={16} /> : <Play size={16} />}
             </button>
@@ -282,7 +290,7 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
           >
             {!imageUnavailable.includes(active.id) ? (
               <img
-                src={active.image.src}
+                src={resolveImageSource(active.image.src)}
                 alt={active.image.alt}
                 width="1100"
                 height="820"
@@ -304,7 +312,7 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
             )}
             {active.image.placeholder && (
               <span className="care-loop-placeholder">
-                Licensed placeholder
+                Tamlois
               </span>
             )}
           </div>

@@ -623,27 +623,29 @@ img {
     min-height: auto;
     grid-template-columns: 1fr;
     gap: 0;
-    padding-block: 2.25rem 2rem;
+    padding-block: 1.15rem 1.75rem;
   }
   .care-loop-positioning {
     display: contents;
   }
   .care-loop-positioning h1 {
     order: 1;
-    font-size: clamp(2.7rem, 13.5vw, 4.15rem);
-    line-height: 0.95;
+    font-size: clamp(2.15rem, 5vw, 4rem);
+    line-height: 0.97;
+    letter-spacing: -0.03em;
   }
   .care-loop-positioning > p {
     order: 2;
-    margin-top: 1.25rem;
-    font-size: 0.95rem;
-    line-height: 1.65;
+    margin-top: 0.65rem;
+    font-size: 1rem;
+    line-height: 1.45;
   }
   .care-loop-stage {
     order: 3;
+    height: clamp(240px, calc(100svh - 350px), 340px);
     min-height: 0;
-    aspect-ratio: 4 / 5;
-    margin-block: 1.8rem 0;
+    aspect-ratio: auto;
+    margin-block: 0.85rem 0;
     box-shadow: 0 18px 48px rgba(13, 45, 33, 0.12);
   }
   .care-loop-image-wrap {
@@ -653,16 +655,29 @@ img {
     aspect-ratio: auto;
   }
   .care-loop-offering {
-    right: 0.85rem;
-    bottom: 0.85rem;
-    width: calc(100% - 1.7rem);
-    padding: 1rem;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    width: calc(100% - 1.2rem);
+    padding: 0.8rem;
   }
   .care-loop-offering h2 {
-    font-size: clamp(1.6rem, 7vw, 2.1rem);
+    margin-top: 0.4rem;
+    font-size: clamp(1.35rem, 6vw, 1.7rem);
+    line-height: 1.02;
   }
   .care-loop-offering-copy {
-    font-size: 0.84rem;
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .care-loop-card-action {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
   }
   .care-loop-actions {
     order: 4;

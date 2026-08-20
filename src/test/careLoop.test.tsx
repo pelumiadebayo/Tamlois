@@ -118,6 +118,27 @@ describe("Tamlois Care Loop", () => {
     ).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("auto-advances on mobile and keeps playback controls available", () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query === "(max-width: 767px)",
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+    vi.useFakeTimers();
+    renderLoop();
+    expect(
+      screen.getByRole("button", { name: "Pause Care Loop" }),
+    ).not.toBeDisabled();
+    act(() => vi.advanceTimersByTime(6500));
+    expect(
+      screen.getByRole("button", { name: /^02 Trichology Care$/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("resumes advancement when Play is explicitly requested", () => {
     vi.useFakeTimers();
     renderLoop();
@@ -176,7 +197,10 @@ describe("Tamlois Care Loop", () => {
     const galleryImage = screen.getByAltText(
       /woven natural hairstyle with neatly sectioned twists/i,
     );
-    expect(galleryImage).toHaveAttribute("src", "/gallery-image.jpg");
+    expect(galleryImage).toHaveAttribute(
+      "src",
+      `${import.meta.env.BASE_URL}gallery-image.jpg`,
+    );
   });
 
   it("disables autoplay when reduced motion is requested", () => {

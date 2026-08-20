@@ -125,9 +125,6 @@ export function Layout() {
               scalp, hair growth and hair-loss management through personalised,
               evidence-informed care.
             </p>
-            <span className="status placeholder-badge mt-5">
-              Contact details are placeholders
-            </span>
           </div>
           <div>
             <h2 className="text-sm font-bold text-[var(--forest-950)]">

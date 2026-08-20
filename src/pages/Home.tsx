@@ -121,6 +121,35 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="section-space bg-[var(--cream)]">
+        <div className="container-shell">
+          <div className="flex flex-col items-start justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <h2 className="section-title">Care continues at home</h2>
+              <p className="lede mt-4">
+                {shopifyEnabled
+                  ? "A preview of the product category. Live availability and checkout are in the connected shop."
+                  : "Demo products show how a Shopify-connected shop can fit the clinic experience."}
+              </p>
+            </div>
+            <ArrowLink to="/shop">
+              Visit the {shopifyEnabled ? "connected" : "demo"} shop
+            </ArrowLink>
+          </div>
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {products
+              .filter((product) => product.featured)
+              .map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  hideBuy={shopifyEnabled}
+                />
+              ))}
+          </div>
+        </div>
+      </section>
+
       <section className="section-space">
         <div className="container-shell">
           <h2 className="section-title">Start with what you notice</h2>
@@ -290,35 +319,6 @@ export default function Home() {
                 </figure>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section-space bg-[var(--cream)]">
-        <div className="container-shell">
-          <div className="flex flex-col items-start justify-between gap-5 md:flex-row md:items-end">
-            <div>
-              <h2 className="section-title">Care continues at home</h2>
-              <p className="lede mt-4">
-                {shopifyEnabled
-                  ? "A preview of the product category. Live availability and checkout are in the connected shop."
-                  : "Demo products show how a Shopify-connected shop can fit the clinic experience."}
-              </p>
-            </div>
-            <ArrowLink to="/shop">
-              Visit the {shopifyEnabled ? "connected" : "demo"} shop
-            </ArrowLink>
-          </div>
-          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {products
-              .filter((product) => product.featured)
-              .map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  hideBuy={shopifyEnabled}
-                />
-              ))}
           </div>
         </div>
       </section>

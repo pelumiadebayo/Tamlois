@@ -46,7 +46,7 @@ export type SalonSessionAvailability = (typeof SALON_SESSIONS)[number] & {
 
 export const defaultSettings: BusinessSettings = {
   timezone: "Africa/Lagos",
-  address: "Road 2, Gowon Estate, Egbeda Lagos, Nigeria",
+  address: "16, Road 21, Gowon Estate, Lagos, Nigeria",
   bookingInterval: 30,
   bufferMinutes: 15,
   minimumNoticeHours: 4,

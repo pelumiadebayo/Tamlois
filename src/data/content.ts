@@ -756,15 +756,6 @@ export const products: Product[] = [
     true,
   ],
   [
-    "prd-bundle",
-    "Natural-hair care bundle",
-    "A demo cleansing, moisture and sealing set.",
-    32000,
-    "Bundles",
-    true,
-    true,
-  ],
-  [
     "prd-bonnet",
     "Satin bonnet",
     "A demo adjustable sleep bonnet.",
@@ -830,7 +821,7 @@ export const faqs = [
 ] as const;
 
 export const contact = {
-  address: "Road 2, Gowon Estate, Egbeda Lagos, Nigeria",
+  address: "16, Road 21, Gowon Estate, Lagos, Nigeria",
   phone: import.meta.env.VITE_BUSINESS_PHONE || "+234 081 344 3908",
   whatsapp: import.meta.env.VITE_BUSINESS_WHATSAPP || "+234 081 344 3908",
   email: import.meta.env.VITE_BUSINESS_EMAIL || "hello@tamlois.com",
