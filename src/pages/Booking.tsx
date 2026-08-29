@@ -965,6 +965,7 @@ function SalonScheduleStep({
             const blockReason = firebaseEnabled
               ? remoteDay?.reason
               : localFullDayBlock?.reason;
+            const isAlertStatus = status === "blocked" || status === "booked";
             const availabilityText = !capacityVerified
               ? "Checking availability"
               : status === "blocked"
@@ -995,22 +996,25 @@ function SalonScheduleStep({
                 }}
               >
                 <strong>{format(day, "d")}</strong>
-                {inVisibleMonth && (
-                  <small>
-                    <span className="salon-space-wide salon-calendar-status">
-                      {availabilityText}
-                    </span>
-                    <span className="salon-space-compact salon-calendar-status">
-                      {!capacityVerified
-                        ? "…"
-                        : status === "available"
-                          ? `${remaining} left`
-                          : status === "unavailable"
-                            ? "—"
+                {inVisibleMonth &&
+                  (!capacityVerified || status !== "unavailable") && (
+                    <small>
+                      <span
+                        className={`salon-space-wide salon-calendar-status ${isAlertStatus ? "is-alert" : ""}`}
+                      >
+                        {availabilityText}
+                      </span>
+                      <span
+                        className={`salon-space-compact salon-calendar-status ${isAlertStatus ? "is-alert" : ""}`}
+                      >
+                        {!capacityVerified
+                          ? "…"
+                          : status === "available"
+                            ? `${remaining} left`
                             : availabilityText}
-                    </span>
-                  </small>
-                )}
+                      </span>
+                    </small>
+                  )}
               </button>
             );
           })}
