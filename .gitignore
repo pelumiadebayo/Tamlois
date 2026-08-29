@@ -13,3 +13,5 @@ firebase-debug.log
 firestore-debug.log
 .impeccable/review/*.png
 output/
+functions/.env*
+functions/lib/
