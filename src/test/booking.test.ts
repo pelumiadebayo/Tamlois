@@ -5,11 +5,13 @@ import {
   calculateBookingTotals,
   canTransitionBooking,
   compatibleExtras,
+  configuredPaymentModes,
   generateBookingReference,
   isPolicyConsentCurrent,
   policyBundleVersion,
   policyConsentSnapshots,
   resolveExtraSelection,
+  resolveConfiguredPaymentMode,
   sanitizeIntakeResponses,
   validateImageFile,
 } from "../lib/booking";
@@ -20,7 +22,7 @@ import {
   services,
 } from "../data/content";
 import { defaultSettings } from "../lib/availability";
-import type { BookingPolicy } from "../types";
+import type { BookingPolicy, PaymentSettings } from "../types";
 
 const policyTimestamp = Timestamp.fromDate(new Date("2026-08-29T09:00:00Z"));
 const bookingPolicies: BookingPolicy[] = [
@@ -134,6 +136,30 @@ describe("booking helpers", () => {
       amountDueNow: 16250,
       balanceDue: 16250,
     });
+  });
+  it("uses the configured payment choices and default without forcing clinic", () => {
+    const payment: PaymentSettings = {
+      ...defaultSettings.payment,
+      enabledModes: ["deposit_fixed", "clinic"],
+      defaultMode: "deposit_fixed",
+    };
+    expect(configuredPaymentModes(payment)).toEqual([
+      "deposit_fixed",
+      "clinic",
+    ]);
+    expect(resolveConfiguredPaymentMode(payment)).toBe("deposit_fixed");
+    expect(resolveConfiguredPaymentMode(payment, "clinic")).toBe("clinic");
+    expect(resolveConfiguredPaymentMode(payment, "full")).toBe(
+      "deposit_fixed",
+    );
+  });
+  it("honours the administrator's disabled payment default", () => {
+    expect(
+      resolveConfiguredPaymentMode({
+        ...defaultSettings.payment,
+        defaultMode: "disabled",
+      }),
+    ).toBe("disabled");
   });
   it("validates optional image type and size", () => {
     expect(

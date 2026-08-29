@@ -203,6 +203,34 @@ export function calculateBookingTotals(
   };
 }
 
+export function configuredPaymentModes(
+  settings: PaymentSettings,
+): Exclude<PaymentMode, "disabled">[] {
+  const supportedModes: Exclude<PaymentMode, "disabled">[] = [
+    "full",
+    "deposit_percentage",
+    "deposit_fixed",
+    "clinic",
+  ];
+  return supportedModes.filter((mode) => settings.enabledModes.includes(mode));
+}
+
+export function resolveConfiguredPaymentMode(
+  settings: PaymentSettings,
+  selected?: PaymentMode,
+): PaymentMode {
+  if (settings.defaultMode === "disabled") return "disabled";
+  const enabledModes = configuredPaymentModes(settings);
+  if (
+    selected &&
+    selected !== "disabled" &&
+    enabledModes.includes(selected)
+  )
+    return selected;
+  if (enabledModes.includes(settings.defaultMode)) return settings.defaultMode;
+  return enabledModes[0] ?? "disabled";
+}
+
 export function validateImageFile(
   file: Pick<File, "name" | "type" | "size">,
   maxBytes = 5 * 1024 * 1024,

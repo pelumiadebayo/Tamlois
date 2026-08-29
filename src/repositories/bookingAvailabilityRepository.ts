@@ -18,7 +18,7 @@ import {
   type SalonSessionId,
 } from "../lib/bookingCapacity";
 import { db, ensureAnonymousBookingUser, firebaseEnabled } from "../lib/firebase";
-import { resolveSalonCalendarDayAvailability } from "../lib/availability";
+import { resolveSalonMonthDayAvailability } from "../lib/availability";
 import type {
   AvailabilityRepositoryContract,
   BookingAvailabilityRequest,
@@ -292,29 +292,14 @@ export class FirebaseBookingAvailabilityRepository
     for (let day = 1; day <= daysInMonth; day += 1) {
       const date = `${month}-${String(day).padStart(2, "0")}`;
       const fullDayReason = fullDayBlockReasons.get(date);
-      if (fullDayBlockedDates.has(date)) {
-        result[date] = resolveSalonCalendarDayAvailability(
-          true,
-          0,
-          fullDayReason,
-          true,
-        );
-        continue;
-      }
-      if (!isBookableDate(date)) {
-        result[date] = resolveSalonCalendarDayAvailability(false, 0);
-        continue;
-      }
       const locks = locksByDate.get(date) ?? new Set<string>();
       const blocks = blocksByDate.get(date) ?? new Set<string>();
-      const remaining = BUSINESS_SCHEDULE.salonSessions.reduce((sum, session) => {
-        if (!meetsMinimumNotice(date, session.startTime)) return sum;
+      const sessions = BUSINESS_SCHEDULE.salonSessions.map((session) => {
         const blocked = blockUnitIds(
           date,
           session.startTime,
           session.endTime,
         ).some((id) => blocks.has(id));
-        if (blocked) return sum;
         const capacity = Math.max(
           0,
           Math.min(
@@ -325,9 +310,19 @@ export class FirebaseBookingAvailabilityRepository
         const occupied = salonSeatLockIds(date, session.id)
           .slice(0, capacity)
           .filter((id) => locks.has(id)).length;
-        return sum + Math.max(0, capacity - occupied);
-      }, 0);
-      result[date] = resolveSalonCalendarDayAvailability(true, remaining);
+        return {
+          capacity,
+          occupied,
+          blocked,
+          meetsNotice: meetsMinimumNotice(date, session.startTime),
+        };
+      });
+      result[date] = resolveSalonMonthDayAvailability(
+        isBookableDate(date),
+        sessions,
+        fullDayReason,
+        fullDayBlockedDates.has(date),
+      );
     }
     return result;
   }

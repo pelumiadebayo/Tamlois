@@ -38,7 +38,15 @@ Firestore Rules cannot read Vite, `.env.local` or GitHub variables. Creating ano
 
 The existing target is `(default)`, Standard edition, `africa-south1`. Do not seed production and do not manually create empty collections. They appear after their first successful write.
 
-The normal Africa/Lagos schedule and Salon sessions are typed in `src/config/businessSchedule.ts`. Firestore persists `services`, `bookingPolicies`, `bookings`, `bookingLocks`, `blockedPeriods`, `blockedPeriodDetails`, `capacityOverrides`, `capacityOverrideDetails`, `auditLogs`, `leads` and `enquiries`. Booking PII exists only in `bookings`; lock and public operational documents contain no customer PII. A full-day `blockedPeriods` unit repeats a bounded `publicReason` so the customer calendar can explain the closure. Do not enter names, contact details or other private information in that field. Timed-block and capacity-adjustment reasons remain in owner-only detail collections. Gallery stays static.
+The normal Africa/Lagos schedule and Salon sessions are typed in `src/config/businessSchedule.ts`. Firestore persists `services`, `bookingPolicies`, `bookings`, `bookingLocks`, `blockedPeriods`, `blockedPeriodDetails`, `capacityOverrides`, `capacityOverrideDetails`, `businessSettings`, `publicBookingSettings`, `auditLogs`, `leads` and `enquiries`. Booking PII exists only in `bookings`; lock and public operational documents contain no customer PII. A full-day `blockedPeriods` unit repeats a bounded `publicReason` so the customer calendar can explain the closure. Do not enter names, contact details or other private information in that field. Timed-block and capacity-adjustment reasons remain in owner-only detail collections. Gallery stays static.
+
+### Payment and hold settings
+
+**Admin → Settings** writes payment choices, percentage and fixed-deposit amounts, balance timing, approval requirement and the 5–30 minute hold duration atomically to `businessSettings/booking` and `publicBookingSettings/current`. The first document is owner-only and authoritative for a trusted payment backend. The second contains the same non-sensitive values for the customer booking interface. Signed-out visitors may directly read only `publicBookingSettings/current`; collection listing is denied.
+
+Fixed deposit is a supported payment mode and must have a positive whole-Naira amount when enabled. Saving requires at least one enabled choice, and a non-disabled default must also be enabled. The current browser-only Firebase flow remains pay-at-clinic; restoring the trusted Paystack backend is what turns the stored online-payment and hold values into gateway behavior.
+
+`Clinic approval required` controls the initial status of new bookings. When enabled, a new booking is `pending-confirmation` until the owner confirms or cancels it. When disabled, a valid booking is immediately `confirmed`. The booking transaction and Firestore Rules both read the administrator-controlled public settings document; the customer cannot choose or forge this status. Changing the switch does not retroactively change existing bookings.
 
 ### Booking policies
 

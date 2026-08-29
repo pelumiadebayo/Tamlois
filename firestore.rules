@@ -6,6 +6,13 @@ service cloud.firestore {
     // bookingLocks contain only non-sensitive deterministic capacity units.
     // Full-day blockedPeriods may also repeat one bounded, customer-facing
     // closure reason; private block details and auditLogs remain owner-only.
+    // businessSettings/booking and publicBookingSettings/current contain:
+    //   address: non-empty string, at most 500 characters
+    //   payment: strict map of enabled/default modes, percentage/fixed deposit,
+    //     balance timing, 5-30 minute hold duration and approval requirement.
+    // Customer booking status is pending-confirmation when approvalRequired is
+    // true (or settings are absent), and confirmed when it is false.
+    //   updatedAt: server timestamp. Neither settings document contains PII.
     function ownerUid() {
       // Firestore Rules cannot read Vite environment variables.
       return '0CZw1AFTjMXudXtvFST0z2ufET02';
@@ -155,6 +162,15 @@ service cloud.firestore {
     // caps the whole Rules expression tree at 1,000 expressions. Fields copied
     // from the catalogue are therefore validated by equality with the live
     // service document instead of repeating the full owner-side validator.
+    function validInitialBookingStatus(data) {
+      let settingsPath = /databases/$(database)/documents/publicBookingSettings/current;
+      return (!exists(settingsPath) && data.status == 'pending-confirmation') ||
+        (exists(settingsPath) &&
+          ((get(settingsPath).data.payment.approvalRequired == true &&
+              data.status == 'pending-confirmation') ||
+            (get(settingsPath).data.payment.approvalRequired == false &&
+              data.status == 'confirmed')));
+    }
     function validCustomerBooking(data, bookingId) {
       return data.keys().hasOnly([
           'id', 'reference', 'ownerUid', 'serviceId', 'serviceNameSnapshot', 'serviceType',
@@ -179,7 +195,7 @@ service cloud.firestore {
         data.policyVersion is string && data.policyVersion.size() > 0 && data.policyVersion.size() <= 80 &&
         data.policyConsent == true && validPolicyConsent(data.policyConsentRecord) &&
         data.intakeResponses is map && data.intakeResponses.keys().size() <= 30 &&
-        data.status == 'pending-confirmation' && data.paymentStatus == 'not-required' &&
+        validInitialBookingStatus(data) && data.paymentStatus == 'not-required' &&
         data.followUpDue == false && validCreateTimestamps(data) &&
         ((data.serviceType == 'salon' && data.schedulingMode == 'salon-session' &&
             data.sessionId in ['morning', 'afternoon', 'evening'] && data.lockIds.size() == 1) ||
@@ -283,6 +299,38 @@ service cloud.firestore {
         data.keys().hasOnly(['id', 'reason', 'adminUid', 'createdAt', 'updatedAt']) && data.id == id &&
         data.reason is string && data.reason.size() > 0 && data.reason.size() <= 500 && data.adminUid == request.auth.uid;
     }
+    function validPaymentSettings(data) {
+      return data is map && data.keys().hasAll([
+          'enabledModes', 'defaultMode', 'depositPercentage',
+          'fixedDepositAmount', 'balanceDue', 'holdMinutes',
+          'approvalRequired'
+        ]) && data.keys().hasOnly([
+          'enabledModes', 'defaultMode', 'depositPercentage',
+          'fixedDepositAmount', 'balanceDue', 'holdMinutes',
+          'approvalRequired'
+        ]) &&
+        data.enabledModes is list && data.enabledModes.size() >= 1 &&
+        data.enabledModes.size() <= 4 &&
+        data.enabledModes.toSet().size() == data.enabledModes.size() &&
+        data.enabledModes.toSet().hasOnly([
+          'full', 'deposit_percentage', 'deposit_fixed', 'clinic'
+        ]) &&
+        data.defaultMode in ['full', 'deposit_percentage', 'deposit_fixed', 'clinic', 'disabled'] &&
+        (data.defaultMode == 'disabled' || data.defaultMode in data.enabledModes) &&
+        data.depositPercentage is int && data.depositPercentage >= 1 && data.depositPercentage <= 100 &&
+        data.fixedDepositAmount is int && data.fixedDepositAmount >= 0 && data.fixedDepositAmount <= 10000000 &&
+        (!('deposit_fixed' in data.enabledModes) || data.fixedDepositAmount > 0) &&
+        data.balanceDue in ['at-clinic', 'before-appointment'] &&
+        data.holdMinutes is int && data.holdMinutes >= 5 && data.holdMinutes <= 30 &&
+        data.approvalRequired is bool;
+    }
+    function validStoredBookingSettings(data) {
+      return data.keys().hasAll(['address', 'payment', 'updatedAt']) &&
+        data.keys().hasOnly(['address', 'payment', 'updatedAt']) &&
+        data.address is string && data.address.size() > 0 && data.address.size() <= 500 &&
+        validPaymentSettings(data.payment) &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
 
     match /services/{id} {
       allow get, list: if isAdmin() || (resource.data.active == true && resource.data.archived == false);
@@ -341,6 +389,20 @@ service cloud.firestore {
       allow create: if isAdmin() && validPrivateReason(request.resource.data, id) && validCreateTimestamps(request.resource.data);
       allow update: if isAdmin() && validPrivateReason(request.resource.data, id) && validUpdateTimestamps(request.resource.data);
       allow delete: if isAdmin();
+    }
+    match /businessSettings/{id} {
+      allow get: if isAdmin() && id == 'booking';
+      allow list: if false;
+      allow create, update: if isAdmin() && id == 'booking' &&
+        validStoredBookingSettings(request.resource.data);
+      allow delete: if false;
+    }
+    match /publicBookingSettings/{id} {
+      allow get: if id == 'current';
+      allow list: if false;
+      allow create, update: if isAdmin() && id == 'current' &&
+        validStoredBookingSettings(request.resource.data);
+      allow delete: if false;
     }
     match /leads/{id} {
       allow create: if request.resource.data.keys().hasOnly(['id', 'email', 'consent', 'createdAt', 'utm']) &&

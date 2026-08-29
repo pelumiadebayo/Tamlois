@@ -49,7 +49,10 @@ import {
 } from "../lib/adminAuthorization";
 import { appRepositories } from "../repositories/app";
 import { bookingConfigurationRepositories } from "../repositories/bookingConfigurationRepository";
-import { availabilityRepository } from "../repositories/availabilityRepository";
+import {
+  AvailabilityBlockConflictError,
+  availabilityRepository,
+} from "../repositories/availabilityRepository";
 import { shopifyEnabled } from "../lib/adapters";
 import type {
   BlockedPeriod,
@@ -1769,7 +1772,10 @@ export function AdminAvailabilityPage() {
           ? String(error.code)
           : "";
       setBlockError(
-        code === "permission-denied"
+        error instanceof AvailabilityBlockConflictError ||
+          code === "block-overlap"
+          ? "This time overlaps an existing block. Remove the existing block before adding a replacement."
+          : code === "permission-denied"
           ? "Firebase rejected this block. Deploy the current Firestore Rules and confirm you are signed in with the authorised owner account."
           : code === "unauthenticated"
             ? "Your administrator session has expired. Sign in again, then retry the block."
@@ -1909,6 +1915,8 @@ export function AdminSettingsPage() {
   const [policies, setPolicies] = useState<BookingPolicy[]>([]);
   const [policiesLoading, setPoliciesLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
   const [policyForm, setPolicyForm] = useState({ title: "", summary: "" });
   const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
   const [policyBusy, setPolicyBusy] = useState(false);
@@ -1949,14 +1957,112 @@ export function AdminSettingsPage() {
   const setPayment = <K extends keyof BusinessSettings["payment"]>(
     key: K,
     value: BusinessSettings["payment"][K],
-  ) =>
+  ) => {
+    setSaved(false);
+    setSettingsError("");
     setSettings((current) => ({
       ...current,
       payment: { ...current.payment, [key]: value },
     }));
+  };
+  function setDefaultPaymentMode(
+    mode: BusinessSettings["payment"]["defaultMode"],
+  ) {
+    setSaved(false);
+    setSettingsError("");
+    setSettings((current) => ({
+      ...current,
+      payment: {
+        ...current.payment,
+        defaultMode: mode,
+        enabledModes:
+          mode === "disabled" || current.payment.enabledModes.includes(mode)
+            ? current.payment.enabledModes
+            : [...current.payment.enabledModes, mode],
+      },
+    }));
+  }
+  function togglePaymentMode(
+    mode: Exclude<BusinessSettings["payment"]["defaultMode"], "disabled">,
+    enabled: boolean,
+  ) {
+    setSaved(false);
+    setSettingsError("");
+    setSettings((current) => {
+      const enabledModes = enabled
+        ? [...new Set([...current.payment.enabledModes, mode])]
+        : current.payment.enabledModes.filter((item) => item !== mode);
+      return {
+        ...current,
+        payment: {
+          ...current.payment,
+          enabledModes,
+          defaultMode:
+            !enabled && current.payment.defaultMode === mode
+              ? (enabledModes[0] ?? "disabled")
+              : current.payment.defaultMode,
+        },
+      };
+    });
+  }
   async function saveBookingSettings() {
-    await availabilityRepository.saveSettings(settings);
-    setSaved(true);
+    if (savingSettings) return;
+    const payment = settings.payment;
+    if (payment.enabledModes.length === 0) {
+      setSettingsError("Enable at least one payment choice before saving.");
+      return;
+    }
+    if (
+      payment.defaultMode !== "disabled" &&
+      !payment.enabledModes.includes(payment.defaultMode)
+    ) {
+      setSettingsError("Enable the selected default payment choice before saving.");
+      return;
+    }
+    if (
+      payment.enabledModes.includes("deposit_fixed") &&
+      (!Number.isInteger(payment.fixedDepositAmount) ||
+        payment.fixedDepositAmount <= 0 ||
+        payment.fixedDepositAmount > 10000000)
+    ) {
+      setSettingsError("Enter a fixed deposit amount greater than zero.");
+      return;
+    }
+    if (
+      !Number.isInteger(payment.depositPercentage) ||
+      payment.depositPercentage < 1 ||
+      payment.depositPercentage > 100
+    ) {
+      setSettingsError("Deposit percentage must be a whole number from 1 to 100.");
+      return;
+    }
+    if (
+      !Number.isInteger(payment.holdMinutes) ||
+      payment.holdMinutes < 5 ||
+      payment.holdMinutes > 30
+    ) {
+      setSettingsError("Slot hold must be a whole number from 5 to 30 minutes.");
+      return;
+    }
+    setSavingSettings(true);
+    setSettingsError("");
+    setSaved(false);
+    try {
+      await availabilityRepository.saveSettings(settings);
+      setSaved(true);
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? String(error.code)
+          : "";
+      setSettingsError(
+        code === "permission-denied"
+          ? "Firebase rejected these settings. Deploy the current Firestore Rules and confirm you are signed in with the authorised owner account."
+          : "Payment and hold settings could not be saved. Check your connection and try again.",
+      );
+    } finally {
+      setSavingSettings(false);
+    }
   }
   function resetPolicyForm() {
     setEditingPolicyId(null);
@@ -2110,8 +2216,8 @@ export function AdminSettingsPage() {
             Payment and hold settings
           </h2>
           <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-            Demo supports full, percentage deposit and pay-at-clinic. Live
-            Paystack must initialise and verify through a secure backend.
+            These values are saved to Firebase and reused after refresh. Online
+            collection still requires a verified payment backend.
           </p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <div className="field">
@@ -2119,8 +2225,7 @@ export function AdminSettingsPage() {
               <select
                 value={settings.payment.defaultMode}
                 onChange={(e) =>
-                  setPayment(
-                    "defaultMode",
+                  setDefaultPaymentMode(
                     e.target
                       .value as BusinessSettings["payment"]["defaultMode"],
                   )
@@ -2137,7 +2242,7 @@ export function AdminSettingsPage() {
               <label>Deposit percentage</label>
               <input
                 type="number"
-                min="0"
+                min="1"
                 max="100"
                 value={settings.payment.depositPercentage}
                 onChange={(e) =>
@@ -2149,7 +2254,9 @@ export function AdminSettingsPage() {
               <label>Fixed deposit (NGN)</label>
               <input
                 type="number"
-                min="0"
+                min="1"
+                max="10000000"
+                step="500"
                 value={settings.payment.fixedDepositAmount}
                 onChange={(e) =>
                   setPayment("fixedDepositAmount", Number(e.target.value))
@@ -2215,14 +2322,7 @@ export function AdminSettingsPage() {
                       type="checkbox"
                       checked={settings.payment.enabledModes.includes(mode)}
                       onChange={(e) =>
-                        setPayment(
-                          "enabledModes",
-                          e.target.checked
-                            ? [...settings.payment.enabledModes, mode]
-                            : settings.payment.enabledModes.filter(
-                                (item) => item !== mode,
-                              ),
-                        )
+                        togglePaymentMode(mode, e.target.checked)
                       }
                     />
                     {label}
@@ -2470,9 +2570,19 @@ export function AdminSettingsPage() {
           </div>
         </div>
       )}
-      <button className="btn btn-primary mt-6" onClick={saveBookingSettings}>
-        Save payment settings
+      <button
+        className="btn btn-primary mt-6"
+        disabled={savingSettings}
+        type="button"
+        onClick={saveBookingSettings}
+      >
+        {savingSettings ? "Saving settings…" : "Save payment settings"}
       </button>
+      {settingsError && (
+        <p className="field-error mt-3" role="alert">
+          {settingsError}
+        </p>
+      )}
       {saved && (
         <p
           className="mt-3 text-sm font-bold text-[var(--forest-700)]"

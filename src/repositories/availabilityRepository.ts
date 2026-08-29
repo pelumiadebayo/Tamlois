@@ -1,9 +1,10 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
+  runTransaction,
   serverTimestamp,
-  setDoc,
   writeBatch,
 } from "firebase/firestore";
 import { BUSINESS_SCHEDULE } from "../config/businessSchedule";
@@ -15,6 +16,17 @@ import { recordAdminAudit } from "./auditRepository";
 
 const SETTINGS_KEY = "tamlois-booking-settings";
 const BLOCKS_KEY = "tamlois-blocks";
+
+export class AvailabilityBlockConflictError extends Error {
+  readonly code = "block-overlap";
+
+  constructor() {
+    super(
+      "This time overlaps an existing block. Remove the existing block before adding a replacement.",
+    );
+    this.name = "AvailabilityBlockConflictError";
+  }
+}
 
 const mergeSettings = (value: Partial<BusinessSettings>): BusinessSettings => ({
   ...defaultSettings,
@@ -51,9 +63,10 @@ async function recordAvailabilityAudit(
 export const availabilityRepository = {
   async getPublic(): Promise<BusinessSettings> {
     if (!firebaseEnabled || !db) return localSettings();
-    // Anonymous clients receive only the static schedule. Dated exceptions are
-    // applied by the privileged availability API, which keeps reasons private.
-    return defaultSettings;
+    const snapshot = await getDoc(doc(db, "publicBookingSettings", "current"));
+    return snapshot.exists()
+      ? mergeSettings(snapshot.data() as Partial<BusinessSettings>)
+      : defaultSettings;
   },
   async getAdmin(): Promise<{
     settings: BusinessSettings;
@@ -63,9 +76,10 @@ export const availabilityRepository = {
       const settings = localSettings();
       return { settings, blocks: settings.blockedPeriods };
     }
-    const [blocksSnapshot, detailsSnapshot] = await Promise.all([
+    const [blocksSnapshot, detailsSnapshot, settingsSnapshot] = await Promise.all([
       getDocs(collection(db, "blockedPeriods")),
       getDocs(collection(db, "blockedPeriodDetails")),
+      getDoc(doc(db, "businessSettings", "booking")),
     ]);
     const details = new Map(
       detailsSnapshot.docs.map((item) => [item.id, item.data()]),
@@ -99,7 +113,14 @@ export const availabilityRepository = {
       `${a.date}${a.start ?? ""}`.localeCompare(`${b.date}${b.start ?? ""}`),
     );
     return {
-      settings: { ...defaultSettings, blockedPeriods: blocks },
+      settings: {
+        ...mergeSettings(
+          settingsSnapshot.exists()
+            ? (settingsSnapshot.data() as Partial<BusinessSettings>)
+            : {},
+        ),
+        blockedPeriods: blocks,
+      },
       blocks,
     };
   },
@@ -111,8 +132,22 @@ export const availabilityRepository = {
       );
       return;
     }
-    // The normal schedule is intentionally source-controlled. Only dated
-    // exceptions are written to Firestore.
+    const payload = {
+      address: settings.address,
+      payment: settings.payment,
+      updatedAt: serverTimestamp(),
+    };
+    const batch = writeBatch(db);
+    batch.set(doc(db, "businessSettings", "booking"), payload, { merge: true });
+    batch.set(doc(db, "publicBookingSettings", "current"), payload, {
+      merge: true,
+    });
+    await batch.commit();
+    await recordAvailabilityAudit(
+      "booking-settings.updated",
+      "businessSettings",
+      "booking",
+    );
   },
   async addBlock(block: BlockedPeriod, settings: BusinessSettings) {
     const next = [...settings.blockedPeriods, block];
@@ -125,30 +160,42 @@ export const availabilityRepository = {
         block.start ?? BUSINESS_SCHEDULE.openingTime,
         block.end ?? BUSINESS_SCHEDULE.closingTime,
       );
-      const batch = writeBatch(db);
-      unitIds.forEach((unitId) =>
-        batch.set(doc(db!, "blockedPeriods", unitId), {
-          id: unitId,
+      const unitReferences = unitIds.map((unitId) =>
+        doc(db!, "blockedPeriods", unitId),
+      );
+      await runTransaction(db, async (transaction) => {
+        const existingUnits = await Promise.all(
+          unitReferences.map((reference) => transaction.get(reference)),
+        );
+        if (existingUnits.some((snapshot) => snapshot.exists()))
+          throw new AvailabilityBlockConflictError();
+
+        unitReferences.forEach((reference, index) => {
+          const unitId = unitIds[index];
+          transaction.set(reference, {
+            id: unitId,
+            date: block.date,
+            unitTime: unitId.slice(-5),
+            groupId: block.id,
+            kind,
+            ...(kind === "all-day"
+              ? { publicReason: block.reason.trim() }
+              : {}),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        });
+        transaction.set(doc(db!, "blockedPeriodDetails", block.id), {
+          id: block.id,
           date: block.date,
-          unitTime: unitId.slice(-5),
-          groupId: block.id,
+          ...(block.start ? { start: block.start, end: block.end } : {}),
+          reason: block.reason,
           kind,
-          ...(kind === "all-day" ? { publicReason: block.reason.trim() } : {}),
+          adminUid: auth?.currentUser?.uid ?? "",
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-        }),
-      );
-      batch.set(doc(db, "blockedPeriodDetails", block.id), {
-        id: block.id,
-        date: block.date,
-        ...(block.start ? { start: block.start, end: block.end } : {}),
-        reason: block.reason,
-        kind,
-        adminUid: auth?.currentUser?.uid ?? "",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        });
       });
-      await batch.commit();
       await recordAvailabilityAudit(
         "availability.blocked",
         "blockedPeriods",

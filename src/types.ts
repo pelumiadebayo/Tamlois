@@ -423,6 +423,7 @@ export interface CreateBookingInput {
   intakeResponses: Booking["intakeResponses"];
   policyConsentRecord: PolicyConsentRecord;
   addressSnapshot: string;
+  approvalRequired: boolean;
 }
 
 export interface RescheduleBookingInput {

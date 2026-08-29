@@ -65,6 +65,7 @@ describe("Firestore booking transactions", () => {
       const booking = await repository.createBooking(
         input(salonService, `salon-${index}`, `TAM-SALON-000${index}`, "09:00"),
       );
+      expect(booking.status).toBe("pending-confirmation");
       expect(booking.lockIds).toEqual([
         `${booking.date}_morning_seat-${index}`,
       ]);
@@ -164,6 +165,20 @@ describe("Firestore booking transactions", () => {
     ).rejects.toMatchObject({ code: "POLICY_CHANGED" });
     expect(await documentExists("bookings", "stale-policy")).toBe(false);
   });
+
+  it("confirms a booking immediately when clinic approval is disabled", async () => {
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), "publicBookingSettings", "current"),
+        publicSettings(false),
+      );
+    });
+    const customer = customerRepository("auto-confirm-customer");
+    const booking = await customer.repository.createBooking(
+      input(salonService, "auto-confirm", "TAM-AUTO-0001", "09:00"),
+    );
+    expect(booking.status).toBe("confirmed");
+  });
 });
 
 async function documentExists(collectionName: string, id: string) {
@@ -223,6 +238,23 @@ function input(
       ],
     },
     addressSnapshot: "Tamlois clinic",
+    approvalRequired: true,
+  };
+}
+
+function publicSettings(approvalRequired: boolean) {
+  return {
+    address: "Tamlois clinic",
+    payment: {
+      enabledModes: ["clinic"],
+      defaultMode: "clinic",
+      depositPercentage: 50,
+      fixedDepositAmount: 10000,
+      balanceDue: "at-clinic",
+      holdMinutes: 15,
+      approvalRequired,
+    },
+    updatedAt: new Date(),
   };
 }
 

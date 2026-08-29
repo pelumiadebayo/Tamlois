@@ -13,6 +13,7 @@ import {
   getDoc,
   getDocs,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -83,6 +84,55 @@ describe("single-owner authorization and public catalogue", () => {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }),
+    );
+  });
+
+  it("allows the owner to atomically create a block range and its private detail", async () => {
+    const firestore = testEnvironment.authenticatedContext(ownerUid).firestore();
+    const units = ["10-00", "10-30", "11-00"].map((unitTime) => ({
+      unitTime,
+      id: `2026-09-02_${unitTime}`,
+    }));
+    await assertSucceeds(
+      runTransaction(firestore, async (transaction) => {
+        const unitReferences = units.map(({ id }) =>
+          doc(firestore, "blockedPeriods", id),
+        );
+        const snapshots = await Promise.all(
+          unitReferences.map((reference) => transaction.get(reference)),
+        );
+        expect(snapshots.every((snapshot) => !snapshot.exists())).toBe(true);
+        units.forEach(({ id, unitTime }, index) => {
+          transaction.set(unitReferences[index], {
+            id,
+            date: "2026-09-02",
+            unitTime,
+            groupId: "staff-meeting",
+            kind: "time-range",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        });
+        transaction.set(
+          doc(firestore, "blockedPeriodDetails", "staff-meeting"),
+          {
+            id: "staff-meeting",
+            date: "2026-09-02",
+            start: "10:15",
+            end: "11:15",
+            reason: "Staff meeting",
+            kind: "time-range",
+            adminUid: ownerUid,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          },
+        );
+      }),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(firestore, "blockedPeriodDetails", "staff-meeting"),
+      ),
     );
   });
 
@@ -194,6 +244,92 @@ describe("single-owner authorization and public catalogue", () => {
   });
 });
 
+describe("persisted payment and hold settings", () => {
+  it("lets the owner atomically save the private and public settings documents", async () => {
+    const firestore = testEnvironment.authenticatedContext(ownerUid).firestore();
+    const batch = writeBatch(firestore);
+    batch.set(
+      doc(firestore, "businessSettings", "booking"),
+      bookingSettingsRecord(),
+    );
+    batch.set(
+      doc(firestore, "publicBookingSettings", "current"),
+      bookingSettingsRecord(),
+    );
+    await assertSucceeds(batch.commit());
+
+    const privateSettings = await assertSucceeds(
+      getDoc(doc(firestore, "businessSettings", "booking")),
+    );
+    expect(privateSettings.data()?.payment.fixedDepositAmount).toBe(12500);
+  });
+
+  it("allows a direct public read but denies private and collection-list reads", async () => {
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), "publicBookingSettings", "current"),
+        bookingSettingsRecord(false),
+      );
+      await setDoc(
+        doc(context.firestore(), "businessSettings", "booking"),
+        bookingSettingsRecord(false),
+      );
+    });
+    const visitor = testEnvironment.unauthenticatedContext().firestore();
+    await assertSucceeds(
+      getDoc(doc(visitor, "publicBookingSettings", "current")),
+    );
+    await assertFails(
+      getDocs(collection(visitor, "publicBookingSettings")),
+    );
+    await assertFails(
+      getDoc(doc(visitor, "businessSettings", "booking")),
+    );
+  });
+
+  it("denies settings writes from an ordinary authenticated account", async () => {
+    const ordinary = testEnvironment
+      .authenticatedContext("ordinary-authenticated-user")
+      .firestore();
+    await assertFails(
+      setDoc(
+        doc(ordinary, "publicBookingSettings", "current"),
+        bookingSettingsRecord(),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(ordinary, "businessSettings", "booking"),
+        bookingSettingsRecord(),
+      ),
+    );
+  });
+
+  it("rejects invalid fixed deposits, duplicate modes and schema pollution", async () => {
+    const owner = testEnvironment.authenticatedContext(ownerUid).firestore();
+    await assertFails(
+      setDoc(
+        doc(owner, "businessSettings", "booking"),
+        bookingSettingsRecord(true, { fixedDepositAmount: -1 }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(owner, "businessSettings", "booking"),
+        bookingSettingsRecord(true, {
+          enabledModes: ["clinic", "clinic"],
+        }),
+      ),
+    );
+    await assertFails(
+      setDoc(doc(owner, "businessSettings", "booking"), {
+        ...bookingSettingsRecord(),
+        unexpected: "not allowed",
+      }),
+    );
+  });
+});
+
 describe("public booking policies and owner management", () => {
   it("lets signed-out visitors read every existing policy", async () => {
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
@@ -275,6 +411,24 @@ describe("anonymous booking ownership and locks", () => {
     const firestore = anonymous("customer-a");
     await assertSucceeds(createSalonBooking(firestore, "customer-a"));
     await assertSucceeds(getDoc(doc(firestore, "bookings", "booking-a")));
+  });
+
+  it("allows only the initial status required by the clinic approval setting", async () => {
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), "publicBookingSettings", "current"),
+        bookingSettingsRecord(false, { approvalRequired: false }),
+      );
+    });
+    const firestore = anonymous("customer-a");
+    await assertFails(createSalonBooking(firestore, "customer-a"));
+    await assertSucceeds(
+      createSalonBooking(firestore, "customer-a", { status: "confirmed" }),
+    );
+    const booking = await assertSucceeds(
+      getDoc(doc(firestore, "bookings", "booking-a")),
+    );
+    expect(booking.data()?.status).toBe("confirmed");
   });
 
   it("does not allow anonymous users to list bookings", async () => {
@@ -495,6 +649,33 @@ function serviceRecord(id = "salon-service", active = true) {
     placeholder: false,
     createdAt: new Date("2026-08-28T09:00:00Z"),
     updatedAt: new Date("2026-08-28T09:00:00Z"),
+  };
+}
+
+function bookingSettingsRecord(
+  useServerTimestamp = true,
+  paymentOverrides: Record<string, unknown> = {},
+) {
+  return {
+    address: "16, Road 21, Gowon Estate, Lagos, Nigeria",
+    payment: {
+      enabledModes: [
+        "full",
+        "deposit_percentage",
+        "deposit_fixed",
+        "clinic",
+      ],
+      defaultMode: "deposit_fixed",
+      depositPercentage: 50,
+      fixedDepositAmount: 12500,
+      balanceDue: "at-clinic",
+      holdMinutes: 15,
+      approvalRequired: true,
+      ...paymentOverrides,
+    },
+    updatedAt: useServerTimestamp
+      ? serverTimestamp()
+      : new Date("2026-08-29T09:00:00Z"),
   };
 }
 

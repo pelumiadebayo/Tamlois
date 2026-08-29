@@ -43,6 +43,60 @@ export function resolveSalonCalendarDayAvailability(
   };
 }
 
+export interface SalonMonthSessionCapacity {
+  capacity: number;
+  occupied: number;
+  blocked: boolean;
+  meetsNotice: boolean;
+}
+
+/**
+ * Keeps capacity states distinct from schedule states. In particular, a date
+ * is only "booked" when every configured Salon place is occupied. A date that
+ * still has places but has passed the booking-notice window is unavailable,
+ * not booked.
+ */
+export function resolveSalonMonthDayAvailability(
+  bookableDate: boolean,
+  sessions: readonly SalonMonthSessionCapacity[],
+  fullDayReason?: string,
+  fullDayBlocked = false,
+): SalonMonthAvailabilityDay {
+  if (fullDayBlocked || fullDayReason?.trim())
+    return resolveSalonCalendarDayAvailability(
+      bookableDate,
+      0,
+      fullDayReason,
+      fullDayBlocked,
+    );
+
+  if (!bookableDate)
+    return resolveSalonCalendarDayAvailability(false, 0);
+
+  const totalCapacity = sessions.reduce(
+    (sum, session) => sum + Math.max(0, session.capacity),
+    0,
+  );
+  const totalRemaining = sessions.reduce(
+    (sum, session) =>
+      sum + Math.max(0, session.capacity - session.occupied),
+    0,
+  );
+
+  if (totalCapacity > 0 && totalRemaining === 0)
+    return resolveSalonCalendarDayAvailability(true, 0);
+
+  const selectableRemaining = sessions.reduce((sum, session) => {
+    if (session.blocked || !session.meetsNotice) return sum;
+    return sum + Math.max(0, session.capacity - session.occupied);
+  }, 0);
+
+  if (selectableRemaining === 0)
+    return resolveSalonCalendarDayAvailability(false, 0);
+
+  return resolveSalonCalendarDayAvailability(true, selectableRemaining);
+}
+
 export const defaultSettings: BusinessSettings = {
   timezone: BUSINESS_SCHEDULE.timezone,
   address: "16, Road 21, Gowon Estate, Lagos, Nigeria",
@@ -55,7 +109,7 @@ export const defaultSettings: BusinessSettings = {
   closedDays: [0],
   blockedPeriods: [],
   payment: {
-    enabledModes: ["full", "deposit_percentage", "clinic"],
+    enabledModes: ["full", "deposit_percentage", "deposit_fixed", "clinic"],
     defaultMode:
       (import.meta.env
         .VITE_DEFAULT_PAYMENT_MODE as BusinessSettings["payment"]["defaultMode"]) ||

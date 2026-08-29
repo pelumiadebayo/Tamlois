@@ -46,11 +46,13 @@ import {
   bookingSchema,
   calculateBookingTotals,
   compatibleExtras,
+  configuredPaymentModes,
   currency,
   isPolicyConsentCurrent,
   policyBundleVersion,
   policyConsentSnapshots,
   resolveExtraSelection,
+  resolveConfiguredPaymentMode,
   sanitizeIntakeResponses,
   validateImageFile,
   type BookingFormData,
@@ -99,7 +101,6 @@ const steps = [
 ] as const;
 const PHOTO_UPLOADS_ENABLED =
   import.meta.env.VITE_ENABLE_CLIENT_PHOTO_UPLOADS === "true";
-const PAYSTACK_ENABLED = import.meta.env.VITE_ENABLE_PAYSTACK === "true";
 type LiveAvailabilityStatus = "idle" | "loading" | "ready" | "error";
 const AVAILABILITY_UNAVAILABLE_MESSAGE =
   "Live availability could not be verified from Firestore. Please retry.";
@@ -1723,9 +1724,8 @@ function PaymentStep({
     mode,
     settings.payment,
   );
-  const modes: PaymentMode[] = firebaseEnabled
-    ? ["clinic"]
-    : settings.payment.enabledModes.filter((item) => item !== "disabled");
+  const modes = configuredPaymentModes(settings.payment);
+  const onlinePaymentUnavailable = firebaseEnabled && mode !== "clinic";
   const labels: Record<PaymentMode, string> = {
     full: "Pay in full",
     deposit_percentage: `${settings.payment.depositPercentage}% deposit`,
@@ -1737,7 +1737,8 @@ function PaymentStep({
     <div>
       <h2 className="booking-title">Choose how to pay</h2>
       <p className="booking-copy">
-        No online payment is taken. Availability is checked again atomically when you confirm.
+        These choices reflect the clinic&apos;s current payment settings.
+        Availability is checked again when you confirm.
       </p>
       {settings.payment.defaultMode === "disabled" || modes.length === 0 ? (
         <Notice tone="error">
@@ -1763,6 +1764,15 @@ function PaymentStep({
               </label>
             ))}
           </div>
+          {onlinePaymentUnavailable && (
+            <div className="mt-5">
+              <Notice tone="warm">
+                This payment choice is configured, but secure online payment is
+                temporarily unavailable while Paystack processing is paused.
+                Choose Pay at clinic if that option is available.
+              </Notice>
+            </div>
+          )}
           <div className="mt-7 rounded-[14px] bg-[var(--forest-950)] p-6 text-white">
             <dl className="grid gap-3 text-sm">
               <div className="flex justify-between">
@@ -1796,8 +1806,10 @@ function PaymentStep({
           {["initialised", "processing"].includes(state) && (
             <p className="mt-5 font-bold" role="status">
               {state === "initialised"
-                ? "Initialising secure payment…"
-                : "Processing demo payment…"}
+                ? "Initialising payment…"
+                : mode === "clinic"
+                  ? "Confirming booking…"
+                  : "Processing demo payment…"}
             </p>
           )}
           <div className="mt-6 flex flex-wrap gap-3">
@@ -1813,16 +1825,18 @@ function PaymentStep({
             ) : (
               <button
                 className="btn btn-primary"
-                disabled={state === "processing"}
+                disabled={state === "processing" || onlinePaymentUnavailable}
                 type="button"
                 onClick={() => onPay(false)}
               >
-                {state === "failed"
-                  ? "Retry payment"
-                  : `Pay ${currency(totals.amountDueNow)}`}
+                {onlinePaymentUnavailable
+                  ? "Online payment unavailable"
+                  : state === "failed"
+                    ? "Retry payment"
+                    : `Pay ${currency(totals.amountDueNow)}`}
               </button>
             )}
-            {!PAYSTACK_ENABLED && mode !== "clinic" && (
+            {!firebaseEnabled && mode !== "clinic" && (
               <button
                 className="btn btn-secondary"
                 type="button"
@@ -1833,10 +1847,10 @@ function PaymentStep({
             )}
           </div>
           <p className="mt-4 text-xs leading-5 text-[var(--muted)]">
-            {PAYSTACK_ENABLED
-              ? "Real payment requires trusted server-side Paystack verification and is currently disabled."
-              : mode === "clinic"
-                ? "Pay at the clinic. No card details are collected."
+            {mode === "clinic"
+              ? "Pay at the clinic. No card details are collected."
+              : onlinePaymentUnavailable
+                ? "No payment will be collected or recorded until secure online processing is restored."
                 : "Demo payment. No card details or real money are collected."}
           </p>
         </>
@@ -1900,9 +1914,10 @@ export default function BookingPage() {
   const selectedExtras = extrasCatalog.filter((extra) =>
     draft.extraIds.includes(extra.id),
   );
-  const paymentMode = firebaseEnabled
-    ? "clinic"
-    : draft.paymentMode || settings.payment.defaultMode;
+  const paymentMode = resolveConfiguredPaymentMode(
+    settings.payment,
+    draft.paymentMode,
+  );
   const details = { ...emptyDetails, ...draft.details } as BookingFormData;
 
   const updateDraft = (patch: Partial<BookingDraft>) =>
@@ -2227,6 +2242,7 @@ export default function BookingPage() {
         intakeResponses: draft.intakeResponses,
         policyConsentRecord: draft.policyConsent,
         addressSnapshot: settings.address,
+        approvalRequired: settings.payment.approvalRequired,
       });
       if (!firebaseEnabled)
         localStorage.setItem(

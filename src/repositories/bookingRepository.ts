@@ -76,7 +76,7 @@ class DemoBookingRepository implements BookingRepositoryContract {
       policyConsentRecord: input.policyConsentRecord,
       paymentMode: "clinic",
       paymentStatus: "not-required",
-      status: "pending-confirmation",
+      status: input.approvalRequired ? "pending-confirmation" : "confirmed",
       internalNotes: "",
       createdAt: new Date().toISOString(),
       followUpDue: false,
@@ -134,4 +134,3 @@ export const bookingOperationsRepository: BookingRepositoryContract =
   firebaseEnabled && db
     ? new FirebaseBookingRepository(db)
     : new DemoBookingRepository();
-

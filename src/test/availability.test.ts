@@ -4,6 +4,7 @@ import {
   defaultSettings,
   getSalonSessionAvailability,
   resolveSalonCalendarDayAvailability,
+  resolveSalonMonthDayAvailability,
 } from '../lib/availability';
 import type { Booking } from '../types';
 
@@ -14,6 +15,10 @@ const booking: Booking = {
 };
 
 describe('availability calculation', () => {
+  it('includes fixed deposit in the default enabled payment choices', () => {
+    expect(defaultSettings.payment.enabledModes).toContain('deposit_fixed');
+  });
+
   it('closes Sunday', () => expect(getAvailableSlots(new Date(2026, 7, 23), 60, defaultSettings, [], new Date(2026, 7, 20))).toEqual([]));
   it('closes a fully blocked date', () => expect(getAvailableSlots(monday, 60, { ...defaultSettings, blockedPeriods: [{ id: 'x', date: '2026-08-24', reason: 'Closed' }] }, [], now)).toEqual([]));
   it('removes overlapping partial blocks', () => {
@@ -80,6 +85,40 @@ describe('salon session capacity', () => {
 });
 
 describe('salon calendar day states', () => {
+  const openSessions = [
+    { capacity: 3, occupied: 0, blocked: false, meetsNotice: true },
+    { capacity: 3, occupied: 0, blocked: false, meetsNotice: true },
+    { capacity: 3, occupied: 0, blocked: false, meetsNotice: true },
+  ];
+
+  it('keeps a date available when only one Salon place is booked', () => {
+    expect(
+      resolveSalonMonthDayAvailability(true, [
+        { ...openSessions[0], occupied: 1 },
+        openSessions[1],
+        openSessions[2],
+      ]),
+    ).toEqual({ remaining: 8, status: 'available' });
+  });
+
+  it('does not call remaining same-day capacity booked after the notice window', () => {
+    expect(
+      resolveSalonMonthDayAvailability(
+        true,
+        openSessions.map((session) => ({ ...session, meetsNotice: false })),
+      ),
+    ).toEqual({ remaining: 0, status: 'unavailable' });
+  });
+
+  it('labels a date booked only when all configured places are occupied', () => {
+    expect(
+      resolveSalonMonthDayAvailability(
+        true,
+        openSessions.map((session) => ({ ...session, occupied: 3 })),
+      ),
+    ).toEqual({ remaining: 0, status: 'booked' });
+  });
+
   it('labels an open date with no remaining capacity as booked', () => {
     expect(resolveSalonCalendarDayAvailability(true, 0)).toEqual({
       remaining: 0,

@@ -225,6 +225,17 @@ async function verifyCurrentPolicies(
     );
 }
 
+async function clinicApprovalRequired(
+  transaction: Transaction,
+  firestore: Firestore,
+) {
+  const snapshot = await transaction.get(
+    doc(firestore, "publicBookingSettings", "current"),
+  );
+  if (!snapshot.exists()) return true;
+  return snapshot.data().payment?.approvalRequired !== false;
+}
+
 function makeAudit(
   transaction: Transaction,
   firestore: Firestore,
@@ -416,6 +427,10 @@ export class FirebaseBookingRepository implements BookingRepositoryContract {
           this.firestore,
           input.policyConsentRecord.policies,
         );
+        const approvalRequired = await clinicApprovalRequired(
+          transaction,
+          this.firestore,
+        );
         const resolved = await resolveBooking(transaction, this.firestore, input);
         const operational = await readOperationalState(
           transaction,
@@ -473,7 +488,7 @@ export class FirebaseBookingRepository implements BookingRepositoryContract {
           policyConsent: true,
           policyConsentRecord: input.policyConsentRecord,
           intakeResponses: input.intakeResponses,
-          status: "pending-confirmation",
+          status: approvalRequired ? "pending-confirmation" : "confirmed",
           paymentStatus: "not-required",
           followUpDue: false,
           createdAt: serverTimestamp(),

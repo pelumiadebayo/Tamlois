@@ -39,12 +39,16 @@ Firestore stores exceptions, not the normal week.
 - `blockedPeriodDetails/{groupId}`: owner-only complete reason and original range.
 - `capacityOverrides/{date_session}`: non-sensitive capacity 0–3.
 - `capacityOverrideDetails/{id}`: owner-only reason.
+- `businessSettings/booking`: owner-only authoritative address and validated payment/hold configuration.
+- `publicBookingSettings/current`: direct-read-only, non-sensitive mirror consumed by the customer booking route. Owner updates both settings documents atomically.
 - `auditLogs/{id}`: immutable owner actions.
 - `leads` and `enquiries`: constrained public submissions, owner-readable.
 
 Collections appear only after their first write. Production is not seeded. Gallery is not a Firestore collection.
 
 The booking route loads every policy and fails closed when none exist. Acceptance records a bundle version plus an ordered copy of each policy's ID, title, summary and numeric version. Immediately before final submission, the route reloads the policy collection; changed or deleted policies invalidate stale consent and return the customer to policy review. Deleting a policy never traverses or rewrites historical bookings.
+
+Booking creation reads `publicBookingSettings/current` inside the same transaction used for capacity allocation. `approvalRequired: true`, or a missing settings document, produces `pending-confirmation`; an explicit `false` produces `confirmed`. Firestore Rules independently enforce that mapping so an anonymous customer cannot select a more privileged initial status. Existing bookings are not rewritten when the setting changes.
 
 ## Capacity algorithms
 
@@ -62,4 +66,4 @@ The normal application always derives and writes the complete set transactionall
 
 ## Payment and notification boundary
 
-Firebase mode is pay-at-clinic. No Paystack secret, redirect trust or client-side “paid” mutation exists. Real verification and webhooks require a trusted backend. On-screen confirmation works without email; production email also requires a securely configured backend/provider.
+Firebase mode is pay-at-clinic while the Paystack backend is stashed. Payment choices—including fixed deposit—and hold duration still persist in Firestore so they survive refresh and remain compatible with the trusted backend model. No Paystack secret, redirect trust or client-side “paid” mutation exists in this state. Real verification, expiring payment holds and webhooks require the trusted backend. On-screen confirmation works without email; production email also requires a securely configured backend/provider.
