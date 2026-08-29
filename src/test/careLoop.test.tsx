@@ -199,7 +199,7 @@ describe("Tamlois Care Loop", () => {
     );
     expect(galleryImage).toHaveAttribute(
       "src",
-      `${import.meta.env.BASE_URL}gallery-image.jpg`,
+      `${import.meta.env.BASE_URL}gallery/woven-style-765.webp`,
     );
   });
 

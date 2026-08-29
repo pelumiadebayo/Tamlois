@@ -5,6 +5,7 @@ import type {
   IntakeQuestion,
   PaymentMode,
   PaymentSettings,
+  PolicyConsentRecord,
   Service,
   ServiceExtra,
 } from "../types";
@@ -96,15 +97,55 @@ export const currency = (value: number) =>
   }).format(value);
 
 export function policyBundleVersion(policies: BookingPolicy[]) {
-  const source = policies
-    .filter((policy) => policy.active)
-    .sort((a, b) => a.id.localeCompare(b.id))
-    .map((policy) => `${policy.id}@${policy.version}`)
+  const source = [...policies]
+    .sort(
+      (a, b) =>
+        a.displayOrder - b.displayOrder || a.id.localeCompare(b.id),
+    )
+    .map(
+      (policy) =>
+        `${policy.displayOrder}:${policy.id}@${policy.version}:${policy.title}:${policy.summary}`,
+    )
     .join("|");
   let hash = 2166136261;
   for (let index = 0; index < source.length; index += 1)
     hash = Math.imul(hash ^ source.charCodeAt(index), 16777619);
   return `bundle-${(hash >>> 0).toString(36)}`;
+}
+
+export function policyConsentSnapshots(policies: BookingPolicy[]) {
+  return [...policies]
+    .sort(
+      (a, b) =>
+        a.displayOrder - b.displayOrder || a.id.localeCompare(b.id),
+    )
+    .map(({ id, title, summary, version }) => ({
+      id,
+      title,
+      summary,
+      version,
+    }));
+}
+
+export function isPolicyConsentCurrent(
+  policies: BookingPolicy[],
+  consent?: PolicyConsentRecord,
+) {
+  if (!policies.length || !consent?.accepted) return false;
+  const currentSnapshots = policyConsentSnapshots(policies);
+  return (
+    consent.version === policyBundleVersion(policies) &&
+    consent.policies?.length === currentSnapshots.length &&
+    currentSnapshots.every((policy, index) => {
+      const accepted = consent.policies[index];
+      return (
+        accepted?.id === policy.id &&
+        accepted.title === policy.title &&
+        accepted.summary === policy.summary &&
+        accepted.version === policy.version
+      );
+    })
+  );
 }
 
 export function compatibleExtras(serviceId: string, extras: ServiceExtra[]) {

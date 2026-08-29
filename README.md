@@ -1,12 +1,10 @@
 # Tamlois Naturals & Trichology Clinic
 
-A production-oriented React website and appointment application for **Tamlois Natural & More | Tamlois Trichology Clinic**. It includes the public marketing site, concern education, services and packages, a Shopify-ready demo shop, end-to-end booking, a working demo admin area, Firebase integration boundaries, tests, and GitHub Pages deployment.
-
-All prices, durations, policies, testimonials, result stories, contact details and media are explicitly placeholder content until the clinic confirms them.
+A React website, booking application and sole-owner administration area for Tamlois. Prices, policies, contact details and unconfirmed media remain placeholder content until the clinic approves them.
 
 ## Stack
 
-React 19, TypeScript, Vite, Tailwind CSS 4, Firebase modular SDK and Cloud Functions, React Hook Form, Zod, date-fns, Lucide, Vitest, React Testing Library and Playwright.
+React 19, TypeScript, Vite, Tailwind CSS 4, Firebase modular Web SDK, React Hook Form, Zod, date-fns, Lucide, Vitest, React Testing Library and Playwright.
 
 ## Local setup
 
@@ -15,53 +13,46 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints. Hash routing keeps deep links compatible with GitHub Pages.
+Hash routing keeps deep links compatible with GitHub Pages. Demo mode uses browser-local fixtures. Firebase mode never falls back to demo data.
 
-## Demo admin
+## Booking architecture
 
-- Route: `/#/admin/login`
-- Email: `owner@tamlois.demo`
-- Password: `demo1234`
+Policy acknowledgement precedes Category → Service → Schedule → Details → Summary → Payment. Policies are owner-created Firestore records with no seeded, hidden or archived state; booking remains closed until at least one exists. Each booking preserves the accepted policy titles, summaries and versions. Salon and Trichology Care Loop links retain the policy gate and skip the already-known category. Extras remain inside Service.
 
-Demo changes and bookings remain in the current browser's local storage. They are not sent to the real clinic. Public booking is guest-only: there is no customer login, account, cart, promo-code, location or first-time/returning-client step.
+The ordinary schedule is typed source configuration: Africa/Lagos, Monday–Saturday, 09:00–18:00; Sunday closed. Salon has three three-hour sessions with capacity three. Trichology keeps duration-aware start times in 30-minute intervals.
+
+In Firebase mode, an invisible Anonymous Authentication session owns each public booking. Availability reads only non-sensitive deterministic lock and operational-exception documents. Final confirmation runs a Firestore transaction that rechecks the active service, blocks, capacity override and every lock before atomically creating the private booking plus its lock(s). There are no temporary checkout holds and no production seed.
+
+Salon lock IDs are `{date}_{sessionId}_seat-1` through `seat-3`. Trichology locks each required unit as `{date}_{HH-MM}`, including the configured buffer. Cancellation deletes future locks atomically; completion and no-show preserve historical occupancy.
+
+Production Firebase booking is pay-at-clinic only. Real Paystack verification, webhooks and email delivery remain disabled because they require a trusted backend. The browser-only design prevents normal transaction races, but Security Rules cannot mathematically derive every consecutive Trichology lock from service duration; see [Architecture](docs/ARCHITECTURE.md).
+
+## Admin authentication
+
+Firebase Email/Password administration is restricted to the single configured owner UID. There is no public signup or customer-account UI, and another authenticated user is not an administrator. Firestore Rules are authoritative; the matching Vite UID is only routing feedback.
 
 ## Homepage and gallery
 
-The homepage opens the Tamlois Care Loop on Natural Hair Salon and follows the fixed care-path order Salon, Trichology, Products and Gallery. Desktop keeps the full actions in the left editorial column and presents the active offering in a compact translucent card over a full-height image; the card uses a calendar action for bookings, a shopping bag for Products and an outward arrow for Gallery. The Gallery offering uses the bundled woven natural-hair image at `/gallery-image.jpg`. The minimal control row contains only icon-only Pause/Play and next controls—there is no numeric position—and clicking next resumes the 6.5-second desktop loop. Everything remains inside the available viewport. Mobile retains the directly selectable horizontal offering list and is manual by default. Reduced-motion experiences are also manual; keyboard arrows and touch swipe are supported on the mobile selector, and every destination remains available as a semantic fallback link.
-
-The `/gallery` route filters typed image records by Trichology, Natural Hair and Clinic; product records are excluded from the public gallery. All bundled images are visibly labelled licensed placeholders and are not presented as client outcomes. Admin users can manage offering copy/media/CTAs and gallery records while the canonical care-path order stays protected; a genuine client result requires confirmed consent, a non-empty consent reference and non-placeholder media.
-
-## Guest booking flow
-
-Policy acknowledgement precedes a six-step flow: Category → Service → Schedule → Details → Summary → Payment. A generic booking starts at Category; Salon and Trichology links from the Care Loop retain the policy gate but then open directly on the matching Service step because the category is already known. The canonical main services are Scalp analysis, Trichology consultation, Scalp therapy, Hair-loss management, Hair treatments and Natural hair care. Compatible optional extras remain inside Service instead of receiving a separate progress tab; the seeded demo extras update duration and price. The draft survives refresh in the current tab, schedule selection creates a 15-minute demo hold, and the final booking snapshots the chosen service, extras, address, preparation, policy version and payment breakdown. Salon services use a monthly capacity calendar with three shared sessions (morning, afternoon and evening), three spaces per session, combined remaining spaces in each date cell, and an accessible session picker. Trichology remains duration-aware and exposes individually calculated start times. Prices, durations and supporting service details remain visibly marked as demo placeholder content until confirmed by the clinic.
-
-The demo payment provider supports full payment, a 50% deposit, pay-at-clinic, and deterministic failure/retry. It never collects card data. Live Paystack and photo uploads remain off by default. When Firebase mode is enabled, the browser uses the included privileged booking API and cannot write booking or payment records directly.
+The Care Loop starts with Natural Hair Salon, followed by Trichology Care, Products and Gallery. Gallery uses optimized static WebP assets, typed metadata, responsive source sets and Load More. It has no Firebase collection, storage provider or admin editor. Follow [the gallery workflow](docs/GALLERY_WORKFLOW.md).
 
 ## Verification
 
 ```bash
+npm run lint
 npm run test
+npm run test:rules
 npm run test:e2e
 npm run build
-npm --prefix functions run build
 ```
 
-## Configuration status
-
-- Firebase: client adapters, restrictive rules and a deployable booking API are included; project credentials and deployment are not configured in the repository.
-- Authentication: demo session works; Firebase Email/Password and admin-claim checks are implemented and await project credentials.
-- Payments: deterministic mock in demo mode; the included Cloud Function initializes and independently verifies Paystack payments and validates signed webhooks in live mode. `PAYSTACK_SECRET_KEY` is a Firebase secret and never a `VITE_` variable.
-- Notifications: mock only. A server-side email adapter is required.
-- Commerce: complete demo catalogue plus an environment-selected Shopify Storefront collection and cart adapter.
-- Analytics: typed event adapter logs in development. Add the production provider later.
-- Homepage content: local typed defaults plus Firestore-backed `homeOfferings` and `gallery` repositories are included. Seed these collections before switching to Firebase mode.
-- Logo: the source image described in the brief was not included in the accessible attachments. A temporary `T` favicon and text mark are used.
+Java 21 is required for Firestore emulator tests. No Cloud Functions or billing account is required.
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
-- [Design system](docs/DESIGN_SYSTEM.md)
 - [Firebase setup](docs/FIREBASE_SETUP.md)
-- [Shopify setup](docs/SHOPIFY_SETUP.md)
-- [GitHub Pages deployment](docs/GITHUB_PAGES_DEPLOYMENT.md)
 - [Manual setup and handover](docs/MANUAL_SETUP_AND_HANDOVER.md)
+- [Design system](docs/DESIGN_SYSTEM.md)
+- [Gallery workflow](docs/GALLERY_WORKFLOW.md)
+- [GitHub Pages deployment](docs/GITHUB_PAGES_DEPLOYMENT.md)
+- [Shopify setup](docs/SHOPIFY_SETUP.md)

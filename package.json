@@ -6,10 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/generate-sitemap.mjs",
+    "gallery:optimize": "node scripts/optimize-gallery.mjs",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-tamlois-owner-auth \"npm run test:rules:unit\"",
+    "test:rules:unit": "vitest run --config vitest.rules.config.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:firebase": "playwright test --config playwright.firebase.config.ts",
     "lint": "tsc -b --pretty false"
   },
   "dependencies": {
@@ -28,6 +32,7 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
@@ -36,7 +41,9 @@
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.2",
+    "firebase-tools": "^15.28.1",
     "jsdom": "^26.1.0",
+    "sharp": "^0.35.4",
     "typescript": "~5.8.3",
     "vite": "^7.1.3",
     "vitest": "^3.2.4"

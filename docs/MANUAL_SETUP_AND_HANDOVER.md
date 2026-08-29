@@ -28,17 +28,19 @@ This is the launch-blocking checklist. Every value below is absent, illustrative
 3. Copy the public Firebase web configuration values to the matching variables in `.env.example`.
 4. Set `VITE_APP_MODE=firebase`.
 5. Create Firestore and choose the region deliberately.
-6. Enable Email/Password authentication.
-7. Create the owner's account.
-8. Assign the `admin: true` custom claim using trusted Admin SDK code. The browser must never assign claims.
-9. Deploy `firestore.rules` and `firestore.indexes.json`.
-10. Seed `services`, `packages`, the four ordered `homeOfferings`, approved `gallery` records and private `businessSettings` using an Admin SDK process.
+6. Enable Email/Password authentication for the owner and Anonymous Authentication for invisible public booking ownership. There is no customer signup UI.
+7. Create the owner's Email/Password account in Firebase Authentication and copy its User UID.
+8. Set the owner UID in the `ownerUid()` function in `firestore.rules`, and set the same UID as `VITE_FIREBASE_ADMIN_UID` for frontend routing and feedback. Firestore Rules cannot read Vite environment variables; the rules value is authoritative.
+9. Deploy `firestore.rules` and `firestore.indexes.json`. A different authenticated UID remains denied. Anonymous users may create only their own pending booking plus matching non-sensitive locks atomically; they cannot list bookings or set admin/payment outcomes.
+10. Do not seed production catalogue data. Start empty and create the first service in the owner admin. Gallery changes are repository changes, not Firebase records.
 11. Register the final domain with App Check, add the site key and test before enforcement.
 12. Add the GitHub Pages and custom domains to authorised domains.
-13. Use the emulator to test denied public booking reads, allowed active-content reads, booking creation and admin writes.
+13. Use the Auth and Firestore emulators to test denied booking lists, cross-customer reads, active catalogue reads, atomic booking/lock creation, admin blocks and owner writes.
 14. Test two simultaneous booking submissions for overlapping durations and confirm one transaction fails.
 
 Firebase's web API key and project identifiers are browser configuration, not database security. Service-account JSON, private keys and Admin SDK credentials are secrets and must stay in a trusted server or CI secret store.
+
+No Cloud Functions, Google Cloud API enablement, Blaze upgrade, billing link or production seed is required for the current booking flow. Collections appear after their first successful write.
 
 ## GitHub Pages
 
@@ -85,20 +87,21 @@ Choose a transactional provider such as Postmark, Resend, SendGrid or an approve
 | Placeholder                                                          | File or collection                                                        | Field/action                                                                                                                                   |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Hero, practitioner, consultation and result images                   | `src/data/content.ts`                                                     | `media.*` URLs and alt text                                                                                                                    |
-| Care Loop offering copy, focal points and CTA destinations           | Admin Content / `homeOfferings`                                           | Replace licensed placeholder media and verify all four destinations; the canonical four-path order is protected                                |
-| Gallery media and captions                                           | Admin Content / `gallery`                                                 | Replace placeholders with clinic-owned media; mark a genuine client result only with documented consent                                        |
+| Care Loop offering copy, focal points and CTA destinations           | `src/data/content.ts`                                                     | Replace licensed placeholder media and verify all four source-controlled destinations                                                          |
+| Gallery media and captions                                           | `assets/gallery-sources`, `public/gallery`, `src/data/gallery.ts`         | Follow `docs/GALLERY_WORKFLOW.md`; never mark a client result without confirmed written consent                                                  |
 | Source logo exports                                                  | missing input, then `public/` and `src/components/Layout.tsx`             | Replace temporary `T` mark and `public/favicon.svg`; produce transparent full logo, icon PNG, favicon and optimised sizes from the real source |
-| Services, prices, durations, packages, clinical copy                 | `src/data/content.ts` then Firestore `services`/`packages`                | Replace every record marked `placeholder: true`                                                                                                |
+| Services, prices, durations, packages, clinical copy                 | Admin Services / Firestore `services`                                     | Create and publish verified production records; demo fixtures are not copied into Firebase                                                      |
 | Service images                                                       | `src/data/content.ts` / admin media integration                           | `image`, `imageAlt`                                                                                                                            |
 | Concern education and referral copy                                  | `src/data/content.ts`                                                     | `concerns` after clinical review                                                                                                               |
 | Products and prices                                                  | `src/data/content.ts` or Shopify                                          | `products` and commerce provider                                                                                                               |
 | Testimonials                                                         | `src/data/content.ts` then `testimonials`                                 | Replace all illustrative records                                                                                                               |
 | Result stories and before/after media                                | `src/pages/ContentPages.tsx` then `results`                               | Add consented stories and capture context                                                                                                      |
 | Address, phone, WhatsApp, email, Instagram, map                      | `src/data/content.ts` and environment variables                           | `contact` object and `VITE_BUSINESS_*`                                                                                                         |
-| FAQ and policy answers                                               | `src/data/content.ts`                                                     | `faqs`                                                                                                                                         |
+| FAQ answers                                                          | `src/data/content.ts`                                                     | `faqs`                                                                                                                                         |
+| Booking policies                                                     | Admin Settings / Firestore `bookingPolicies`                              | Create reviewed title/summary records in the required public order; do not seed production or add active/archive fields                       |
 | Privacy, terms and cancellation                                      | `src/pages/ContentPages.tsx` / Firestore content                          | `LegalPage` content after legal review                                                                                                         |
-| Booking interval, hours, closed days, notice, buffer, advance window | Admin Availability / `businessSettings/public`                            | Confirm clinic rules, then save through admin                                                                                                  |
-| Blocked periods                                                      | Admin Availability / Firestore `blockedPeriods` plus public-safe settings | Add/remove blocks; private reasons stay out of the public settings document                                                                    |
+| Normal schedule                                                      | `src/config/businessSchedule.ts`                                          | Source-controlled Africa/Lagos Monday-Saturday schedule and Salon sessions                                                                      |
+| Blocked periods and capacity changes                                 | Admin Availability / Firestore `blockedPeriods`, `capacityOverrides`     | Add dated exceptions; full-day closure reasons are public on the calendar, while timed-block and capacity-adjustment reasons remain owner-only |
 | Owner biography                                                      | `src/pages/ContentPages.tsx`, `src/pages/Home.tsx`                        | Use only confirmed wording and credentials                                                                                                     |
 | SEO base URL and sitemap                                             | repository variable and `scripts/generate-sitemap.mjs`                    | `SITE_URL`                                                                                                                                     |
 | Robots sitemap URL                                                   | `public/robots.txt`                                                       | Replace placeholder GitHub URL                                                                                                                 |

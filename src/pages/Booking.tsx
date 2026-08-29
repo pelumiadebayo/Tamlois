@@ -24,17 +24,19 @@ import {
   Download,
   ImagePlus,
   Info,
-  LockKeyhole,
   Printer,
   ShieldCheck,
   Users,
   X,
 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { SEO } from "../components/SEO";
 import {
-  bookingMainServiceIds,
-  bookingPolicies,
   intakeQuestions,
   serviceExtras,
 } from "../data/content";
@@ -45,9 +47,9 @@ import {
   calculateBookingTotals,
   compatibleExtras,
   currency,
-  generateBookingReference,
-  generateManagementToken,
+  isPolicyConsentCurrent,
   policyBundleVersion,
+  policyConsentSnapshots,
   resolveExtraSelection,
   sanitizeIntakeResponses,
   validateImageFile,
@@ -60,16 +62,19 @@ import {
   getSalonSessionAvailability,
   salonSessionForTime,
 } from "../lib/availability";
-import { bookingRepository } from "../repositories/localRepository";
 import { publicBookingConfiguration } from "../repositories/bookingConfigurationRepository";
 import { availabilityRepository } from "../repositories/availabilityRepository";
+import { bookingDraftRepository } from "../repositories/bookingSessionRepository";
 import {
-  bookingDraftRepository,
-  bookingHoldRepository,
-} from "../repositories/bookingSessionRepository";
-import { bookingLockIds } from "../repositories/firestoreRepository";
-import { firebaseEnabled } from "../lib/firebase";
-import { HttpBookingGateway } from "../lib/adapters";
+  BookingAuthenticationError,
+  firebaseEnabled,
+} from "../lib/firebase";
+import { firebaseBookingAvailabilityRepository } from "../repositories/bookingAvailabilityRepository";
+import { bookingOperationsRepository } from "../repositories/bookingRepository";
+import {
+  BookingCapacityError,
+} from "../repositories/firebaseBookingRepository";
+import { MAX_BOOKABLE_DURATION_MINUTES } from "../lib/bookingCapacity";
 import type {
   Booking,
   BookingDraft,
@@ -80,6 +85,8 @@ import type {
   Service,
   ServiceCategory,
   ServiceExtra,
+  SalonAvailabilityResult,
+  SalonMonthAvailabilityDay,
 } from "../types";
 
 const steps = [
@@ -90,11 +97,12 @@ const steps = [
   "Summary",
   "Payment",
 ] as const;
-const bookingMainServiceIdSet = new Set<string>(bookingMainServiceIds);
-const policyVersion = bookingPolicies[0].version;
 const PHOTO_UPLOADS_ENABLED =
   import.meta.env.VITE_ENABLE_CLIENT_PHOTO_UPLOADS === "true";
 const PAYSTACK_ENABLED = import.meta.env.VITE_ENABLE_PAYSTACK === "true";
+type LiveAvailabilityStatus = "idle" | "loading" | "ready" | "error";
+const AVAILABILITY_UNAVAILABLE_MESSAGE =
+  "Live availability could not be verified from Firestore. Please retry.";
 const emptyDetails: BookingFormData = {
   fullName: "",
   phone: "",
@@ -131,26 +139,6 @@ function Notice({
   );
 }
 
-function HoldCountdown({
-  seconds,
-  holdMinutes,
-}: {
-  seconds: number;
-  holdMinutes: number;
-}) {
-  return (
-    <Notice tone={seconds < 120 ? "warm" : "info"}>
-      <LockKeyhole size={17} className="inline" /> This time is held for{" "}
-      {holdMinutes} minutes. Remaining:{" "}
-      <strong className="tabular-nums">
-        {String(Math.floor(seconds / 60)).padStart(2, "0")}:
-        {String(seconds % 60).padStart(2, "0")}
-      </strong>
-      .
-    </Notice>
-  );
-}
-
 function PolicyGate({
   policies,
   version,
@@ -165,48 +153,30 @@ function PolicyGate({
     <section className="booking-policy-stage section-space">
       <div className="container-shell grid gap-9 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div>
-          <span className="status placeholder-badge">
-            Placeholder policy · {version}
+          <span className="status">
+            Current booking policies · {policies.length}
           </span>
           <h1 className="page-title mt-6">Before we reserve clinic time</h1>
           <p className="lede mt-5">
-            Please review how appointments, payments, changes and private
-            information are handled. These terms must be confirmed by the clinic
-            before launch.
+            Please review the current appointment policies. You must accept
+            every policy shown here before continuing to service selection.
           </p>
           <div
             className="policy-scroll mt-8 max-h-[520px] overflow-y-auto rounded-[14px] border border-[var(--line)] bg-white px-5 md:px-7"
             tabIndex={0}
             aria-label="Booking policy summaries"
           >
-            {policies
-              .filter((policy) => policy.active)
-              .map((policy) => (
+            {policies.map((policy) => (
                 <article
                   className="border-b border-[var(--line)] py-6 last:border-0"
                   key={policy.id}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <h2 className="font-bold text-[var(--forest-950)]">
-                      {policy.title}
-                    </h2>
-                    {policy.placeholder && (
-                      <span className="status placeholder-badge shrink-0">
-                        Placeholder
-                      </span>
-                    )}
-                  </div>
+                  <h2 className="font-bold text-[var(--forest-950)]">
+                    {policy.title}
+                  </h2>
                   <p className="mt-2 max-w-[70ch] text-sm leading-6 text-[var(--muted)]">
                     {policy.summary}
                   </p>
-                  <details className="mt-3 text-sm">
-                    <summary className="cursor-pointer font-bold text-[var(--forest-800)]">
-                      Read full section
-                    </summary>
-                    <p className="mt-3 leading-6 text-[var(--muted)]">
-                      {policy.fullText}
-                    </p>
-                  </details>
                 </article>
               ))}
           </div>
@@ -240,6 +210,7 @@ function PolicyGate({
                 version,
                 acceptedAt: new Date().toISOString(),
                 sessionId: bookingDraftRepository.load().sessionId,
+                policies: policyConsentSnapshots(policies),
               })
             }
           >
@@ -449,8 +420,8 @@ function ServiceStep({
     .filter(
       (service) =>
         service.active &&
-        service.category === category &&
-        bookingMainServiceIdSet.has(service.id),
+        !service.archived &&
+        service.category === category,
     )
     .sort((a, b) => a.order - b.order);
   return (
@@ -643,6 +614,10 @@ function ScheduleStep({
   time,
   liveSlots,
   liveSalonSessions,
+  liveStatus = "idle",
+  liveError = "",
+  liveRetryable = true,
+  onRetry,
   onDate,
   onTime,
 }: {
@@ -653,7 +628,11 @@ function ScheduleStep({
   date: string;
   time: string;
   liveSlots?: string[] | null;
-  liveSalonSessions?: Array<{ startTime: string; remaining: number }>;
+  liveSalonSessions?: SalonAvailabilityResult["sessions"];
+  liveStatus?: LiveAvailabilityStatus;
+  liveError?: string;
+  liveRetryable?: boolean;
+  onRetry: () => void;
   onDate: (date: string) => void;
   onTime: (time: string) => void;
 }) {
@@ -667,7 +646,10 @@ function ScheduleStep({
         date={date}
         time={time}
         liveSessions={liveSalonSessions}
-        liveLoading={liveSlots === null}
+        liveLoading={liveStatus === "loading"}
+        liveError={liveError}
+        liveRetryable={liveRetryable}
+        onRetry={onRetry}
         onDate={onDate}
         onTime={onTime}
       />
@@ -684,22 +666,7 @@ function ScheduleStep({
             totalDuration,
             settings,
             bookings,
-          ).filter((slot) => {
-            const candidateLocks = bookingLockIds(
-              date,
-              slot,
-              endTime(slot, parseISO(date), totalDuration),
-              settings.bookingInterval,
-              settings.bufferMinutes,
-            );
-            return !bookingHoldRepository
-              .listActive(date)
-              .some(
-                (hold) =>
-                  hold.sessionId !== bookingDraftRepository.load().sessionId &&
-                  hold.lockIds.some((id) => candidateLocks.includes(id)),
-              );
-          })
+          )
         : [];
   return (
     <div>
@@ -749,7 +716,22 @@ function ScheduleStep({
               ? format(parseISO(date), "EEEE, d MMMM")
               : "Select a date first"}
           </h3>
-          {date && liveSlots === null ? (
+          {date && liveError ? (
+            <div className="mt-4">
+              <Notice tone="error">
+                {liveError}{" "}
+                {liveRetryable && (
+                  <button
+                    type="button"
+                    className="font-bold underline underline-offset-4"
+                    onClick={onRetry}
+                  >
+                    Retry
+                  </button>
+                )}
+              </Notice>
+            </div>
+          ) : date && liveSlots === null ? (
             <div
               className="mt-4 rounded-[12px] border border-dashed border-[var(--line)] p-6 text-sm text-[var(--muted)]"
               role="status"
@@ -801,6 +783,9 @@ function SalonScheduleStep({
   time,
   liveSessions,
   liveLoading,
+  liveError,
+  liveRetryable,
+  onRetry,
   onDate,
   onTime,
 }: {
@@ -808,8 +793,11 @@ function SalonScheduleStep({
   bookings: Booking[];
   date: string;
   time: string;
-  liveSessions?: Array<{ startTime: string; remaining: number }>;
+  liveSessions?: SalonAvailabilityResult["sessions"];
   liveLoading: boolean;
+  liveError: string;
+  liveRetryable: boolean;
+  onRetry: () => void;
   onDate: (date: string) => void;
   onTime: (time: string) => void;
 }) {
@@ -822,9 +810,13 @@ function SalonScheduleStep({
     startOfMonth(date ? parseISO(date) : firstBookableDay),
   );
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [monthCapacity, setMonthCapacity] = useState<
+    Record<string, SalonMonthAvailabilityDay> | null
+  >(null);
+  const [monthCapacityError, setMonthCapacityError] = useState("");
+  const [monthCapacityRetryable, setMonthCapacityRetryable] = useState(true);
+  const [monthCapacityAttempt, setMonthCapacityAttempt] = useState(0);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const currentSessionId = bookingDraftRepository.load().sessionId;
-  const activeHolds = bookingHoldRepository.listActive();
   const calendarDays = eachDayOfInterval({
     start: startOfWeek(startOfMonth(visibleMonth)),
     end: endOfWeek(endOfMonth(visibleMonth)),
@@ -834,9 +826,7 @@ function SalonScheduleStep({
         parseISO(date),
         settings,
         bookings,
-        activeHolds,
         new Date(),
-        currentSessionId,
       ).map((session) => {
         const remote = liveSessions?.find(
           (candidate) => candidate.startTime === session.startTime,
@@ -846,7 +836,7 @@ function SalonScheduleStep({
         return {
           ...session,
           remaining,
-          available: session.available && remaining > 0,
+          available: session.available && remote?.available === true && remaining > 0,
         };
       })
     : [];
@@ -866,6 +856,34 @@ function SalonScheduleStep({
     if (pickerOpen && !dialog.open) dialog.showModal();
     if (!pickerOpen && dialog.open) dialog.close();
   }, [pickerOpen]);
+
+  useEffect(() => {
+    if (!firebaseEnabled || !firebaseBookingAvailabilityRepository) {
+      setMonthCapacity(null);
+      setMonthCapacityError("");
+      return;
+    }
+    let active = true;
+    setMonthCapacity(null);
+    setMonthCapacityError("");
+    firebaseBookingAvailabilityRepository
+      .getSalonMonthAvailability(format(visibleMonth, "yyyy-MM"))
+      .then((capacity) => {
+        if (active) setMonthCapacity(capacity);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setMonthCapacityRetryable(!(error instanceof BookingAuthenticationError));
+        setMonthCapacityError(
+          error instanceof Error
+            ? error.message
+            : "Calendar availability could not be loaded.",
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, [monthCapacityAttempt, visibleMonth]);
 
   const closePicker = () => setPickerOpen(false);
 
@@ -914,24 +932,53 @@ function SalonScheduleStep({
               day,
               settings,
               bookings,
-              activeHolds,
               new Date(),
-              currentSessionId,
             );
             const localRemaining = sessions.reduce(
               (sum, session) => sum + (session.available ? session.remaining : 0),
               0,
             );
-            const remaining =
-              value === date && liveSessions
+            const localFullDayBlock = settings.blockedPeriods.find(
+              (block) => block.date === value && !block.start && !block.end,
+            );
+            const remoteDay = monthCapacity?.[value];
+            const remaining = firebaseEnabled
+              ? remoteDay?.remaining ?? 0
+              : value === date && liveSessions
                 ? liveSessions.reduce(
-                    (sum, session) => sum + session.remaining,
+                    (sum, session) =>
+                      sum + (session.available ? session.remaining : 0),
                     0,
                   )
                 : localRemaining;
             const inVisibleMonth = isSameMonth(day, visibleMonth);
-            const disabled = !inVisibleMonth || remaining === 0;
-            const label = `${format(day, "EEEE, d MMMM yyyy")}: ${remaining} ${remaining === 1 ? "space" : "spaces"} remaining`;
+            const capacityVerified = !firebaseEnabled || monthCapacity !== null;
+            const status: SalonMonthAvailabilityDay["status"] = firebaseEnabled
+              ? remoteDay?.status ?? "unavailable"
+              : localFullDayBlock
+                ? "blocked"
+                : remaining > 0
+                  ? "available"
+                  : sessions.some((session) => session.remaining > 0)
+                    ? "unavailable"
+                    : "booked";
+            const blockReason = firebaseEnabled
+              ? remoteDay?.reason
+              : localFullDayBlock?.reason;
+            const availabilityText = !capacityVerified
+              ? "Checking availability"
+              : status === "blocked"
+                ? blockReason || "Unavailable"
+                : status === "booked"
+                  ? "Booked"
+                  : status === "available"
+                    ? `${remaining} ${remaining === 1 ? "space" : "spaces"} left`
+                    : "Unavailable";
+            const disabled =
+              !inVisibleMonth || !capacityVerified || status !== "available";
+            const label = capacityVerified
+              ? `${format(day, "EEEE, d MMMM yyyy")}: ${availabilityText}`
+              : `${format(day, "EEEE, d MMMM yyyy")}: checking availability`;
             return (
               <button
                 role="gridcell"
@@ -940,6 +987,7 @@ function SalonScheduleStep({
                 disabled={disabled}
                 aria-label={label}
                 aria-selected={date === value}
+                title={status === "blocked" ? blockReason : undefined}
                 className={`${date === value ? "is-selected" : ""} ${!inVisibleMonth ? "is-outside" : ""}`}
                 onClick={() => {
                   onDate(value);
@@ -949,11 +997,17 @@ function SalonScheduleStep({
                 <strong>{format(day, "d")}</strong>
                 {inVisibleMonth && (
                   <small>
-                    <span className="salon-space-wide">
-                      {remaining ? `${remaining} ${remaining === 1 ? "space" : "spaces"}` : "Unavailable"}
+                    <span className="salon-space-wide salon-calendar-status">
+                      {availabilityText}
                     </span>
-                    <span className="salon-space-compact">
-                      {remaining ? `${remaining} left` : "—"}
+                    <span className="salon-space-compact salon-calendar-status">
+                      {!capacityVerified
+                        ? "…"
+                        : status === "available"
+                          ? `${remaining} left`
+                          : status === "unavailable"
+                            ? "—"
+                            : availabilityText}
                     </span>
                   </small>
                 )}
@@ -962,6 +1016,25 @@ function SalonScheduleStep({
           })}
         </div>
       </section>
+
+      {monthCapacityError && (
+        <div className="mt-4">
+          <Notice tone="error">
+            {monthCapacityError}{" "}
+            {monthCapacityRetryable && (
+              <button
+                type="button"
+                className="font-bold underline underline-offset-4"
+                onClick={() =>
+                  setMonthCapacityAttempt((current) => current + 1)
+                }
+              >
+                Retry calendar
+              </button>
+            )}
+          </Notice>
+        </div>
+      )}
 
       {date && (
         <div className="salon-selection-summary mt-5" aria-live="polite">
@@ -1017,7 +1090,7 @@ function SalonScheduleStep({
                 type="button"
                 className={`salon-session-option ${time === session.startTime ? "is-selected" : ""}`}
                 key={session.id}
-                disabled={liveLoading || !session.available}
+                disabled={liveLoading || Boolean(liveError) || !session.available}
                 aria-pressed={time === session.startTime}
                 onClick={() => {
                   onTime(session.startTime);
@@ -1030,17 +1103,35 @@ function SalonScheduleStep({
                 </span>
                 <span className="salon-session-capacity">
                   <Users size={16} aria-hidden="true" />
-                  {liveLoading
-                    ? "Checking capacity…"
+                  {liveError
+                    ? "Availability unavailable"
+                    : liveLoading
+                    ? "Checking availability…"
                     : session.remaining === 0
                     ? "Fully booked"
-                    : `${session.remaining} of ${session.capacity} ${session.remaining === 1 ? "space" : "spaces"} left${session.available ? "" : " · Unavailable"}`}
+                    : `${session.remaining} ${session.remaining === 1 ? "space" : "spaces"} left${session.available ? "" : " · Unavailable"}`}
                 </span>
               </button>
             ))}
           </div>
+          {liveError && (
+            <div className="mt-4">
+              <Notice tone="error">
+                {liveError}{" "}
+                {liveRetryable && (
+                  <button
+                    type="button"
+                    className="font-bold underline underline-offset-4"
+                    onClick={onRetry}
+                  >
+                    Retry
+                  </button>
+                )}
+              </Notice>
+            </div>
+          )}
           <p className="mt-5 text-xs leading-5 text-[var(--muted)]">
-            Capacity updates when bookings and active checkout holds change.
+            Capacity updates when bookings, cancellations and operational blocks change.
           </p>
         </div>
       </dialog>
@@ -1628,9 +1719,9 @@ function PaymentStep({
     mode,
     settings.payment,
   );
-  const modes = settings.payment.enabledModes.filter(
-    (item) => item !== "disabled",
-  );
+  const modes: PaymentMode[] = firebaseEnabled
+    ? ["clinic"]
+    : settings.payment.enabledModes.filter((item) => item !== "disabled");
   const labels: Record<PaymentMode, string> = {
     full: "Pay in full",
     deposit_percentage: `${settings.payment.depositPercentage}% deposit`,
@@ -1642,7 +1733,7 @@ function PaymentStep({
     <div>
       <h2 className="booking-title">Choose how to pay</h2>
       <p className="booking-copy">
-        Your selected time is held while you complete this step.
+        No online payment is taken. Availability is checked again atomically when you confirm.
       </p>
       {settings.payment.defaultMode === "disabled" || modes.length === 0 ? (
         <Notice tone="error">
@@ -1710,6 +1801,7 @@ function PaymentStep({
               <button
                 className="btn btn-primary"
                 type="button"
+                disabled={state === "processing"}
                 onClick={onClinic}
               >
                 Confirm booking request
@@ -1738,8 +1830,10 @@ function PaymentStep({
           </div>
           <p className="mt-4 text-xs leading-5 text-[var(--muted)]">
             {PAYSTACK_ENABLED
-              ? "Paystack must be initialised and verified by the secure booking backend."
-              : "Demo payment. No card details or real money are collected."}
+              ? "Real payment requires trusted server-side Paystack verification and is currently disabled."
+              : mode === "clinic"
+                ? "Pay at the clinic. No card details are collected."
+                : "Demo payment. No card details or real money are collected."}
           </p>
         </>
       )}
@@ -1758,7 +1852,7 @@ export default function BookingPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [extrasCatalog, setExtrasCatalog] = useState(serviceExtras);
   const [questionsCatalog, setQuestionsCatalog] = useState(intakeQuestions);
-  const [policiesCatalog, setPoliciesCatalog] = useState(bookingPolicies);
+  const [policiesCatalog, setPoliciesCatalog] = useState<BookingPolicy[]>([]);
   const [configurationState, setConfigurationState] = useState<
     "loading" | "ready" | "error"
   >("loading");
@@ -1772,15 +1866,17 @@ export default function BookingPage() {
   }>();
   const [paymentState, setPaymentState] =
     useState<PaymentStatus>("not-started");
-  const [holdSeconds, setHoldSeconds] = useState(0);
   const [liveAvailability, setLiveAvailability] = useState<{
     slots: string[];
-    sessions?: Array<{ startTime: string; remaining: number }>;
+    sessions?: SalonAvailabilityResult["sessions"];
   } | null>(null);
-  const bookingGateway = useMemo(() => {
-    const endpoint = import.meta.env.VITE_BOOKING_API_URL;
-    return endpoint ? new HttpBookingGateway(endpoint) : null;
-  }, []);
+  const [liveAvailabilityStatus, setLiveAvailabilityStatus] =
+    useState<LiveAvailabilityStatus>("idle");
+  const [liveAvailabilityError, setLiveAvailabilityError] = useState("");
+  const [liveAvailabilityRetryable, setLiveAvailabilityRetryable] =
+    useState(true);
+  const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
+  const [submittingBooking, setSubmittingBooking] = useState(false);
   const deepLinkId = search.get("service") || undefined;
   const deepLinkCategory =
     search.get("category") === "trichology" ||
@@ -1790,7 +1886,7 @@ export default function BookingPage() {
   const appliedDeepLink = useRef("");
   const activePolicyVersion = policiesCatalog.length
     ? policyBundleVersion(policiesCatalog)
-    : policyVersion;
+    : "";
   const service = services.find(
     (item) => item.id === draft.serviceId && item.active,
   );
@@ -1800,7 +1896,9 @@ export default function BookingPage() {
   const selectedExtras = extrasCatalog.filter((extra) =>
     draft.extraIds.includes(extra.id),
   );
-  const paymentMode = draft.paymentMode || settings.payment.defaultMode;
+  const paymentMode = firebaseEnabled
+    ? "clinic"
+    : draft.paymentMode || settings.payment.defaultMode;
   const details = { ...emptyDetails, ...draft.details } as BookingFormData;
 
   const updateDraft = (patch: Partial<BookingDraft>) =>
@@ -1812,7 +1910,7 @@ export default function BookingPage() {
       availabilityRepository.getPublic(),
       firebaseEnabled
         ? Promise.resolve([] as Booking[])
-        : bookingRepository.list(),
+        : bookingOperationsRepository.list(),
       publicBookingConfiguration.extras(),
       publicBookingConfiguration.questions(),
       publicBookingConfiguration.policies(),
@@ -1827,7 +1925,7 @@ export default function BookingPage() {
         ]) => {
           setSettings(nextSettings);
           setBookings(nextBookings);
-          setExtrasCatalog(nextExtras.length ? nextExtras : serviceExtras);
+          setExtrasCatalog(firebaseEnabled ? nextExtras : nextExtras.length ? nextExtras : serviceExtras);
           setQuestionsCatalog(nextQuestions);
           setPoliciesCatalog(nextPolicies);
           setConfigurationState("ready");
@@ -1844,7 +1942,6 @@ export default function BookingPage() {
       ? services.find((item) => item.id === deepLinkId && item.active)
       : undefined;
     if (deepLinkId && !linked) return;
-    if (draft.holdId) releaseCurrentHold(draft.holdId);
     appliedDeepLink.current = key;
     updateDraft({
       category: linked?.category || deepLinkCategory,
@@ -1852,106 +1949,71 @@ export default function BookingPage() {
       extraIds: [],
       date: "",
       time: "",
-      holdId: undefined,
-      holdExpiresAt: undefined,
       intakeResponses: {},
       step: linked || deepLinkCategory ? 1 : 0,
     });
   }, [deepLinkCategory, deepLinkId, services.length]);
   useEffect(() => {
-    if (!draft.holdExpiresAt) {
-      setHoldSeconds(0);
+    if (!firebaseEnabled || !service || !draft.date) {
+      setLiveAvailability(null);
+      setLiveAvailabilityStatus("idle");
+      setLiveAvailabilityError("");
+      setLiveAvailabilityRetryable(true);
       return;
     }
-    const tick = () => {
-      const remaining = Math.max(
-        0,
-        Math.ceil(
-          (new Date(draft.holdExpiresAt!).getTime() - Date.now()) / 1000,
-        ),
-      );
-      setHoldSeconds(remaining);
-      if (!remaining && draft.holdId) {
-        releaseCurrentHold(draft.holdId, "expired");
-        updateDraft({
-          holdId: undefined,
-          holdExpiresAt: undefined,
-          time: "",
-          step: 2,
-        });
-        setValidation(
-          `Your ${settings.payment.holdMinutes}-minute hold expired. Please choose an available time again.`,
-        );
-      }
-    };
-    tick();
-    const timer = window.setInterval(tick, 1000);
-    return () => window.clearInterval(timer);
-  }, [draft.holdExpiresAt, draft.holdId]);
-
-  useEffect(() => {
-    if (!firebaseEnabled || !bookingGateway || !service || !draft.date) {
+    if (!firebaseBookingAvailabilityRepository) {
       setLiveAvailability(null);
+      setLiveAvailabilityStatus("error");
+      setLiveAvailabilityError(AVAILABILITY_UNAVAILABLE_MESSAGE);
+      setLiveAvailabilityRetryable(true);
       return;
     }
     let active = true;
     setLiveAvailability(null);
-    bookingGateway
-      .getAvailability({
+    setLiveAvailabilityStatus("loading");
+    setLiveAvailabilityError("");
+    setLiveAvailabilityRetryable(true);
+    const request = {
         serviceId: service.id,
         extraIds: draft.extraIds,
         date: draft.date,
-        paymentMode,
-      })
+      };
+    const availabilityRequest =
+      service.category === "salon"
+        ? firebaseBookingAvailabilityRepository.getSalonSessionAvailability(request)
+        : firebaseBookingAvailabilityRepository.getTrichologyAvailability(request);
+    availabilityRequest
       .then((availability) => {
-        if (active) setLiveAvailability(availability);
+        if (!active) return;
+        setLiveAvailability({
+          slots:
+            "slots" in availability
+              ? availability.slots
+              : availability.sessions
+                  .filter((session) => session.available)
+                  .map((session) => session.startTime),
+          sessions:
+            "sessions" in availability ? availability.sessions : undefined,
+        });
+        setLiveAvailabilityStatus("ready");
       })
       .catch((error) => {
         if (!active) return;
-        setLiveAvailability({ slots: [] });
-        setValidation(
+        setLiveAvailability(null);
+        setLiveAvailabilityStatus("error");
+        setLiveAvailabilityRetryable(
+          !(error instanceof BookingAuthenticationError),
+        );
+        setLiveAvailabilityError(
           error instanceof Error
             ? error.message
-            : "Live availability could not be loaded.",
+            : AVAILABILITY_UNAVAILABLE_MESSAGE,
         );
       });
     return () => {
       active = false;
     };
-  }, [bookingGateway, draft.date, draft.extraIds, paymentMode, service]);
-
-  useEffect(() => {
-    const reference = search.get("reference") || search.get("trxref");
-    if (
-      !firebaseEnabled ||
-      !reference ||
-      !bookingGateway ||
-      !draft.holdId ||
-      paymentState !== "not-started" ||
-      configurationState !== "ready"
-    )
-      return;
-    setPaymentState("processing");
-    bookingGateway
-      .verifyPayment(reference)
-      .then((result) => {
-        if (result.requiresReconciliation)
-          throw new Error(
-            "Your payment was received after the time hold expired. The clinic has been alerted to rebook or refund it; please do not pay again.",
-          );
-        if (!result.verified)
-          throw new Error("Paystack did not verify this payment.");
-        return completeBooking(true, reference);
-      })
-      .catch((error) => {
-        setPaymentState("failed");
-        setValidation(
-          error instanceof Error
-            ? error.message
-            : "Payment could not be verified.",
-        );
-      });
-  }, [configurationState, draft.holdId, paymentState, search]);
+  }, [availabilityAttempt, draft.date, draft.extraIds, service]);
 
   if (configurationState === "loading")
     return (
@@ -1969,9 +2031,28 @@ export default function BookingPage() {
         </Notice>
       </div>
     );
+  if (!policiesCatalog.length)
+    return (
+      <div className="container-shell section-space">
+        <SEO
+          title="Booking temporarily unavailable"
+          description="Booking will reopen when the clinic publishes its appointment policies."
+        />
+        <Notice tone="warm">
+          <div>
+            <strong className="block text-[var(--forest-950)]">
+              Booking policies have not been published yet.
+            </strong>
+            <p className="mt-1">
+              Booking is paused until the clinic administrator creates the
+              first policy. Please check back later or contact Tamlois.
+            </p>
+          </div>
+        </Notice>
+      </div>
+    );
   if (
-    !draft.policyConsent?.accepted ||
-    draft.policyConsent.version !== activePolicyVersion
+    !isPolicyConsentCurrent(policiesCatalog, draft.policyConsent)
   )
     return (
       <>
@@ -2003,15 +2084,12 @@ export default function BookingPage() {
       setNotice(
         "Changing category cleared the service, extras and schedule because they may no longer be valid.",
       );
-    if (draft.holdId) releaseCurrentHold(draft.holdId);
     updateDraft({
       category,
       serviceId: undefined,
       extraIds: [],
       date: "",
       time: "",
-      holdId: undefined,
-      holdExpiresAt: undefined,
     });
   }
   function changeService(next: Service) {
@@ -2020,14 +2098,11 @@ export default function BookingPage() {
       setNotice(
         "Changing service cleared extras and schedule so price, duration and availability stay accurate.",
       );
-    if (draft.holdId) releaseCurrentHold(draft.holdId);
     updateDraft({
       serviceId: next.id,
       extraIds: [],
       date: "",
       time: "",
-      holdId: undefined,
-      holdExpiresAt: undefined,
     });
   }
   function toggleExtra(id: string) {
@@ -2038,13 +2113,10 @@ export default function BookingPage() {
       setNotice(
         "Extras changed the duration, so the previous schedule was cleared.",
       );
-    if (draft.holdId) releaseCurrentHold(draft.holdId);
     updateDraft({
       extraIds: next,
       date: "",
       time: "",
-      holdId: undefined,
-      holdExpiresAt: undefined,
     });
   }
   function validateStep() {
@@ -2054,6 +2126,13 @@ export default function BookingPage() {
       return "Choose one main service to continue.";
     if (draft.step === 2 && (!draft.date || !draft.time))
       return "Choose an available date and start time.";
+    if (
+      service &&
+      service.duration +
+        selectedExtras.reduce((sum, extra) => sum + extra.duration, 0) >
+        MAX_BOOKABLE_DURATION_MINUTES
+    )
+      return "This service and extras exceed the four-hour online booking limit. Contact the clinic for help.";
     if (draft.step === 3) {
       const parsed = bookingSchema.safeParse(details);
       if (!parsed.success) return parsed.error.issues[0].message;
@@ -2064,19 +2143,6 @@ export default function BookingPage() {
     }
     return "";
   }
-  function releaseCurrentHold(
-    holdId: string,
-    status: "released" | "expired" = "released",
-  ) {
-    if (firebaseEnabled) {
-      void bookingGateway
-        ?.releaseHold(holdId, draft.sessionId)
-        .catch(() => undefined);
-      return;
-    }
-    bookingHoldRepository.release(holdId, status);
-  }
-
   async function next() {
     const message = validateStep();
     setValidation(message);
@@ -2085,15 +2151,15 @@ export default function BookingPage() {
       const duration =
         service.duration +
         selectedExtras.reduce((sum, extra) => sum + extra.duration, 0);
-      const currentSlots =
-        service.category === "salon"
+      const currentSlots = firebaseEnabled
+        ? liveAvailabilityStatus === "ready"
+          ? liveAvailability?.slots ?? []
+          : []
+        : service.category === "salon"
           ? getSalonSessionAvailability(
               parseISO(draft.date),
               settings,
               bookings,
-              bookingHoldRepository.listActive(draft.date),
-              new Date(),
-              draft.sessionId,
             )
               .filter((session) => session.available)
               .map((session) => session.startTime)
@@ -2103,224 +2169,110 @@ export default function BookingPage() {
               settings,
               bookings,
             );
-      const remotelyAvailable =
-        !firebaseEnabled ||
-        liveAvailability === null ||
-        liveAvailability.slots.includes(draft.time);
-      if (!currentSlots.includes(draft.time) || !remotelyAvailable) {
+      if (!currentSlots.includes(draft.time)) {
         setValidation("That time is no longer available. Choose another slot.");
         updateDraft({ time: "" });
         return;
       }
-      try {
-        if (firebaseEnabled && !bookingGateway)
-          throw new Error(
-            "The secure booking API is not configured. Set VITE_BOOKING_API_URL.",
-          );
-        const hold = firebaseEnabled
-          ? await bookingGateway!.createHold(draft)
-          : bookingHoldRepository.create(
-              {
-                sessionId: draft.sessionId,
-                date: draft.date,
-                startTime: draft.time,
-                endTime: bookingEndTime(
-                  service,
-                  draft.time,
-                  draft.date,
-                  duration,
-                ),
-                serviceId: service.id,
-                category: service.category,
-              },
-              settings.bookingInterval,
-              settings.bufferMinutes,
-              settings.payment.holdMinutes,
-              service.category === "salon" ? 3 : 1,
-            );
-        updateDraft({
-          holdId: hold.id,
-          holdExpiresAt: hold.expiresAt,
-          step: 3,
-        });
-        return;
-      } catch (error) {
-        setValidation(
-          error instanceof Error
-            ? error.message
-            : "The time could not be held.",
-        );
-        return;
-      }
+      updateDraft({ step: 3 });
+      return;
     }
     updateDraft({ step: Math.min(5, draft.step + 1) });
   }
 
-  async function completeBooking(paid: boolean, verifiedReference?: string) {
+  async function completeBooking() {
+    if (submittingBooking) return;
     if (
       !service ||
       !draft.date ||
       !draft.time ||
       !draft.policyConsent ||
-      !draft.holdId
+      !draft.policyConsent.policies.length
     )
       return;
-    const hold = firebaseEnabled
-      ? {
-          status: "active" as const,
-          lockIds: bookingLockIds(
-            draft.date,
-            draft.time,
-            bookingEndTime(
-              service,
-              draft.time,
-              draft.date,
-              service.duration +
-                selectedExtras.reduce((sum, extra) => sum + extra.duration, 0),
-            ),
-            settings.bookingInterval,
-            settings.bufferMinutes,
-          ),
-        }
-      : bookingHoldRepository.get(draft.holdId);
-    if (!hold || hold.status !== "active") {
-      setValidation("Your time hold expired. Choose another available time.");
-      updateDraft({
-        step: 2,
-        time: "",
-        holdId: undefined,
-        holdExpiresAt: undefined,
-      });
+    const parsed = bookingSchema.safeParse(details);
+    if (!parsed.success) {
+      setValidation(parsed.error.issues[0].message);
+      updateDraft({ step: 3 });
       return;
     }
-    const totals = calculateBookingTotals(
-      service,
-      selectedExtras,
-      paymentMode,
-      settings.payment,
-    );
-    const booking: Booking = {
-      id: crypto.randomUUID(),
-      reference: generateBookingReference(),
-      managementToken: generateManagementToken(),
-      category: service.category,
-      serviceId: service.id,
-      serviceName: service.name,
-      serviceSnapshot: {
-        id: service.id,
-        name: service.name,
-        category: service.category,
-        price: service.price,
-        duration: service.duration,
-        preparation: service.preparation,
-      },
-      extras: selectedExtras.map(({ id, name, price, duration }) => ({
-        id,
-        name,
-        price,
-        duration,
-      })),
-      addressSnapshot: settings.address,
-      policyVersion: draft.policyConsent.version,
-      preparationSnapshot: service.preparation,
-      date: draft.date,
-      startTime: draft.time,
-      endTime: bookingEndTime(
+    setSubmittingBooking(true);
+    setPaymentState("processing");
+    setValidation("");
+    try {
+      const currentPolicies = await publicBookingConfiguration.policies();
+      if (!isPolicyConsentCurrent(currentPolicies, draft.policyConsent)) {
+        setPoliciesCatalog(currentPolicies);
+        updateDraft({ policyConsent: undefined });
+        setPaymentState("not-started");
+        setValidation(
+          currentPolicies.length
+            ? "The booking policies changed. Review and accept the current policies before submitting."
+            : "Booking is paused because no booking policies are currently available.",
+        );
+        return;
+      }
+      const savedBooking = await bookingOperationsRepository.createBooking({
+        bookingId: draft.bookingId,
+        bookingReference: draft.bookingReference,
         service,
-        draft.time,
-        draft.date,
-        totals.totalDuration,
-      ),
-      totalDuration: totals.totalDuration,
-      subtotal: totals.subtotal,
-      amountDueNow: paid ? totals.amountDueNow : 0,
-      balanceDue: paid ? totals.balanceDue : totals.subtotal,
-      ...details,
-      intakeResponses: draft.intakeResponses,
-      photoMetadata:
-        photo && !photo.error && photo.consent
-          ? {
-              name: photo.file.name,
-              type: photo.file.type,
-              size: photo.file.size,
-              consent: true,
-            }
-          : undefined,
-      policyConsent: true,
-      policyConsentRecord: draft.policyConsent,
-      paymentMode,
-      paymentStatus: paid
-        ? totals.balanceDue
-          ? "partially-paid"
-          : "paid"
-        : "not-required",
-      paymentReference: paid
-        ? verifiedReference ||
-          `MOCK-${draft.sessionId.slice(0, 8).toUpperCase()}`
-        : undefined,
-      status: settings.payment.approvalRequired
-        ? "pending-confirmation"
-        : "confirmed",
-      internalNotes: "",
-      createdAt: new Date().toISOString(),
-      followUpDue: false,
-      holdId: draft.holdId,
-      lockIds: hold.lockIds,
-    };
-    let savedBooking = booking;
-    if (firebaseEnabled) {
-      if (!bookingGateway)
-        throw new Error("The secure booking API is not configured.");
-      const {
-        id: _id,
-        reference: _reference,
-        managementToken: _managementToken,
-        ...payload
-      } = booking;
-      savedBooking = await bookingGateway.submitBooking(payload);
-    } else {
-      await bookingRepository.save(booking);
-      bookingHoldRepository.convert(draft.holdId);
+        extras: selectedExtras,
+        date: draft.date,
+        startTime: draft.time,
+        details: parsed.data,
+        intakeResponses: draft.intakeResponses,
+        policyConsentRecord: draft.policyConsent,
+        addressSnapshot: settings.address,
+      });
+      if (!firebaseEnabled)
+        localStorage.setItem(
+          "tamlois-last-booking",
+          JSON.stringify(savedBooking),
+        );
+      bookingDraftRepository.clear();
+      analytics.track("booking_submitted", {
+        service: service.id,
+        payment: savedBooking.paymentStatus,
+      });
+      navigate(`/booking/confirmation?booking=${savedBooking.id}`, {
+        state: { booking: savedBooking },
+      });
+    } catch (error) {
+      setPaymentState("failed");
+      if (
+        error instanceof BookingCapacityError &&
+        error.code === "POLICY_CHANGED"
+      ) {
+        const currentPolicies = await publicBookingConfiguration.policies();
+        setPoliciesCatalog(currentPolicies);
+        updateDraft({ policyConsent: undefined });
+        setPaymentState("not-started");
+        setValidation(error.message);
+      } else if (
+        error instanceof BookingCapacityError &&
+        ["SESSION_FULL", "SLOT_UNAVAILABLE", "BLOCKED"].includes(error.code)
+      ) {
+        setValidation(error.message);
+        updateDraft({ step: 2, time: "" });
+        setAvailabilityAttempt((current) => current + 1);
+      } else {
+        setValidation(
+          error instanceof Error
+            ? error.message
+            : "Booking could not be submitted. Please retry.",
+        );
+      }
+    } finally {
+      setSubmittingBooking(false);
     }
-    localStorage.setItem("tamlois-last-booking", JSON.stringify(savedBooking));
-    bookingDraftRepository.clear();
-    analytics.track("booking_submitted", {
-      service: service.id,
-      payment: booking.paymentStatus,
-    });
-    navigate("/booking/confirmation");
   }
 
   async function pay(fail = false) {
     setValidation("");
-    if (firebaseEnabled) {
-      if (!bookingGateway || !draft.holdId)
-        return setValidation("The secure booking API is not configured.");
-      const parsed = bookingSchema.safeParse(details);
-      if (!parsed.success) {
-        setValidation(parsed.error.issues[0].message);
-        updateDraft({ step: 3 });
-        return;
-      }
-      try {
-        setPaymentState("initialised");
-        const payment = await bookingGateway.initialisePayment(
-          draft.holdId,
-          parsed.data.email,
-          draft.sessionId,
-          paymentMode,
-        );
-        window.location.assign(payment.authorizationUrl);
-      } catch (error) {
-        setPaymentState("failed");
-        setValidation(
-          error instanceof Error
-            ? error.message
-            : "Payment could not be initialised.",
-        );
-      }
-      return;
-    }
+    if (firebaseEnabled)
+      return setValidation(
+        "Online payment is disabled. Choose pay at clinic to submit the booking request.",
+      );
     setPaymentState("initialised");
     await new Promise((resolve) => window.setTimeout(resolve, 250));
     setPaymentState("processing");
@@ -2328,12 +2280,12 @@ export default function BookingPage() {
     if (fail) {
       setPaymentState("failed");
       setValidation(
-        "The demo payment failed. Your time remains held; retry before the countdown ends.",
+        "The demo payment failed. Retry or choose pay at clinic.",
       );
       return;
     }
     try {
-      await completeBooking(true);
+      await completeBooking();
     } catch (error) {
       setPaymentState("failed");
       setValidation(
@@ -2344,7 +2296,14 @@ export default function BookingPage() {
     }
   }
 
-  const canContinue = draft.step < 5 && !validateStep();
+  const canContinue =
+    draft.step < 5 &&
+    !validateStep() &&
+    !(
+      firebaseEnabled &&
+      draft.step === 2 &&
+      liveAvailabilityStatus !== "ready"
+    );
   return (
     <>
       <SEO
@@ -2357,7 +2316,7 @@ export default function BookingPage() {
           <h1 className="page-title mt-6">Reserve time for your care</h1>
           <p className="lede mt-5">
             Choose a category, service and extras, then select live
-            availability. Your draft stays in this browser.
+            availability. No customer account is required.
           </p>
         </div>
       </section>
@@ -2370,14 +2329,6 @@ export default function BookingPage() {
               updateDraft({ step });
             }}
           />
-          {draft.step >= 3 && draft.holdId && holdSeconds > 0 && (
-            <div className="mb-5">
-              <HoldCountdown
-                seconds={holdSeconds}
-                holdMinutes={settings.payment.holdMinutes}
-              />
-            </div>
-          )}
           {notice && (
             <div className="mb-5">
               <Notice tone="warm">
@@ -2439,14 +2390,26 @@ export default function BookingPage() {
                       date={draft.date}
                       time={draft.time}
                       liveSlots={
-                        firebaseEnabled
-                          ? liveAvailability?.slots || null
-                          : undefined
+                        firebaseEnabled && liveAvailabilityStatus === "loading"
+                          ? null
+                          : firebaseEnabled && liveAvailabilityStatus === "ready"
+                            ? liveAvailability?.slots || []
+                            : undefined
                       }
                       liveSalonSessions={liveAvailability?.sessions}
+                      liveStatus={liveAvailabilityStatus}
+                      liveError={liveAvailabilityError}
+                      liveRetryable={liveAvailabilityRetryable}
+                      onRetry={() =>
+                        setAvailabilityAttempt((current) => current + 1)
+                      }
                       onDate={(date) => {
                         setValidation("");
                         setLiveAvailability(null);
+                        setLiveAvailabilityStatus(
+                          firebaseEnabled ? "loading" : "idle",
+                        );
+                        setLiveAvailabilityError("");
                         updateDraft({ date, time: "" });
                       }}
                       onTime={(time) => updateDraft({ time })}
@@ -2480,7 +2443,7 @@ export default function BookingPage() {
                       date={draft.date}
                       time={draft.time}
                       settings={settings}
-                      consent={draft.policyConsent}
+                      consent={draft.policyConsent!}
                       edit={(step) => updateDraft({ step })}
                     />
                   )}
@@ -2495,7 +2458,7 @@ export default function BookingPage() {
                       error={validation}
                       onPay={pay}
                       onClinic={() =>
-                        completeBooking(false).catch((error) =>
+                        completeBooking().catch((error) =>
                           setValidation(
                             error instanceof Error
                               ? error.message
@@ -2557,7 +2520,6 @@ export default function BookingPage() {
           <button
             className="no-print mt-7 text-sm font-bold text-[var(--danger)] underline underline-offset-4"
             onClick={() => {
-              if (draft.holdId) releaseCurrentHold(draft.holdId);
               bookingDraftRepository.clear();
               setDraft(bookingDraftRepository.fresh());
               setPhoto(undefined);
@@ -2591,8 +2553,33 @@ function calendarHref(booking: Booking) {
 }
 
 export function BookingConfirmationPage() {
-  const raw = localStorage.getItem("tamlois-last-booking");
-  const booking = raw ? (JSON.parse(raw) as Booking) : null;
+  const location = useLocation();
+  const [search] = useSearchParams();
+  const stateBooking = (location.state as { booking?: Booking } | null)?.booking;
+  const [booking, setBooking] = useState<Booking | null>(() => {
+    if (stateBooking) return stateBooking;
+    if (firebaseEnabled) return null;
+    const raw = localStorage.getItem("tamlois-last-booking");
+    return raw ? (JSON.parse(raw) as Booking) : null;
+  });
+  const [loadingBooking, setLoadingBooking] = useState(
+    firebaseEnabled && !stateBooking && Boolean(search.get("booking")),
+  );
+  useEffect(() => {
+    const id = search.get("booking");
+    if (!firebaseEnabled || booking || !id) return;
+    bookingOperationsRepository
+      .get(id)
+      .then(setBooking)
+      .catch(() => setBooking(null))
+      .finally(() => setLoadingBooking(false));
+  }, [booking, search]);
+  if (loadingBooking)
+    return (
+      <div className="container-shell section-space" role="status">
+        Loading your booking confirmation…
+      </div>
+    );
   if (!booking)
     return (
       <>

@@ -238,17 +238,14 @@ export default function Home() {
           <figure>
             <div className="overflow-hidden rounded-[14px]">
               <img
-                src={media.practitioner.src}
-                alt={media.practitioner.alt}
-                width="900"
-                height="1100"
+                src={`${import.meta.env.BASE_URL}media/owner.jpg`}
+                alt="Popoola Adebola Opeyemi, Certified Trichologist and founder of Tamlois Trichology Clinic"
+                width="2047"
+                height="2560"
                 loading="lazy"
                 className="aspect-[4/5] w-full object-cover"
               />
             </div>
-            <figcaption className="mt-3 text-xs font-semibold text-[#8b4e22]">
-              Licensed stock placeholder.
-            </figcaption>
           </figure>
           <div>
             <h2 className="section-title">Popoola Adebola Opeyemi</h2>

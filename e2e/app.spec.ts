@@ -295,7 +295,7 @@ test("17 pay-at-clinic creates a pending-confirmation request", async ({
   await page.getByText("Pay at clinic", { exact: true }).click();
   await page.getByRole("button", { name: "Confirm booking request" }).click();
   await expect(
-    page.getByRole("heading", { name: /awaiting confirmation/ }),
+    page.getByRole("heading", { name: /Booking request received/ }),
   ).toBeVisible();
   await expect(page.getByText("pending-confirmation")).toBeVisible();
 });
@@ -306,7 +306,7 @@ test("18 paid deposit creates receipt and calendar action", async ({
   await reachPayment(page);
   await page.getByRole("button", { name: /^Pay ₦/ }).click();
   await expect(
-    page.getByRole("heading", { name: /awaiting confirmation/ }),
+    page.getByRole("heading", { name: /Booking request received/ }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Add to calendar" }),
@@ -332,8 +332,69 @@ test("20 admin filters guest bookings without exposing a customer account", asyn
     page.getByPlaceholder(/Search reference, name, email/),
   ).toBeVisible();
   await expect(page.getByLabel("Filter category")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Content" })).toHaveCount(0);
+  await page.goto("/#/admin/content");
+  await expect(page).toHaveURL(/#\/admin$/);
   await page.goto("/#/booking");
   await expect(
     page.getByText(/sign in|create account|promo code|choose location/i),
   ).toHaveCount(0);
+});
+
+test("21 admin duration controls use the approved appointment lengths", async ({
+  page,
+}) => {
+  const expectedDurations = [
+    "15 minutes",
+    "30 minutes",
+    "45 minutes",
+    "1 hour",
+    "1 hour 30 minutes",
+    "2 hours",
+    "3 hours",
+    "4 hours",
+  ];
+
+  await page.goto("/#/admin/login");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Services" }).click();
+
+  const extraDuration = page.locator('select[aria-label$=" duration"]').first();
+  await expect(extraDuration).toBeVisible();
+  expect(await extraDuration.locator("option").allTextContents()).toEqual(
+    expectedDurations,
+  );
+
+  await page.getByRole("link", { name: "New service" }).click();
+  const serviceDuration = page.getByLabel("Duration", { exact: true });
+  await expect(serviceDuration).toHaveValue("60");
+  expect(await serviceDuration.locator("option").allTextContents()).toEqual(
+    expectedDurations,
+  );
+
+  await page.getByRole("button", { name: "Add variation" }).click();
+  const variationDuration = page.getByLabel("Variation 1 duration");
+  expect(await variationDuration.locator("option").allTextContents()).toEqual(
+    expectedDurations,
+  );
+});
+
+test("22 a published admin-created service appears in booking", async ({
+  page,
+}) => {
+  await page.goto("/#/admin/login");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Services" }).click();
+  await page.getByRole("link", { name: "New service" }).click();
+  await page.getByLabel("Name").fill("Admin-created salon service");
+  await page.getByLabel("Category", { exact: true }).selectOption("salon");
+  await page.getByLabel("Short summary").fill("A newly published salon appointment.");
+  await page.getByLabel("Image URL").fill("https://example.com/salon-service.webp");
+  await page.getByLabel("Image alt text").fill("Natural hair salon appointment");
+  await page.getByRole("button", { name: "Save service" }).click();
+
+  await acceptPolicy(page, "/#/booking?category=salon");
+  await expect(
+    page.getByRole("button", { name: /Admin-created salon service/ }),
+  ).toBeVisible();
 });

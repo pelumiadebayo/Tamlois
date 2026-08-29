@@ -2,7 +2,14 @@ node_modules
 node_modules_failed
 dist
 .env
+.env.local
+.env.*.local
 playwright-report
+playwright-report-firebase
+.playwright-cli
+.codex-firestore-analysis.md
 test-results
+firebase-debug.log
+firestore-debug.log
 .impeccable/review/*.png
 output/

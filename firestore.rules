@@ -1,111 +1,370 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+    // Data model: services and bookingPolicies are public records; bookings
+    // contain private customer data and immutable accepted-policy snapshots;
+    // bookingLocks contain only non-sensitive deterministic capacity units.
+    // Full-day blockedPeriods may also repeat one bounded, customer-facing
+    // closure reason; private block details and auditLogs remain owner-only.
+    function ownerUid() {
+      // Firestore Rules cannot read Vite environment variables.
+      return '0CZw1AFTjMXudXtvFST0z2ufET02';
+    }
+    function isAuthenticated() { return request.auth != null; }
+    function isAdmin() { return isAuthenticated() && request.auth.uid == ownerUid(); }
+    function isOwner(uid) { return isAuthenticated() && request.auth.uid == uid; }
+    function isDocOwner() { return isOwner(resource.data.ownerUid); }
+    function uidUnchanged() { return request.resource.data.ownerUid == request.auth.uid; }
+    function uidNotModified() { return request.resource.data.ownerUid == resource.data.ownerUid; }
+    function isAnonymousCustomer() {
+      return isAuthenticated() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function validDate(value) {
+      return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+    function validTime(value) {
+      return value is string && value.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+    }
+    function validUnitTime(value) {
+      return value is string && value.matches('^([01][0-9]|2[0-3])-[0-5][0-9]$');
+    }
+    function validEmail(value) {
+      return value is string && value.size() >= 3 && value.size() <= 160 &&
+        value.matches('^[^@ ]+@[^@ ]+[.][^@ ]+$');
+    }
+    function validCreateTimestamps(data) {
+      return data.createdAt is timestamp && data.createdAt == request.time &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
+    function validUpdateTimestamps(data) {
+      return data.createdAt == resource.data.createdAt &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
     }
 
-    function isActivePublicRecord() {
-      return resource.data.active == true;
+    function validService(data) {
+      return data.keys().hasAll([
+          'id', 'slug', 'name', 'category', 'type', 'summary', 'description',
+          'concerns', 'price', 'duration', 'durationMinutes', 'preparation',
+          'expectation', 'aftercare', 'caution', 'consultationRequired',
+          'depositRequired', 'depositAmount', 'active', 'archived', 'order',
+          'displayOrder', 'schedulingMode', 'image', 'imageAlt', 'variations',
+          'placeholder', 'createdAt', 'updatedAt'
+        ]) && data.keys().hasOnly([
+          'id', 'slug', 'name', 'category', 'type', 'summary', 'description',
+          'concerns', 'price', 'duration', 'durationMinutes', 'preparation',
+          'expectation', 'aftercare', 'caution', 'consultationRequired',
+          'depositRequired', 'depositAmount', 'active', 'archived', 'featured',
+          'order', 'displayOrder', 'schedulingMode', 'image', 'imageAlt',
+          'variations', 'intakeSchemaId', 'photoUploadEnabled', 'placeholder',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+        data.slug is string && data.slug.size() > 0 && data.slug.size() <= 120 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+        data.category in ['salon', 'trichology'] && data.type in ['service', 'consultation', 'package'] &&
+        data.summary is string && data.summary.size() <= 500 &&
+        data.description is string && data.description.size() <= 5000 &&
+        data.concerns is list && data.concerns.size() <= 30 &&
+        data.price is number && data.price >= 0 && data.price <= 10000000 &&
+        data.durationMinutes is int && data.durationMinutes > 0 && data.durationMinutes <= 240 &&
+        data.duration == data.durationMinutes &&
+        data.preparation is string && data.preparation.size() <= 2000 &&
+        data.expectation is string && data.expectation.size() <= 2000 &&
+        data.aftercare is string && data.aftercare.size() <= 2000 &&
+        data.caution is string && data.caution.size() <= 2000 &&
+        data.consultationRequired is bool && data.depositRequired is bool &&
+        data.depositAmount is number && data.depositAmount >= 0 && data.depositAmount <= 10000000 &&
+        data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 10000 && data.order == data.displayOrder &&
+        ((data.category == 'salon' && data.schedulingMode == 'salon-session') ||
+          (data.category == 'trichology' && data.schedulingMode == 'precise-time')) &&
+        data.active is bool && data.archived is bool && data.placeholder == false &&
+        data.image is string && data.image.size() <= 2048 &&
+        data.imageAlt is string && data.imageAlt.size() <= 300 &&
+        data.variations is list && data.variations.size() <= 30 &&
+        (!('intakeSchemaId' in data) || (data.intakeSchemaId is string && data.intakeSchemaId.size() <= 128)) &&
+        (!('photoUploadEnabled' in data) || data.photoUploadEnabled is bool) &&
+        (!('featured' in data) || data.featured is bool);
     }
 
-    function isCanonicalHomeOffering(id) {
-      return request.resource.data.id == id &&
-        request.resource.data.active == true &&
-        ((id == 'trichology' && request.resource.data.sequence == 1) ||
-          (id == 'salon' && request.resource.data.sequence == 2) ||
-          (id == 'products' && request.resource.data.sequence == 3) ||
-          (id == 'gallery' && request.resource.data.sequence == 4));
+    function validCustomer(data) {
+      return data is map && data.keys().hasOnly([
+          'fullName', 'phone', 'email', 'preferredContactMethod', 'concern',
+          'hopes', 'concernDuration', 'priorProfessionalTreatment', 'productsTreatments', 'note'
+        ]) &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 30 && validEmail(data.email) &&
+        data.preferredContactMethod in ['', 'phone', 'whatsapp', 'email'] &&
+        data.concern is string && data.concern.size() <= 2000 &&
+        data.hopes is string && data.hopes.size() <= 2000 &&
+        data.concernDuration is string && data.concernDuration.size() <= 200 &&
+        data.priorProfessionalTreatment is string && data.priorProfessionalTreatment.size() <= 500 &&
+        data.productsTreatments is string && data.productsTreatments.size() <= 800 &&
+        data.note is string && data.note.size() <= 2000;
+    }
+    function validServiceExtra(data) {
+      return data.keys().hasAll([
+          'id', 'name', 'description', 'price', 'duration',
+          'compatibleServiceIds', 'incompatibleExtraIds', 'active', 'order',
+          'placeholder', 'createdAt', 'updatedAt'
+        ]) && data.keys().hasOnly([
+          'id', 'name', 'description', 'price', 'duration',
+          'compatibleServiceIds', 'incompatibleExtraIds', 'active', 'order',
+          'placeholder', 'createdAt', 'updatedAt'
+        ]) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+        data.description is string && data.description.size() <= 1000 &&
+        data.price is number && data.price >= 0 && data.price <= 10000000 &&
+        data.duration is int && data.duration > 0 && data.duration <= 240 &&
+        data.compatibleServiceIds is list && data.compatibleServiceIds.size() <= 50 &&
+        data.incompatibleExtraIds is list && data.incompatibleExtraIds.size() <= 50 &&
+        data.active is bool && data.order is int && data.order >= 0 && data.order <= 10000 &&
+        data.placeholder == false;
+    }
+    function validPolicyConsent(data) {
+      return data is map && data.keys().hasOnly(['accepted', 'version', 'acceptedAt', 'sessionId', 'policies']) && data.accepted == true &&
+        data.version is string && data.version.size() > 0 && data.version.size() <= 80 &&
+        data.acceptedAt is string && data.acceptedAt.size() >= 20 && data.acceptedAt.size() <= 40 &&
+        data.sessionId is string && data.sessionId.size() > 0 && data.sessionId.size() <= 128 &&
+        data.policies is list && data.policies.size() >= 1 && data.policies.size() <= 20 &&
+        validPolicySnapshot(data.policies[0]);
+    }
+    function validPolicySnapshot(data) {
+      return data is map && data.keys().hasOnly(['id', 'title', 'summary', 'version']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 160 &&
+        data.summary is string && data.summary.size() > 0 && data.summary.size() <= 3000 &&
+        data.version is int && data.version >= 1 && data.version <= 1000000;
+    }
+    function validBookingPolicy(data, policyId) {
+      return data.keys().hasOnly(['id', 'title', 'summary', 'displayOrder', 'version', 'createdAt', 'updatedAt']) &&
+        data.id == policyId && data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 160 &&
+        data.summary is string && data.summary.size() > 0 && data.summary.size() <= 3000 &&
+        data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 10000 &&
+        data.version is int && data.version >= 1 && data.version <= 1000000;
+    }
+    function validBookingPolicyVersionUpdate() {
+      let wordingChanged = request.resource.data.title != resource.data.title ||
+        request.resource.data.summary != resource.data.summary;
+      return (wordingChanged && request.resource.data.version == resource.data.version + 1) ||
+        (!wordingChanged && request.resource.data.version == resource.data.version);
+    }
+    // Customer creates deliberately use a bounded validator.
+    // Firestore evaluates every write in the atomic booking/lock transaction and
+    // caps the whole Rules expression tree at 1,000 expressions. Fields copied
+    // from the catalogue are therefore validated by equality with the live
+    // service document instead of repeating the full owner-side validator.
+    function validCustomerBooking(data, bookingId) {
+      return data.keys().hasOnly([
+          'id', 'reference', 'ownerUid', 'serviceId', 'serviceNameSnapshot', 'serviceType',
+          'schedulingMode', 'date', 'startTime', 'endTime', 'sessionId', 'lockIds', 'customer',
+          'serviceSnapshot', 'extrasSnapshot', 'totalDuration', 'subtotal', 'addressSnapshot',
+          'preparationSnapshot', 'policyVersion', 'policyConsent', 'policyConsentRecord',
+          'intakeResponses', 'status', 'paymentStatus', 'followUpDue', 'createdAt', 'updatedAt'
+        ]) &&
+        data.id == bookingId && data.id is string && data.id.size() <= 128 &&
+        data.reference is string && data.reference.size() >= 6 && data.reference.size() <= 40 &&
+        data.ownerUid == request.auth.uid &&
+        data.serviceId is string && data.serviceId.size() > 0 && data.serviceId.size() <= 128 &&
+        validDate(data.date) && validTime(data.startTime) && validTime(data.endTime) &&
+        data.lockIds is list && data.lockIds.size() >= 1 && data.lockIds.size() <= 9 &&
+        validCustomer(data.customer) &&
+        data.serviceSnapshot is map && data.serviceSnapshot.keys().hasOnly(['id', 'name', 'category', 'price', 'duration', 'preparation']) &&
+        data.extrasSnapshot is list && data.extrasSnapshot.size() <= 20 &&
+        data.totalDuration is int && data.totalDuration > 0 && data.totalDuration <= 240 &&
+        data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 50000000 &&
+        data.addressSnapshot is string && data.addressSnapshot.size() <= 500 &&
+        data.preparationSnapshot is string && data.preparationSnapshot.size() <= 2000 &&
+        data.policyVersion is string && data.policyVersion.size() > 0 && data.policyVersion.size() <= 80 &&
+        data.policyConsent == true && validPolicyConsent(data.policyConsentRecord) &&
+        data.intakeResponses is map && data.intakeResponses.keys().size() <= 30 &&
+        data.status == 'pending-confirmation' && data.paymentStatus == 'not-required' &&
+        data.followUpDue == false && validCreateTimestamps(data) &&
+        ((data.serviceType == 'salon' && data.schedulingMode == 'salon-session' &&
+            data.sessionId in ['morning', 'afternoon', 'evening'] && data.lockIds.size() == 1) ||
+          (data.serviceType == 'trichology' && data.schedulingMode == 'precise-time' && !('sessionId' in data)));
+    }
+    function validCustomerBookingCreate(data, bookingId) {
+      let serviceData = get(/databases/$(database)/documents/services/$(data.serviceId)).data;
+      let firstLock = getAfter(/databases/$(database)/documents/bookingLocks/$(data.lockIds[0])).data;
+      return isAnonymousCustomer() && validCustomerBooking(data, bookingId) &&
+        serviceData.active == true && serviceData.archived == false && serviceData.id == data.serviceId &&
+        serviceData.name == data.serviceNameSnapshot && serviceData.category == data.serviceType &&
+        serviceData.schedulingMode == data.schedulingMode && serviceData.price == data.serviceSnapshot.price &&
+        serviceData.durationMinutes == data.serviceSnapshot.duration && data.serviceSnapshot.id == serviceData.id &&
+        data.serviceSnapshot.name == serviceData.name && data.serviceSnapshot.category == serviceData.category &&
+        data.totalDuration >= serviceData.durationMinutes && data.subtotal >= serviceData.price &&
+        existsAfter(/databases/$(database)/documents/bookingLocks/$(data.lockIds[0])) &&
+        firstLock.bookingId == bookingId && firstLock.ownerUid == request.auth.uid &&
+        firstLock.serviceType == data.serviceType && firstLock.date == data.date &&
+        firstLock.startTime == data.startTime && firstLock.endTime == data.endTime &&
+        ((data.serviceType == 'salon' && firstLock.sessionId == data.sessionId) ||
+          data.serviceType == 'trichology');
+    }
+    function validAdminStatusTransition() {
+      return request.resource.data.status == resource.data.status ||
+        (resource.data.status in ['request-submitted', 'pending-confirmation'] && request.resource.data.status in ['confirmed', 'cancelled']) ||
+        (resource.data.status == 'confirmed' && request.resource.data.status in ['completed', 'cancelled', 'no-show', 'reschedule-requested', 'cancellation-requested']) ||
+        (resource.data.status in ['reschedule-requested', 'cancellation-requested'] && request.resource.data.status in ['confirmed', 'cancelled']);
+    }
+    function validAdminPaymentStatus() {
+      return request.resource.data.paymentStatus in [
+        'not-required', 'not-started', 'initialised', 'processing',
+        'partially-paid', 'paid', 'failed', 'cancelled', 'refunded',
+        'partially-refunded'
+      ];
+    }
+    function validAdminBookingUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'paymentStatus', 'followUpDue', 'internalNotes', 'date',
+          'startTime', 'endTime', 'sessionId', 'lockIds', 'updatedAt'
+        ]) &&
+        uidNotModified() && validUpdateTimestamps(request.resource.data) &&
+        validAdminStatusTransition() && validAdminPaymentStatus() &&
+        request.resource.data.followUpDue is bool &&
+        validDate(request.resource.data.date) && validTime(request.resource.data.startTime) &&
+        validTime(request.resource.data.endTime) &&
+        request.resource.data.lockIds is list && request.resource.data.lockIds.size() >= 1 &&
+        request.resource.data.lockIds.size() <= 9 &&
+        (!('internalNotes' in request.resource.data) ||
+          (request.resource.data.internalNotes is string && request.resource.data.internalNotes.size() <= 2000)) &&
+        request.resource.data.policyVersion == resource.data.policyVersion &&
+        request.resource.data.policyConsent == resource.data.policyConsent &&
+        request.resource.data.policyConsentRecord == resource.data.policyConsentRecord;
     }
 
-    function isPublishableGallery(data) {
-      return data.isClientResult != true ||
-        (data.consentConfirmed == true &&
-          data.placeholder == false &&
-          data.consentRecordReference is string &&
-          data.consentRecordReference.size() > 0);
+    function validBookingLock(data, lockId) {
+      return data.keys().hasOnly(['lockId', 'bookingId', 'ownerUid', 'serviceType', 'date', 'sessionId', 'unitTime', 'startTime', 'endTime', 'status', 'createdAt']) &&
+        data.lockId == lockId && data.lockId.size() <= 80 &&
+        data.bookingId is string && data.bookingId.size() > 0 && data.bookingId.size() <= 128 &&
+        data.ownerUid is string && data.ownerUid.size() > 0 && data.ownerUid.size() <= 128 &&
+        data.serviceType in ['salon', 'trichology'] && validDate(data.date) && validTime(data.startTime) && validTime(data.endTime) &&
+        data.status == 'active' && data.createdAt is timestamp && data.createdAt == request.time &&
+        ((data.serviceType == 'salon' && data.keys().hasAll(['sessionId']) && !('unitTime' in data) &&
+          data.sessionId in ['morning', 'afternoon', 'evening'] && lockId.matches(data.date + '_' + data.sessionId + '_seat-[1-3]') &&
+          ((data.sessionId == 'morning' && data.startTime == '09:00' && data.endTime == '12:00') ||
+           (data.sessionId == 'afternoon' && data.startTime == '12:00' && data.endTime == '15:00') ||
+           (data.sessionId == 'evening' && data.startTime == '15:00' && data.endTime == '18:00'))) ||
+         (data.serviceType == 'trichology' && data.keys().hasAll(['unitTime']) && !('sessionId' in data) &&
+          validUnitTime(data.unitTime) && lockId == data.date + '_' + data.unitTime));
+    }
+    function validCustomerLockCreate(data, lockId) {
+      return isAnonymousCustomer() && uidUnchanged() && validBookingLock(data, lockId);
     }
 
-    // Public catalogue and policy reads are deliberately narrow. Drafts, guest
-    // identity, intake answers, holds and payment records are never public.
+    function validBlockUnit(data, blockId) {
+      return data.keys().hasAll(['id', 'date', 'unitTime', 'groupId', 'kind', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'date', 'unitTime', 'groupId', 'kind', 'sessionId', 'publicReason', 'createdAt', 'updatedAt']) &&
+        data.id == blockId && validDate(data.date) && validUnitTime(data.unitTime) && blockId == data.date + '_' + data.unitTime &&
+        data.groupId is string && data.groupId.size() > 0 && data.groupId.size() <= 128 &&
+        data.kind in ['all-day', 'time-range', 'salon-session'] &&
+        (!('sessionId' in data) || data.sessionId in ['morning', 'afternoon', 'evening']) &&
+        ((data.kind == 'all-day' && data.keys().hasAll(['publicReason']) &&
+            data.publicReason is string && data.publicReason.size() > 0 && data.publicReason.size() <= 160) ||
+          (data.kind != 'all-day' && !('publicReason' in data)));
+    }
+    function validBlockDetail(data, id) {
+      return data.keys().hasAll(['id', 'date', 'reason', 'kind', 'adminUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'date', 'start', 'end', 'reason', 'kind', 'sessionId', 'adminUid', 'createdAt', 'updatedAt']) &&
+        data.id == id && validDate(data.date) && data.reason is string && data.reason.size() > 0 && data.reason.size() <= 500 &&
+        data.kind in ['all-day', 'time-range', 'salon-session'] && data.adminUid == request.auth.uid &&
+        ((!('start' in data) && !('end' in data)) || (validTime(data.start) && validTime(data.end) && data.start < data.end)) &&
+        (!('sessionId' in data) || data.sessionId in ['morning', 'afternoon', 'evening']);
+    }
+    function validCapacityOverride(data, id) {
+      return data.keys().hasAll(['id', 'date', 'sessionId', 'capacity', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'date', 'sessionId', 'capacity', 'createdAt', 'updatedAt']) &&
+        data.id == id && id == data.date + '_' + data.sessionId && validDate(data.date) &&
+        data.sessionId in ['morning', 'afternoon', 'evening'] && data.capacity is int && data.capacity >= 0 && data.capacity <= 3;
+    }
+    function validPrivateReason(data, id) {
+      return data.keys().hasAll(['id', 'reason', 'adminUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'reason', 'adminUid', 'createdAt', 'updatedAt']) && data.id == id &&
+        data.reason is string && data.reason.size() > 0 && data.reason.size() <= 500 && data.adminUid == request.auth.uid;
+    }
+
     match /services/{id} {
-      allow read: if isActivePublicRecord() || isAdmin();
-      allow write: if isAdmin();
-    }
-    match /serviceExtras/{id} {
-      allow read: if isActivePublicRecord() || isAdmin();
-      allow write: if isAdmin();
-    }
-    match /serviceIntakeSchemas/{id} {
-      allow read: if isActivePublicRecord() || isAdmin();
-      allow write: if isAdmin();
-    }
-    match /bookingPolicies/{id} {
-      allow read: if isActivePublicRecord() || isAdmin();
-      allow write: if isAdmin();
-    }
-    match /homeOfferings/{id} {
-      allow read: if isActivePublicRecord() || isAdmin();
-      allow create, update: if isAdmin() && isCanonicalHomeOffering(id);
-      allow delete: if false;
-    }
-    match /gallery/{id} {
-      allow read: if isAdmin() ||
-        (isActivePublicRecord() && isPublishableGallery(resource.data));
-      allow create, update: if isAdmin() &&
-        isPublishableGallery(request.resource.data);
+      allow get, list: if isAdmin() || (resource.data.active == true && resource.data.archived == false);
+      allow create: if isAdmin() && request.resource.data.id == id && validService(request.resource.data) && validCreateTimestamps(request.resource.data);
+      allow update: if isAdmin() && request.resource.data.id == id && validService(request.resource.data) && validUpdateTimestamps(request.resource.data);
       allow delete: if isAdmin();
     }
-    match /businessSettings/public {
-      allow read: if true;
-      allow write: if isAdmin();
+    match /serviceExtras/{id} {
+      allow get, list: if isAdmin() || (resource.data.active == true && resource.data.placeholder == false);
+      allow create: if isAdmin() && request.resource.data.id == id && validServiceExtra(request.resource.data) && validCreateTimestamps(request.resource.data);
+      allow update: if isAdmin() && request.resource.data.id == id && validServiceExtra(request.resource.data) && validUpdateTimestamps(request.resource.data);
+      allow delete: if isAdmin();
     }
-    match /businessSettings/{id} {
-      allow read, write: if isAdmin();
+    match /serviceIntakeSchemas/{id} { allow read, write: if isAdmin(); }
+    match /bookingPolicies/{id} {
+      allow get, list: if true;
+      allow create: if isAdmin() && validBookingPolicy(request.resource.data, id) &&
+        request.resource.data.version == 1 && validCreateTimestamps(request.resource.data);
+      allow update: if isAdmin() && validBookingPolicy(request.resource.data, id) &&
+        validUpdateTimestamps(request.resource.data) && validBookingPolicyVersionUpdate();
+      allow delete: if isAdmin();
+    }
+    match /bookings/{id} {
+      allow get: if isAdmin() || isDocOwner();
+      allow list: if isAdmin();
+      allow create: if validCustomerBookingCreate(request.resource.data, id);
+      allow update: if isAdmin() && validAdminBookingUpdate();
+      allow delete: if false;
+    }
+    match /bookingLocks/{id} {
+      // Lock records contain no names, email addresses, phone numbers or notes.
+      allow get, list: if isAuthenticated();
+      allow create: if isAdmin() || validCustomerLockCreate(request.resource.data, id);
+      allow update, delete: if isAdmin();
     }
     match /blockedPeriods/{id} {
-      allow read, write: if isAdmin();
+      allow get, list: if isAuthenticated();
+      allow create: if isAdmin() && validBlockUnit(request.resource.data, id) && validCreateTimestamps(request.resource.data);
+      allow update: if isAdmin() && validBlockUnit(request.resource.data, id) && validUpdateTimestamps(request.resource.data);
+      allow delete: if isAdmin();
     }
-
-    // The secure booking API uses privileged server credentials for atomic hold,
-    // payment verification and booking creation. Browser clients cannot bypass it.
-    match /bookingHolds/{id} { allow read, write: if isAdmin(); }
-    match /bookings/{id} { allow read, write: if isAdmin(); }
-    match /bookingIntakeResponses/{id} { allow read, write: if isAdmin(); }
-    match /payments/{id} { allow read, write: if isAdmin(); }
-    match /paymentEvents/{id} { allow read, write: if isAdmin(); }
-    match /notifications/{id} { allow read, write: if isAdmin(); }
-
-    match /content/home-announcement {
-      allow read: if true;
-      allow write: if isAdmin();
+    match /blockedPeriodDetails/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && validBlockDetail(request.resource.data, id) && validCreateTimestamps(request.resource.data);
+      allow update: if isAdmin() && validBlockDetail(request.resource.data, id) && validUpdateTimestamps(request.resource.data);
+      allow delete: if isAdmin();
     }
-    match /{collectionName}/{id} {
-      allow read: if collectionName in ['faqs', 'testimonials', 'results', 'content', 'productsCache']
-                  && (isActivePublicRecord() || isAdmin());
-      allow write: if collectionName in ['faqs', 'testimonials', 'results', 'content', 'productsCache'] && isAdmin();
+    match /capacityOverrides/{id} {
+      allow get, list: if isAuthenticated();
+      allow create: if isAdmin() && validCapacityOverride(request.resource.data, id) && validCreateTimestamps(request.resource.data);
+      allow update: if isAdmin() && validCapacityOverride(request.resource.data, id) && validUpdateTimestamps(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /capacityOverrideDetails/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && validPrivateReason(request.resource.data, id) && validCreateTimestamps(request.resource.data);
+      allow update: if isAdmin() && validPrivateReason(request.resource.data, id) && validUpdateTimestamps(request.resource.data);
+      allow delete: if isAdmin();
     }
     match /leads/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['id', 'email', 'consent', 'createdAt', 'utm'])
-                    && request.resource.data.consent == true;
+      allow create: if request.resource.data.keys().hasOnly(['id', 'email', 'consent', 'createdAt', 'utm']) &&
+        request.resource.data.id == id && validEmail(request.resource.data.email) && request.resource.data.consent == true &&
+        request.resource.data.utm is map && request.resource.data.utm.keys().size() <= 20 && request.resource.data.createdAt == request.time;
       allow read, update, delete: if isAdmin();
     }
     match /enquiries/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['id', 'fullName', 'email', 'message', 'consent', 'createdAt'])
-                    && request.resource.data.fullName is string
-                    && request.resource.data.fullName.size() >= 2
-                    && request.resource.data.fullName.size() <= 100
-                    && request.resource.data.email is string
-                    && request.resource.data.email.size() <= 160
-                    && request.resource.data.message is string
-                    && request.resource.data.message.size() >= 5
-                    && request.resource.data.message.size() <= 2000
-                    && request.resource.data.consent == true;
+      allow create: if request.resource.data.keys().hasOnly(['id', 'fullName', 'email', 'message', 'consent', 'createdAt']) &&
+        request.resource.data.id == id && request.resource.data.fullName is string &&
+        request.resource.data.fullName.size() >= 2 && request.resource.data.fullName.size() <= 100 && validEmail(request.resource.data.email) &&
+        request.resource.data.message is string && request.resource.data.message.size() >= 5 && request.resource.data.message.size() <= 2000 &&
+        request.resource.data.consent == true && request.resource.data.createdAt == request.time;
       allow read, update, delete: if isAdmin();
     }
     match /auditLogs/{id} {
-      allow read, create: if isAdmin();
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly(['id', 'action', 'actorUid', 'targetCollection', 'targetId', 'createdAt']) &&
+        request.resource.data.id == id && request.resource.data.action is string && request.resource.data.action.size() > 0 &&
+        request.resource.data.action.size() <= 100 && request.resource.data.actorUid == request.auth.uid &&
+        request.resource.data.targetCollection is string && request.resource.data.targetCollection.size() <= 100 &&
+        request.resource.data.targetId is string && request.resource.data.targetId.size() <= 128 && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }
+    match /{document=**} { allow read, write: if false; }
   }
 }

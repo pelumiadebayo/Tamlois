@@ -1,5 +1,6 @@
 export type ServiceType = "service" | "consultation" | "package";
 export type ServiceCategory = "salon" | "trichology";
+export type SchedulingMode = "salon-session" | "precise-time";
 export type BookingStatus =
   | "draft"
   | "slot-held"
@@ -56,6 +57,7 @@ export interface Service {
   concerns: string[];
   price: number;
   duration: number;
+  durationMinutes?: number;
   preparation: string;
   expectation: string;
   aftercare: string;
@@ -64,14 +66,19 @@ export interface Service {
   depositRequired: boolean;
   depositAmount: number;
   active: boolean;
+  archived?: boolean;
   featured?: boolean;
   order: number;
+  displayOrder?: number;
+  schedulingMode?: SchedulingMode;
   image: string;
   imageAlt: string;
   variations: ServiceVariation[];
   intakeSchemaId?: string;
   photoUploadEnabled?: boolean;
-  placeholder: true;
+  placeholder: boolean;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 export interface ServiceExtra {
@@ -84,7 +91,7 @@ export interface ServiceExtra {
   incompatibleExtraIds: string[];
   active: boolean;
   order: number;
-  placeholder: true;
+  placeholder: boolean;
 }
 
 export interface IntakeQuestion {
@@ -152,20 +159,23 @@ export type GalleryCategory =
   | "natural-hair"
   | "clinic"
   | "products";
-export interface GalleryItem {
+export interface StaticGalleryItem {
   id: string;
-  image: string;
-  category: GalleryCategory;
+  category: Exclude<GalleryCategory, "products">;
   caption: string;
   alt: string;
   order: number;
   featured: boolean;
   active: boolean;
-  relatedServiceId?: string;
-  consentRecordReference?: string;
-  consentConfirmed: boolean;
+  width: number;
+  height: number;
+  sources: Array<{ src: string; width: number }>;
+  provenance: "tamlois" | "licensed-placeholder";
+  provenanceLabel: string;
   isClientResult: boolean;
-  placeholder: boolean;
+  writtenConsentConfirmed: boolean;
+  consentNote: string;
+  relatedHref?: string;
 }
 
 export interface PaymentSettings {
@@ -194,13 +204,24 @@ export interface BusinessSettings {
 
 export interface BookingPolicy {
   id: string;
-  version: string;
-  effectiveFrom: string;
   title: string;
   summary: string;
-  fullText: string;
-  active: boolean;
-  placeholder: boolean;
+  displayOrder: number;
+  version: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+export type CreateBookingPolicyInput = Pick<BookingPolicy, "title" | "summary">;
+export type UpdateBookingPolicyInput = Pick<BookingPolicy, "title" | "summary">;
+export interface BookingPolicyRepository {
+  list(): Promise<BookingPolicy[]>;
+  createAsAdmin(input: CreateBookingPolicyInput): Promise<BookingPolicy>;
+  updateAsAdmin(
+    id: string,
+    input: UpdateBookingPolicyInput,
+  ): Promise<BookingPolicy>;
+  reorderAsAdmin(ids: string[]): Promise<void>;
+  deleteAsAdmin(id: string): Promise<void>;
 }
 export interface BlockedPeriod {
   id: string;
@@ -208,6 +229,21 @@ export interface BlockedPeriod {
   start?: string;
   end?: string;
   reason: string;
+  kind?: "all-day" | "time-range" | "salon-session";
+  sessionId?: string;
+  adminUid?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+export interface CapacityOverride {
+  id: string;
+  date: string;
+  sessionId: string;
+  capacity: number;
+  reason: string;
+  adminUid?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 export interface BookingExtraSnapshot {
   id: string;
@@ -228,13 +264,18 @@ export interface PolicyConsentRecord {
   version: string;
   acceptedAt: string;
   sessionId: string;
+  policies: Array<
+    Pick<BookingPolicy, "id" | "title" | "summary" | "version">
+  >;
 }
 
 export interface Booking {
   id: string;
   reference: string;
+  ownerUid?: string;
   managementToken?: string;
   category: ServiceCategory;
+  schedulingMode?: SchedulingMode;
   serviceId: string;
   serviceName: string;
   serviceSnapshot: BookingServiceSnapshot;
@@ -245,6 +286,7 @@ export interface Booking {
   date: string;
   startTime: string;
   endTime: string;
+  salonSessionId?: "morning" | "afternoon" | "evening";
   totalDuration: number;
   subtotal: number;
   amountDueNow: number;
@@ -274,13 +316,15 @@ export interface Booking {
   status: BookingStatus;
   internalNotes: string;
   createdAt: string;
+  updatedAt?: unknown;
   followUpDue: boolean;
-  holdId?: string;
   lockIds?: string[];
 }
 
 export interface BookingDraft {
   sessionId: string;
+  bookingId: string;
+  bookingReference: string;
   flowVersion: number;
   step: number;
   policyConsent?: PolicyConsentRecord;
@@ -306,22 +350,109 @@ export interface BookingDraft {
   >;
   intakeResponses: Record<string, string | string[] | boolean>;
   paymentMode?: PaymentMode;
-  holdId?: string;
-  holdExpiresAt?: string;
   updatedAt: string;
 }
 
-export interface BookingHold {
-  id: string;
-  sessionId: string;
+export interface BookingLock {
+  lockId: string;
+  bookingId: string;
+  ownerUid: string;
+  serviceType: ServiceCategory;
   date: string;
+  sessionId?: "morning" | "afternoon" | "evening";
+  unitTime?: string;
   startTime: string;
   endTime: string;
+  status: "active";
+  createdAt: unknown;
+}
+
+export interface SalonAvailabilityResult {
+  date: string;
+  blocked: boolean;
+  sessions: Array<{
+    id: "morning" | "afternoon" | "evening";
+    label: string;
+    startTime: string;
+    endTime: string;
+    capacity: number;
+    remaining: number;
+    available: boolean;
+    blocked: boolean;
+  }>;
+}
+
+export interface SalonMonthAvailabilityDay {
+  remaining: number;
+  status: "available" | "booked" | "blocked" | "unavailable";
+  reason?: string;
+}
+
+export interface TrichologyAvailabilityResult {
+  date: string;
+  slots: string[];
+  blocked: boolean;
+}
+
+export interface BookingAvailabilityRequest {
+  date: string;
   serviceId: string;
-  category?: ServiceCategory;
-  lockIds: string[];
-  expiresAt: string;
-  status: "active" | "converted" | "expired" | "released";
+  extraIds: string[];
+}
+
+export interface CreateBookingInput {
+  bookingId: string;
+  bookingReference: string;
+  service: Service;
+  extras: ServiceExtra[];
+  date: string;
+  startTime: string;
+  details: Pick<
+    Booking,
+    | "fullName"
+    | "phone"
+    | "email"
+    | "preferredContact"
+    | "concern"
+    | "hopes"
+    | "concernDuration"
+    | "priorProfessionalTreatment"
+    | "productsTreatments"
+    | "note"
+  >;
+  intakeResponses: Booking["intakeResponses"];
+  policyConsentRecord: PolicyConsentRecord;
+  addressSnapshot: string;
+}
+
+export interface RescheduleBookingInput {
+  date: string;
+  startTime: string;
+}
+
+export interface AvailabilityRepositoryContract {
+  getSalonSessionAvailability(
+    request: BookingAvailabilityRequest,
+  ): Promise<SalonAvailabilityResult>;
+  getTrichologyAvailability(
+    request: BookingAvailabilityRequest,
+  ): Promise<TrichologyAvailabilityResult>;
+  getSalonMonthAvailability(
+    month: string,
+  ): Promise<Record<string, SalonMonthAvailabilityDay>>;
+}
+
+export interface BookingRepositoryContract {
+  list(): Promise<Booking[]>;
+  get(id: string): Promise<Booking | null>;
+  createBooking(input: CreateBookingInput): Promise<Booking>;
+  cancelBookingAsAdmin(bookingId: string): Promise<void>;
+  rescheduleBookingAsAdmin(
+    bookingId: string,
+    input: RescheduleBookingInput,
+  ): Promise<void>;
+  updateStatusAsAdmin(bookingId: string, status: BookingStatus): Promise<void>;
+  saveInternalNotesAsAdmin(bookingId: string, internalNotes: string): Promise<void>;
 }
 
 export interface Lead {
@@ -337,3 +468,4 @@ export interface Repository<T extends { id: string }> {
   save(item: T): Promise<T>;
   remove(id: string): Promise<void>;
 }
+import type { Timestamp } from "firebase/firestore";

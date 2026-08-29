@@ -1,5 +1,5 @@
-import type { Booking, BookingPolicy, IntakeQuestion, Repository, Service, ServiceExtra } from '../types';
-import { bookingPolicies, intakeQuestions, serviceExtras, services as seedServices } from '../data/content';
+import type { Booking, IntakeQuestion, Repository, Service, ServiceExtra } from '../types';
+import { intakeQuestions, serviceExtras, services as seedServices } from '../data/content';
 
 export class LocalRepository<T extends { id: string }> implements Repository<T> {
   constructor(private key: string, private seed: T[] = []) {}
@@ -24,4 +24,3 @@ export const serviceRepository = new LocalRepository<Service>('tamlois-services'
 export const bookingRepository = new LocalRepository<Booking>('tamlois-bookings', []);
 export const serviceExtraRepository = new LocalRepository<ServiceExtra>('tamlois-service-extras', serviceExtras);
 export const intakeQuestionRepository = new LocalRepository<IntakeQuestion>('tamlois-intake-questions', intakeQuestions);
-export const bookingPolicyRepository = new LocalRepository<BookingPolicy>('tamlois-booking-policies', bookingPolicies);

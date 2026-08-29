@@ -11,48 +11,47 @@ import {
 import type {
   BlockedPeriod,
   Booking,
-  BookingHold,
   BusinessSettings,
+  SalonMonthAvailabilityDay,
 } from "../types";
+import { BUSINESS_SCHEDULE } from "../config/businessSchedule";
 
-export const SALON_SESSIONS = [
-  {
-    id: "morning",
-    label: "Morning Session",
-    startTime: "09:00",
-    endTime: "12:00",
-    capacity: 3,
-  },
-  {
-    id: "afternoon",
-    label: "Afternoon Session",
-    startTime: "12:00",
-    endTime: "15:00",
-    capacity: 3,
-  },
-  {
-    id: "evening",
-    label: "Evening Session",
-    startTime: "15:00",
-    endTime: "18:00",
-    capacity: 3,
-  },
-] as const;
+export const SALON_SESSIONS = BUSINESS_SCHEDULE.salonSessions;
 
 export type SalonSessionAvailability = (typeof SALON_SESSIONS)[number] & {
   remaining: number;
   available: boolean;
 };
 
+export function resolveSalonCalendarDayAvailability(
+  bookable: boolean,
+  remaining: number,
+  fullDayReason?: string,
+  fullDayBlocked = false,
+): SalonMonthAvailabilityDay {
+  const reason = fullDayReason?.trim();
+  if (fullDayBlocked || reason)
+    return {
+      remaining: 0,
+      status: "blocked",
+      reason: reason || "Closed",
+    };
+  if (!bookable) return { remaining: 0, status: "unavailable" };
+  return {
+    remaining: Math.max(0, remaining),
+    status: remaining > 0 ? "available" : "booked",
+  };
+}
+
 export const defaultSettings: BusinessSettings = {
-  timezone: "Africa/Lagos",
+  timezone: BUSINESS_SCHEDULE.timezone,
   address: "16, Road 21, Gowon Estate, Lagos, Nigeria",
-  bookingInterval: 30,
-  bufferMinutes: 15,
-  minimumNoticeHours: 4,
-  maximumAdvanceDays: 60,
-  openingHour: 9,
-  closingHour: 18,
+  bookingInterval: BUSINESS_SCHEDULE.bookingIntervalMinutes,
+  bufferMinutes: BUSINESS_SCHEDULE.appointmentBufferMinutes,
+  minimumNoticeHours: BUSINESS_SCHEDULE.minimumNoticeHours,
+  maximumAdvanceDays: BUSINESS_SCHEDULE.maximumAdvanceDays,
+  openingHour: Number(BUSINESS_SCHEDULE.openingTime.slice(0, 2)),
+  closingHour: Number(BUSINESS_SCHEDULE.closingTime.slice(0, 2)),
   closedDays: [0],
   blockedPeriods: [],
   payment: {
@@ -102,9 +101,7 @@ export function getSalonSessionAvailability(
   date: Date,
   settings: BusinessSettings = defaultSettings,
   bookings: Booking[] = [],
-  holds: BookingHold[] = [],
   now = new Date(),
-  currentSessionId?: string,
 ): SalonSessionAvailability[] {
   const clinicNow = wallClockInTimeZone(now, settings.timezone);
   const dateValue = format(date, "yyyy-MM-dd");
@@ -140,18 +137,7 @@ export function getSalonSessionAvailability(
         booking.startTime === session.startTime &&
         !["cancelled", "expired"].includes(booking.status),
     ).length;
-    const heldSpaces = holds.filter(
-      (hold) =>
-        hold.status === "active" &&
-        hold.sessionId !== currentSessionId &&
-        hold.date === dateValue &&
-        hold.startTime === session.startTime &&
-        (hold.category === "salon" || hold.endTime === session.endTime),
-    ).length;
-    const remaining = Math.max(
-      0,
-      session.capacity - bookedSpaces - heldSpaces,
-    );
+    const remaining = Math.max(0, session.capacity - bookedSpaces);
     const meetsNotice =
       isAfter(start, minimumStart) || isEqual(start, minimumStart);
     return {

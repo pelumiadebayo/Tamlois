@@ -1,38 +1,97 @@
 # Firebase setup
 
-## Secure booking boundary
+## 1. Web configuration
 
-The included Firestore rules permit public reads only for active catalogue, intake and policy records plus the sanitised public business settings document. Anonymous browsers cannot create or read `bookingHolds`, `bookings`, `bookingIntakeResponses`, `payments`, `paymentEvents` or `notifications`. The included `bookingApi` Cloud Function validates the complete active policy bundle, service/extras compatibility, duration, price, required contact details, availability and hold state before committing a booking. Service intake responses remain optional.
+Copy the public Firebase Web app values to `.env.local` and the matching GitHub repository variables:
 
-For Paystack, the function initializes transactions with its server secret, independently verifies amount/reference/hold metadata before booking creation, and validates webhook HMAC signatures. Release holds after cancellation or expiry. Store no Paystack secret in Vite or any browser-delivered configuration.
+```dotenv
+VITE_APP_MODE=firebase
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=tamlois
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_ADMIN_UID=0CZw1AFTjMXudXtvFST0z2ufET02
+VITE_DEFAULT_PAYMENT_MODE=clinic
+```
 
-For optional client photos, keep `VITE_ENABLE_CLIENT_PHOTO_UPLOADS=false` until private Storage rules, file validation, retention/deletion, explicit consent, malware handling and short-lived signed access are implemented. Demo mode creates only an in-memory preview URL and never uploads the file.
+Firebase Web identifiers are browser-visible configuration, not secrets. Never put a service account, Paystack secret or mail-provider key in a `VITE_*` variable. `VITE_BOOKING_API_URL` is not used.
 
-1. Create a Firebase project owned by the clinic.
-2. Register a Web app and copy its public web configuration into a local `.env` based on `.env.example`.
-3. Set `VITE_APP_MODE=firebase`.
-4. Set `VITE_BOOKING_API_URL` to the deployed `bookingApi` URL. Create the `PAYSTACK_SECRET_KEY` secret with `firebase functions:secrets:set PAYSTACK_SECRET_KEY`. Set `PUBLIC_SITE_ORIGIN` and `BOOKING_ALLOWED_ORIGIN` to the exact public web origin when prompted during deployment. Set `REQUIRE_APP_CHECK=true` after the client App Check key has been verified.
-5. Create Cloud Firestore in a region close to the clinic's users. Region choice is difficult to change later.
-6. Enable Email/Password under Authentication.
-7. Create the owner's account.
-8. Set a custom claim such as `{ "admin": true }` using a trusted Admin SDK script or server environment. Never let the browser grant itself admin status.
-9. Deploy functions, rules and indexes:
+## 2. Enable Authentication providers
 
-   ```bash
-   npm install -g firebase-tools
-   firebase login
-   firebase use YOUR_PROJECT_ID
-   npm --prefix functions install
-   npm --prefix functions run build
-   firebase deploy --only functions,firestore:rules,firestore:indexes
-   ```
+In Firebase Console → **Authentication → Sign-in method**:
 
-10. Seed active services, service extras, service intake schemas, all active policies, the four canonical `homeOfferings` records and approved `gallery` records. Their enforced IDs/order are Salon 1, Trichology 2, Products 3 and Gallery 4. Save public-safe availability and payment settings through the admin. Gallery records marked `isClientResult: true` must also carry `consentConfirmed: true`, `placeholder: false` and a non-empty clinic-held consent reference.
-11. Add the production host and any custom domain to Authentication authorised domains.
-12. Enable App Check for the final web domain, add `VITE_FIREBASE_APP_CHECK_SITE_KEY`, and enforce it only after verification.
-13. Point the Paystack webhook to the deployed `paystackWebhook` URL and test successful and failed verification with Paystack test keys. The API stores idempotent `paymentEvents`; a success received after hold expiry is marked `requires-refund-or-manual-rebooking` and must be handled by clinic operations.
-14. Test public reads, admin-claim sign-in, concurrent hold collisions, expiration/release, paid and clinic-due bookings, stale-policy rejection and every admin action with the Firebase emulator before production.
+1. Enable **Email/Password** for the owner admin.
+2. Enable **Anonymous** for public booking ownership.
 
-Firebase API keys, auth domains, project IDs and app IDs are designed to appear in web apps. They identify the project but do not authorise data access. Security depends on Authentication, Firestore rules, App Check and trusted server code. Admin SDK keys, service-account JSON, Paystack secrets, Shopify Admin tokens and email-provider secrets must never enter `VITE_*` variables or source control.
+If Anonymous is disabled, customers receive “Online booking is not enabled yet” and no availability or booking write is attempted. Existing anonymous sessions are reused. The public UI never asks a customer to register.
 
-The included rules deny all public booking and hold reads/writes; the Admin SDK in Cloud Functions bypasses those rules only after server validation. Public users may read active `homeOfferings` and active `gallery` records, while only admins can write them. The gallery rule rejects a client-result claim without confirmed consent. `businessSettings/public` intentionally exposes operating rules and reason-free blocks, while private operational records remain admin-only. Before production, enable App Check or equivalent request attestation and rate limiting, configure retention for intake data, and test cancellation cleanup and concurrent submissions against the emulator.
+Create the sole owner in **Authentication → Users → Add user**, then copy the User UID. Put the UID in both:
+
+- `ownerUid()` in `firestore.rules` — authoritative;
+- `VITE_FIREBASE_ADMIN_UID` — routing and feedback only.
+
+Firestore Rules cannot read Vite, `.env.local` or GitHub variables. Creating another Email/Password user does not grant access because its UID differs. There is no custom claim or signup bootstrap.
+
+## 3. Firestore
+
+The existing target is `(default)`, Standard edition, `africa-south1`. Do not seed production and do not manually create empty collections. They appear after their first successful write.
+
+The normal Africa/Lagos schedule and Salon sessions are typed in `src/config/businessSchedule.ts`. Firestore persists `services`, `bookingPolicies`, `bookings`, `bookingLocks`, `blockedPeriods`, `blockedPeriodDetails`, `capacityOverrides`, `capacityOverrideDetails`, `auditLogs`, `leads` and `enquiries`. Booking PII exists only in `bookings`; lock and public operational documents contain no customer PII. A full-day `blockedPeriods` unit repeats a bounded `publicReason` so the customer calendar can explain the closure. Do not enter names, contact details or other private information in that field. Timed-block and capacity-adjustment reasons remain in owner-only detail collections. Gallery stays static.
+
+### Booking policies
+
+Do not seed production policies. After signing in as the configured owner, open **Admin → Settings** and create the first policy. Until at least one policy exists, the customer booking flow remains closed.
+
+Each `bookingPolicies/{policyId}` document contains only `id`, `title`, `summary`, `displayOrder`, numeric `version`, `createdAt` and `updatedAt`. Every existing document is publicly readable. Only the owner UID may create, edit, reorder or permanently delete a policy. There is no active, hidden, archived or soft-deleted state.
+
+Editing title or summary increments the numeric version. Reordering changes only `displayOrder`. Permanent deletion removes only the policy document; it does not update bookings. Each new booking embeds the accepted policy IDs, titles, summaries and versions in `policyConsentRecord.policies`, so historical consent remains intact after later edits or deletion.
+
+Review the Rules, select the intended project, then deploy only Rules and indexes:
+
+```bash
+firebase use
+firebase deploy --only firestore:rules,firestore:indexes
+```
+
+This does not deploy collections, seed data, Functions or frontend code.
+
+## 4. App Check
+
+1. Register the web app with reCAPTCHA Enterprise or another supported web provider.
+2. Add `pelumiadebayo.github.io` and the eventual custom domain to Firebase authorized domains and the App Check provider.
+3. Set `VITE_FIREBASE_APP_CHECK_SITE_KEY`.
+4. Start in monitoring mode and verify legitimate production requests.
+5. Enable Firestore enforcement only after valid traffic is healthy.
+
+App Check reduces automated abuse. It does not replace Authentication, Rules or a trusted backend.
+
+## 5. Tests
+
+Install Java 21 for emulator tests, then run:
+
+```bash
+npm run lint
+npm run test
+npm run test:rules
+npm run test:e2e
+npm run build
+```
+
+CI already installs Java 21. Rules tests cover anonymous ownership, denied booking lists, cross-customer denial, forbidden customer status/payment changes, immutable policy snapshots, public policy reads, owner-only policy management, permanent deletion, PII-free locks, owner access and default denial.
+
+## 6. Replacing the owner
+
+1. Create the replacement Email/Password user and copy its UID.
+2. Replace `ownerUid()` in `firestore.rules`.
+3. Replace `VITE_FIREBASE_ADMIN_UID` locally and in GitHub variables.
+4. Deploy the Rules and rebuild the frontend.
+5. Verify the new owner is allowed and the old UID is denied.
+6. Only then disable/delete the previous owner account.
+
+## 7. Deliberate limitations
+
+No Cloud Functions, paid backend, billing upgrade or Google Cloud API enablement is required. Normal concurrent capacity is protected by Firestore transactions. Rules cannot fully prove that a malicious browser created every consecutive Trichology unit derived from duration; a trusted backend is required for absolute enforcement later.
+
+Real Paystack verification/webhooks and production email are also unavailable without a trusted backend. Firebase mode stays pay-at-clinic and always shows an on-screen booking confirmation.

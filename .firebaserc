@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "production": "tamlois",
+    "default": "tamlois"
+  },
+  "targets": {},
+  "etags": {}
+}

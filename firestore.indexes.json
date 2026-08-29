@@ -1,32 +1,20 @@
 {
-  "indexes": [
+  "indexes": [],
+  "fieldOverrides": [
     {
       "collectionGroup": "bookings",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "ASCENDING" }
-      ]
+      "fieldPath": "customer",
+      "indexes": []
     },
     {
-      "collectionGroup": "services",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "active", "order": "ASCENDING" },
-        { "fieldPath": "order", "order": "ASCENDING" }
-      ]
+      "collectionGroup": "bookings",
+      "fieldPath": "intakeResponses",
+      "indexes": []
     },
     {
-      "collectionGroup": "gallery",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "active", "order": "ASCENDING" },
-        { "fieldPath": "isClientResult", "order": "ASCENDING" },
-        { "fieldPath": "consentConfirmed", "order": "ASCENDING" },
-        { "fieldPath": "placeholder", "order": "ASCENDING" },
-        { "fieldPath": "consentRecordReference", "order": "ASCENDING" }
-      ]
+      "collectionGroup": "bookings",
+      "fieldPath": "extrasSnapshot",
+      "indexes": []
     }
-  ],
-  "fieldOverrides": []
+  ]
 }

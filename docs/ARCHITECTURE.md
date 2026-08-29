@@ -1,46 +1,65 @@
 # Architecture
 
-## Booking domain
+## Runtime separation
 
-The booking client owns only anonymous, temporary workflow state. `BookingDraft` is kept in session storage, expires after 24 hours, and `BookingHold` is modelled locally for the demo. In Firebase mode, `functions/src/index.ts` exposes secure routes for atomic hold creation/release, booking submission, Paystack initialisation, server-side verification and signed webhook processing.
+Demo mode uses typed fixtures and local repositories. Firebase mode requires complete Web SDK configuration and never falls back to fixtures or localStorage for services, availability, bookings or administration. Session storage is used only for unfinished form progress; a completed Firebase booking is read from Firestore and its immediate confirmation copy is cached for the confirmation route.
 
-The canonical Firestore collections are `services`, `serviceExtras`, `serviceIntakeSchemas`, `businessSettings`, `bookingPolicies`, `blockedPeriods`, `bookingHolds`, `bookings`, `bookingIntakeResponses`, `payments`, `paymentEvents`, `notifications`, `homeOfferings`, `gallery`, and `auditLogs`. Final bookings snapshot the service, extras, address, policy version, deposit calculation and preparation guidance so future catalogue edits do not rewrite historical records.
+UI components call typed repository interfaces. They do not call Firestore directly. Booking policies use a dedicated repository because their create, edit, reorder and permanent-delete operations have different versioning guarantees from generic records. Gallery metadata and optimized assets remain static repository content.
 
-Guest management must use an unguessable management token through a rate-limited backend. There is intentionally no public lookup by reference, email or phone and no customer-auth route.
+## Authentication
 
-## Application shape
+Public booking silently reuses or creates a Firebase Anonymous Authentication session. Its UID becomes `bookings.ownerUid` and every related `bookingLocks.ownerUid`. Customers see no account or Firebase identity UI.
 
-`src/App.tsx` owns lazy route boundaries. Public pages render inside the shared header/footer layout, while admin pages use a separate protected operational shell. `HashRouter` prevents GitHub Pages refresh failures.
+The sole administrator signs in separately with Email/Password. React restores state with `onAuthStateChanged` and checks the browser-visible owner UID for navigation feedback. Firestore Rules independently compare the authenticated UID with `ownerUid()` and are authoritative. Anonymous users and other Email/Password users cannot enter owner routes or collections.
 
-The application has three layers:
+## Static schedule
 
-1. **UI and routes** in `src/pages` and `src/components`.
-2. **Domain logic and adapters** in `src/lib`.
-3. **Data access** in `src/repositories`.
+`src/config/businessSchedule.ts` owns the ordinary schedule:
 
-UI components do not make privileged Firestore writes. Demo repositories use local storage; Firebase configuration repositories implement the same typed read contract, while bookings and holds go through `HttpBookingGateway`.
+- timezone: `Africa/Lagos`;
+- Monday–Saturday: 09:00–18:00;
+- Sunday: closed;
+- Salon morning 09:00–12:00, afternoon 12:00–15:00, evening 15:00–18:00;
+- Salon capacity: three per session;
+- Trichology interval: 30 minutes;
+- appointment buffer: 15 minutes;
+- maximum online duration: four hours.
 
-`CareLoop` receives sorted active `HomeOffering` records from `homeContentRepository`; it owns only presentation state, autoplay and input handling. Manual selection stops autoplay, while reduced-motion and mobile media queries keep the experience manual from the start. `Gallery` consumes active `GalleryItem` records through the same repository boundary. Firestore permits public reads of active records but reserves writes for admins, including a rule-level consent check when a gallery item is marked as a client result.
+Firestore stores exceptions, not the normal week.
 
-## Booking availability
+## Firestore model
 
-Available times are computed, not stored. Trichology uses `getAvailableSlots`, which combines administrator-managed operating hours, closed days, service duration, booking interval, buffer time, minimum notice, advance window, full-day blocks, partial blocks and active bookings. Salon uses `getSalonSessionAvailability`: fixed 9:00–12:00, 12:00–15:00 and 15:00–18:00 sessions each expose three capacity spaces, subtract matching active bookings and checkout holds, and roll the result into the monthly calendar's per-day count. Demo values persist locally; Firebase mode reads a public-safe `businessSettings/public` document while block reasons remain in the admin-only collection.
+- `services/{serviceId}`: owner-managed catalogue; only active, non-archived records are public.
+- `bookingPolicies/{policyId}`: publicly readable title/summary records ordered by `displayOrder`; owner-only create, versioned edit, reorder and permanent delete. There is no visibility or archive state.
+- `bookings/{bookingId}`: private customer identity, contact details, consent, historical service/extras snapshots, immutable accepted policy title/summary/version snapshots, status and `lockIds`.
+- `bookingLocks/{lockId}`: non-sensitive owner UID, booking ID, service type, date/time, optional Salon session or Trichology unit, active status and timestamp. No name, email, phone, concern or note.
+- `blockedPeriods/{date_unit}`: deterministic 30-minute blocked unit. Full-day
+  units also contain the bounded `publicReason` displayed on the customer
+  calendar; timed blocks do not expose their reason here.
+- `blockedPeriodDetails/{groupId}`: owner-only complete reason and original range.
+- `capacityOverrides/{date_session}`: non-sensitive capacity 0–3.
+- `capacityOverrideDetails/{id}`: owner-only reason.
+- `auditLogs/{id}`: immutable owner actions.
+- `leads` and `enquiries`: constrained public submissions, owner-readable.
 
-In demo mode the browser revalidates availability and creates local locks. In Firebase mode the public-safe availability route returns exact Trichology start times or Salon session counts. The server reloads service, extras and public settings, rejects past, closed, blocked, off-grid, short-notice and over-advance requests, and recomputes duration and price. Trichology atomically claims deterministic interval documents for the appointment plus buffer; Salon atomically claims one of three deterministic capacity documents for the selected session. Release is transactionally session-owned and cannot delete converted booking locks. Booking submission revalidates the active policy bundle and the required full name, phone and email, accepts optional conditional intake, independently verifies Paystack when payment is due, creates the booking, and converts every lock in one transaction. App Check can be enforced and a persistent per-origin/IP quota protects the public routes.
+Collections appear only after their first write. Production is not seeded. Gallery is not a Firestore collection.
 
-## Providers
+The booking route loads every policy and fails closed when none exist. Acceptance records a bundle version plus an ordered copy of each policy's ID, title, summary and numeric version. Immediately before final submission, the route reloads the policy collection; changed or deleted policies invalidate stale consent and return the customer to policy review. Deleting a policy never traverses or rewrites historical bookings.
 
-- Payments: deterministic demo handling plus the `bookingApi` and `paystackWebhook` Cloud Functions.
-- Notifications: `MockNotificationProvider` and a production interface.
-- Commerce: `MockCommerceProvider` and an environment-selected Shopify Storefront API collection/cart provider.
-- Analytics: typed `AnalyticsProvider` and development console implementation.
+## Capacity algorithms
 
-No secret key belongs in Vite variables because all `VITE_*` values are included in the browser bundle.
+Salon availability reads the three deterministic seats for each session. A transaction selects the first available permitted seat after re-reading the service, relevant block units and deterministic capacity override. The booking and one seat lock are written together. Firestore retries conflicts; the fourth simultaneous booking sees all three seats and fails with `SESSION_FULL`.
 
-## Data collections
+Trichology availability calculates every required 30-minute unit for duration plus buffer. A transaction re-reads all relevant block units and locks, then writes the booking and every lock together. Any overlap fails with `SLOT_UNAVAILABLE`; no partial lock set is committed.
 
-`services`, `serviceExtras`, `serviceIntakeSchemas`, `bookingPolicies`, `businessSettings`, `blockedPeriods`, `bookingHolds`, `bookings`, `bookingIntakeResponses`, `payments`, `paymentEvents`, `notifications`, `homeOfferings`, `gallery`, `faqs`, `testimonials`, `results`, `content`, `leads`, `enquiries`, `productsCache`, and `auditLogs`.
+Booking IDs and references are generated once per draft and reused for retry idempotency. There are no payment holds. Admin cancellation updates the booking, deletes its future locks and adds an audit event atomically. Rescheduling claims new locks, updates the snapshot and releases old locks in one transaction. Completion and no-show retain locks.
 
-## SEO and hosting limits
+## Browser-only security limit
 
-Titles, descriptions, canonical URLs, Open Graph data, JSON-LD, robots and a generated sitemap are included. GitHub Pages still serves a client-rendered SPA. For stronger organic search, migrate to prerendering or an SSR-capable host while preserving current slugs.
+Rules validate authentication, ownership, active services, exact writable schemas, string/list limits, allowed customer statuses, deterministic Salon seat IDs, non-sensitive lock fields and booking/lock `getAfter()` relationships. Rules can require at least one matching Trichology lock and bound the list to nine units, but they cannot derive and prove that an arbitrary browser supplied exactly every consecutive unit required by service duration and buffer.
+
+The normal application always derives and writes the complete set transactionally, so ordinary concurrent double-booking is prevented. A deliberately malicious custom client could potentially under-lock Trichology business coverage. App Check reduces abuse but does not make browser code trusted. Absolute server-authoritative enforcement would require a trusted backend later.
+
+## Payment and notification boundary
+
+Firebase mode is pay-at-clinic. No Paystack secret, redirect trust or client-side “paid” mutation exists. Real verification and webhooks require a trusted backend. On-screen confirmation works without email; production email also requires a securely configured backend/provider.

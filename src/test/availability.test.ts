@@ -3,13 +3,14 @@ import {
   getAvailableSlots,
   defaultSettings,
   getSalonSessionAvailability,
+  resolveSalonCalendarDayAvailability,
 } from '../lib/availability';
 import type { Booking } from '../types';
 
 const monday = new Date(2026, 7, 24);
 const now = new Date(2026, 7, 23, 8, 0);
 const booking: Booking = {
-  id: 'b1', reference: 'TAM-TEST', category: 'trichology', serviceId: 's1', serviceName: 'Consultation', serviceSnapshot: { id: 's1', name: 'Consultation', category: 'trichology', price: 1000, duration: 60, preparation: 'Prepare' }, extras: [], addressSnapshot: 'Clinic', policyVersion: 'v1', preparationSnapshot: 'Prepare', date: '2026-08-24', startTime: '10:00', endTime: '11:00', totalDuration: 60, subtotal: 1000, amountDueNow: 0, balanceDue: 1000, fullName: 'Test Client', phone: '08000000000', email: 'test@example.com', preferredContact: 'email', concern: 'shedding', hopes: 'Plan', concernDuration: 'Months', priorProfessionalTreatment: 'No', productsTreatments: '', note: '', intakeResponses: {}, policyConsent: true, policyConsentRecord: { accepted: true, version: 'v1', acceptedAt: now.toISOString(), sessionId: 'session' }, paymentMode: 'clinic', paymentStatus: 'not-required', status: 'confirmed', internalNotes: '', createdAt: now.toISOString(), followUpDue: false
+  id: 'b1', reference: 'TAM-TEST', category: 'trichology', serviceId: 's1', serviceName: 'Consultation', serviceSnapshot: { id: 's1', name: 'Consultation', category: 'trichology', price: 1000, duration: 60, preparation: 'Prepare' }, extras: [], addressSnapshot: 'Clinic', policyVersion: 'v1', preparationSnapshot: 'Prepare', date: '2026-08-24', startTime: '10:00', endTime: '11:00', totalDuration: 60, subtotal: 1000, amountDueNow: 0, balanceDue: 1000, fullName: 'Test Client', phone: '08000000000', email: 'test@example.com', preferredContact: 'email', concern: 'shedding', hopes: 'Plan', concernDuration: 'Months', priorProfessionalTreatment: 'No', productsTreatments: '', note: '', intakeResponses: {}, policyConsent: true, policyConsentRecord: { accepted: true, version: 'v1', acceptedAt: now.toISOString(), sessionId: 'session', policies: [{ id: 'appointments', title: 'Appointment-only care', summary: 'Appointments must be booked in advance.', version: 1 }] }, paymentMode: 'clinic', paymentStatus: 'not-required', status: 'confirmed', internalNotes: '', createdAt: now.toISOString(), followUpDue: false
 };
 
 describe('availability calculation', () => {
@@ -36,14 +37,13 @@ describe('salon session capacity', () => {
       monday,
       { ...defaultSettings, minimumNoticeHours: 0 },
       [],
-      [],
       now,
     );
     expect(sessions.map((session) => session.remaining)).toEqual([3, 3, 3]);
     expect(sessions.every((session) => session.available)).toBe(true);
   });
 
-  it('subtracts bookings and active holds from the matching session only', () => {
+  it('subtracts bookings from the matching session only', () => {
     const salonBooking: Booking = {
       ...booking,
       id: 'salon-1',
@@ -55,23 +55,9 @@ describe('salon session capacity', () => {
       monday,
       { ...defaultSettings, minimumNoticeHours: 0 },
       [salonBooking],
-      [
-        {
-          id: 'hold-1',
-          sessionId: 'other-session',
-          date: '2026-08-24',
-          startTime: '09:00',
-          endTime: '12:00',
-          serviceId: 'svc-natural',
-          category: 'salon',
-          lockIds: [],
-          expiresAt: '2026-08-24T12:00:00.000Z',
-          status: 'active',
-        },
-      ],
       now,
     );
-    expect(sessions.map((session) => session.remaining)).toEqual([1, 3, 3]);
+    expect(sessions.map((session) => session.remaining)).toEqual([2, 3, 3]);
   });
 
   it('disables a full session while leaving other sessions selectable', () => {
@@ -86,10 +72,38 @@ describe('salon session capacity', () => {
       monday,
       { ...defaultSettings, minimumNoticeHours: 0 },
       fullMorning,
-      [],
       now,
     );
     expect(sessions[0]).toMatchObject({ remaining: 0, available: false });
     expect(sessions[1]).toMatchObject({ remaining: 3, available: true });
+  });
+});
+
+describe('salon calendar day states', () => {
+  it('labels an open date with no remaining capacity as booked', () => {
+    expect(resolveSalonCalendarDayAvailability(true, 0)).toEqual({
+      remaining: 0,
+      status: 'booked',
+    });
+  });
+
+  it('uses the public reason for a full-day booking block', () => {
+    expect(
+      resolveSalonCalendarDayAvailability(true, 9, ' Team training '),
+    ).toEqual({
+      remaining: 0,
+      status: 'blocked',
+      reason: 'Team training',
+    });
+  });
+
+  it('does not mislabel a legacy full-day block as booked', () => {
+    expect(
+      resolveSalonCalendarDayAvailability(true, 0, undefined, true),
+    ).toEqual({
+      remaining: 0,
+      status: 'blocked',
+      reason: 'Closed',
+    });
   });
 });

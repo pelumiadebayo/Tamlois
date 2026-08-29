@@ -9,7 +9,7 @@ import { currency } from "../lib/booking";
 import { filterServices } from "../lib/catalogue";
 
 export function ServicesPage() {
-  const { services, loading, error } = useServices();
+  const { services, loading, error, retry } = useServices();
   const [search] = useSearchParams();
   const [query, setQuery] = useState("");
   const requestedCategory = search.get("category");
@@ -40,7 +40,7 @@ export function ServicesPage() {
         query,
         category,
       ),
-    [query, category],
+    [services, query, category],
   );
   return (
     <>
@@ -62,7 +62,7 @@ export function ServicesPage() {
               {error}{" "}
               <button
                 className="font-bold underline"
-                onClick={() => location.reload()}
+                onClick={retry}
               >
                 Retry
               </button>
@@ -113,13 +113,17 @@ export function ServicesPage() {
               ))}
             </div>
           )}
-          {!loading && filtered.length === 0 && (
+          {!loading && !error && filtered.length === 0 && (
             <div className="surface mt-10 p-10 text-center">
-              <h2 className="font-display text-3xl">No matching services</h2>
+              <h2 className="font-display text-3xl">
+                {services.length ? "No matching services" : "No services have been published yet"}
+              </h2>
               <p className="mt-3 text-sm text-[var(--muted)]">
-                Try a broader search or choose another category.
+                {services.length
+                  ? "Try a broader search or choose another category."
+                  : "Please check back after Tamlois adds its first active service."}
               </p>
-              <button
+              {services.length > 0 && <button
                 className="btn btn-secondary mt-5"
                 onClick={() => {
                   setQuery("");
@@ -127,7 +131,7 @@ export function ServicesPage() {
                 }}
               >
                 Clear filters
-              </button>
+              </button>}
             </div>
           )}
         </div>

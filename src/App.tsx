@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { firebaseConfigurationError } from "./lib/firebase";
 
 const Home = lazy(() => import("./pages/Home"));
 const ServicesPage = lazy(() =>
@@ -65,9 +66,6 @@ const AdminBookingsPage = lazy(() =>
 const AdminAvailabilityPage = lazy(() =>
   import("./pages/Admin").then((m) => ({ default: m.AdminAvailabilityPage })),
 );
-const AdminContentPage = lazy(() =>
-  import("./pages/Admin").then((m) => ({ default: m.AdminContentPage })),
-);
 const AdminSettingsPage = lazy(() =>
   import("./pages/Admin").then((m) => ({ default: m.AdminSettingsPage })),
 );
@@ -83,6 +81,19 @@ function LoadingPage() {
 }
 
 export default function App() {
+  if (firebaseConfigurationError)
+    return (
+      <main className="grid min-h-[100dvh] place-items-center bg-[var(--forest-50)] p-5">
+        <section className="surface max-w-xl p-8" role="alert">
+          <h1 className="font-display text-4xl text-[var(--forest-950)]">
+            Firebase configuration required
+          </h1>
+          <p className="mt-4 leading-7 text-[var(--muted)]">
+            {firebaseConfigurationError} The application will not fall back to demo data while Firebase mode is selected.
+          </p>
+        </section>
+      </main>
+    );
   return (
     <Suspense fallback={<LoadingPage />}>
       <Routes>
@@ -120,8 +131,8 @@ export default function App() {
           <Route path="services/:id" element={<AdminServiceEditorPage />} />
           <Route path="bookings" element={<AdminBookingsPage />} />
           <Route path="availability" element={<AdminAvailabilityPage />} />
-          <Route path="content" element={<AdminContentPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
       </Routes>
     </Suspense>

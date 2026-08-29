@@ -1,7 +1,5 @@
-import type { Booking, BookingDraft, BookingHold, Product } from "../types";
+import type { Booking, Product } from "../types";
 import { products } from "../data/content";
-import { getToken } from "firebase/app-check";
-import { appCheck } from "./firebase";
 
 export interface PaymentProvider {
   createPayment(
@@ -19,107 +17,6 @@ export class PaystackPaymentProvider implements PaymentProvider {
     throw new Error(
       "Paystack is disabled. Configure a secure verification backend before enabling it.",
     );
-  }
-}
-
-export interface SecureBookingGateway {
-  createHold(draft: BookingDraft): Promise<BookingHold>;
-  getAvailability(input: {
-    serviceId: string;
-    extraIds: string[];
-    date: string;
-    paymentMode?: string;
-  }): Promise<{
-    slots: string[];
-    sessions?: Array<{ startTime: string; remaining: number }>;
-  }>;
-  releaseHold(holdId: string, sessionId: string): Promise<void>;
-  initialisePayment(
-    holdId: string,
-    email: string,
-    sessionId: string,
-    paymentMode: string,
-  ): Promise<{ authorizationUrl: string; reference: string }>;
-  verifyPayment(reference: string): Promise<{
-    verified: boolean;
-    amount: number;
-    requiresReconciliation?: boolean;
-  }>;
-  submitBooking(
-    payload: Omit<Booking, "id" | "reference" | "managementToken">,
-  ): Promise<Booking>;
-}
-
-/** Browser-safe client for a privileged booking API. It never accepts a Paystack secret. */
-export class HttpBookingGateway implements SecureBookingGateway {
-  constructor(private endpoint: string) {}
-  private async request<T>(path: string, body: unknown): Promise<T> {
-    const attestation = appCheck
-      ? await getToken(appCheck, false).catch(() => null)
-      : null;
-    const response = await fetch(`${this.endpoint.replace(/\/$/, "")}${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(attestation?.token
-          ? { "X-Firebase-AppCheck": attestation.token }
-          : {}),
-      },
-      body: JSON.stringify(body),
-      credentials: "omit",
-    });
-    const payload = (await response.json().catch(() => ({}))) as T & {
-      message?: string;
-    };
-    if (!response.ok)
-      throw new Error(
-        payload.message ||
-          "The secure booking service could not complete this request.",
-      );
-    return payload;
-  }
-  createHold(draft: BookingDraft) {
-    return this.request<BookingHold>("/holds", { draft });
-  }
-  async getAvailability(input: {
-    serviceId: string;
-    extraIds: string[];
-    date: string;
-    paymentMode?: string;
-  }) {
-    return this.request<{
-      slots: string[];
-      sessions?: Array<{ startTime: string; remaining: number }>;
-    }>(
-      "/availability",
-      input,
-    );
-  }
-  async releaseHold(holdId: string, sessionId: string) {
-    await this.request("/holds/release", { holdId, sessionId });
-  }
-  initialisePayment(
-    holdId: string,
-    email: string,
-    sessionId: string,
-    paymentMode: string,
-  ) {
-    return this.request<{ authorizationUrl: string; reference: string }>(
-      "/payments/initialise",
-      { holdId, email, sessionId, paymentMode },
-    );
-  }
-  verifyPayment(reference: string) {
-    return this.request<{
-      verified: boolean;
-      amount: number;
-      requiresReconciliation?: boolean;
-    }>("/payments/verify", { reference });
-  }
-  submitBooking(
-    payload: Omit<Booking, "id" | "reference" | "managementToken">,
-  ) {
-    return this.request<Booking>("/bookings", { booking: payload });
   }
 }
 

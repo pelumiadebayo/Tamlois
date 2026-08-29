@@ -1,23 +1,48 @@
 import { describe, expect, it } from "vitest";
+import { Timestamp } from "firebase/firestore";
 import {
   bookingSchema,
   calculateBookingTotals,
   canTransitionBooking,
   compatibleExtras,
   generateBookingReference,
+  isPolicyConsentCurrent,
   policyBundleVersion,
+  policyConsentSnapshots,
   resolveExtraSelection,
   sanitizeIntakeResponses,
   validateImageFile,
 } from "../lib/booking";
-import { bookingLockIds } from "../repositories/firestoreRepository";
+import { trichologyUnitLockIds } from "../lib/bookingCapacity";
 import {
-  bookingPolicies,
   intakeQuestions,
   serviceExtras,
   services,
 } from "../data/content";
 import { defaultSettings } from "../lib/availability";
+import type { BookingPolicy } from "../types";
+
+const policyTimestamp = Timestamp.fromDate(new Date("2026-08-29T09:00:00Z"));
+const bookingPolicies: BookingPolicy[] = [
+  {
+    id: "appointments",
+    title: "Appointment-only care",
+    summary: "Appointments must be booked in advance.",
+    displayOrder: 0,
+    version: 1,
+    createdAt: policyTimestamp,
+    updatedAt: policyTimestamp,
+  },
+  {
+    id: "changes",
+    title: "Changes",
+    summary: "Contact the clinic before changing an appointment.",
+    displayOrder: 1,
+    version: 2,
+    createdAt: policyTimestamp,
+    updatedAt: policyTimestamp,
+  },
+];
 
 describe("booking helpers", () => {
   it("requires only full name, phone and email in customer details", () => {
@@ -61,10 +86,10 @@ describe("booking helpers", () => {
     expect(canTransitionBooking("completed", "draft")).toBe(false);
   });
   it("creates deterministic interval locks including buffer time", () => {
-    expect(bookingLockIds("2026-09-01", "10:00", "11:00", 30, 15)).toEqual([
-      "2026-09-01_1000",
-      "2026-09-01_1030",
-      "2026-09-01_1100",
+    expect(trichologyUnitLockIds("2026-09-01", "10:00", 60, 15)).toEqual([
+      "2026-09-01_10-00",
+      "2026-09-01_10-30",
+      "2026-09-01_11-00",
     ]);
   });
   it("filters extras by service compatibility", () =>
@@ -129,18 +154,57 @@ describe("booking helpers", () => {
       validateImageFile({ name: "photo.webp", type: "image/webp", size: 1000 }),
     ).toBe("");
   });
-  it("versions the complete active policy bundle deterministically", () => {
+  it("versions the complete policy bundle deterministically", () => {
     const first = policyBundleVersion(bookingPolicies);
     expect(policyBundleVersion([...bookingPolicies].reverse())).toBe(first);
     expect(
       policyBundleVersion(
         bookingPolicies.map((policy, index) =>
           index === 1
-            ? { ...policy, version: `${policy.version}-revised` }
+            ? { ...policy, version: policy.version + 1 }
             : policy,
         ),
       ),
     ).not.toBe(first);
+  });
+  it("captures immutable public policy fields for booking consent", () => {
+    const snapshots = policyConsentSnapshots(bookingPolicies);
+    expect(snapshots).toEqual([
+      {
+        id: "appointments",
+        title: "Appointment-only care",
+        summary: "Appointments must be booked in advance.",
+        version: 1,
+      },
+      {
+        id: "changes",
+        title: "Changes",
+        summary: "Contact the clinic before changing an appointment.",
+        version: 2,
+      },
+    ]);
+    expect(snapshots[0]).not.toBe(bookingPolicies[0]);
+  });
+  it("fails closed without policies and invalidates stale consent", () => {
+    const consent = {
+      accepted: true as const,
+      version: policyBundleVersion(bookingPolicies),
+      acceptedAt: "2026-08-29T09:00:00.000Z",
+      sessionId: "session-one",
+      policies: policyConsentSnapshots(bookingPolicies),
+    };
+    expect(isPolicyConsentCurrent([], consent)).toBe(false);
+    expect(isPolicyConsentCurrent(bookingPolicies, consent)).toBe(true);
+    expect(
+      isPolicyConsentCurrent(
+        bookingPolicies.map((policy, index) =>
+          index === 0
+            ? { ...policy, summary: "The wording has changed.", version: 2 }
+            : policy,
+        ),
+        consent,
+      ),
+    ).toBe(false);
   });
   it("purges answers when their conditional question becomes hidden", () => {
     const conditional = intakeQuestions.find((question) => question.condition);

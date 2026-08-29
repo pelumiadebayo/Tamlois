@@ -1,22 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  getIdTokenResult,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
 import {
+  ArrowDown,
+  ArrowUp,
   CalendarClock,
   ChevronRight,
   CircleDollarSign,
-  FileText,
   LayoutDashboard,
   LogOut,
   Menu,
   Package,
+  Pencil,
   Plus,
   Search,
   Settings,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
@@ -33,18 +36,21 @@ import { Brand } from "../components/Layout";
 import { SEO } from "../components/SEO";
 import { currency } from "../lib/booking";
 import { defaultSettings } from "../lib/availability";
-import { auth, db, firebaseEnabled } from "../lib/firebase";
+import {
+  auth,
+  firebaseEnabled,
+  firebaseAdminUid,
+} from "../lib/firebase";
+import {
+  hasConfiguredOwnerUid,
+  isAuthorizedAdminUid,
+  OWNER_UID_NOT_CONFIGURED_MESSAGE,
+  UNAUTHORIZED_ADMIN_ACCOUNT_MESSAGE,
+} from "../lib/adminAuthorization";
 import { appRepositories } from "../repositories/app";
 import { bookingConfigurationRepositories } from "../repositories/bookingConfigurationRepository";
 import { availabilityRepository } from "../repositories/availabilityRepository";
-import { contentRepository } from "../repositories/contentRepository";
-import {
-  galleryRepository,
-  homeOfferingRepository,
-} from "../repositories/homeContentRepository";
-import { updateBookingWithLockCleanup } from "../repositories/firestoreRepository";
 import { shopifyEnabled } from "../lib/adapters";
-import { homeOfferings as defaultHomeOfferings } from "../data/content";
 import type {
   BlockedPeriod,
   Booking,
@@ -52,8 +58,6 @@ import type {
   BookingStatus,
   BusinessSettings,
   IntakeQuestion,
-  GalleryItem,
-  HomeOffering,
   Service,
   ServiceExtra,
 } from "../types";
@@ -63,9 +67,39 @@ const adminLinks = [
   ["/admin/services", "Services", Package],
   ["/admin/bookings", "Bookings", Users],
   ["/admin/availability", "Availability", CalendarClock],
-  ["/admin/content", "Content", FileText],
   ["/admin/settings", "Settings", Settings],
 ] as const;
+
+const durationOptions = [
+  { value: 15, label: "15 minutes" },
+  { value: 30, label: "30 minutes" },
+  { value: 45, label: "45 minutes" },
+  { value: 60, label: "1 hour" },
+  { value: 90, label: "1 hour 30 minutes" },
+  { value: 120, label: "2 hours" },
+  { value: 180, label: "3 hours" },
+  { value: 240, label: "4 hours" },
+] as const;
+
+const isSupportedDuration = (duration: number) =>
+  durationOptions.some((option) => option.value === duration);
+
+function DurationSelectOptions({ current }: { current: number }) {
+  return (
+    <>
+      {!isSupportedDuration(current) && (
+        <option value={current} disabled>
+          Unsupported duration ({current} minutes)
+        </option>
+      )}
+      {durationOptions.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </>
+  );
+}
 
 const { bookings: bookingRepository, services: serviceRepository } =
   appRepositories;
@@ -97,17 +131,19 @@ export function AdminLoginPage() {
           email,
           password,
         );
-        const token = await getIdTokenResult(credential.user, true);
-        if (token.claims.admin !== true) {
+        if (!hasConfiguredOwnerUid(firebaseAdminUid)) {
           await signOut(auth);
-          setError("This account is not authorised as a clinic administrator.");
+          setError(OWNER_UID_NOT_CONFIGURED_MESSAGE);
+          return;
+        }
+        if (!isAuthorizedAdminUid(credential.user.uid, firebaseAdminUid)) {
+          await signOut(auth);
+          setError(UNAUTHORIZED_ADMIN_ACCOUNT_MESSAGE);
           return;
         }
         navigate("/admin");
       } catch {
-        setError(
-          "Sign-in failed. Check the account, password and admin claim.",
-        );
+        setError("Sign-in failed. Check the account email and password.");
       }
       return;
     }
@@ -152,6 +188,27 @@ export function AdminLoginPage() {
               </p>
             )}
             <button className="btn btn-primary">Sign in</button>
+            {firebaseEnabled && (
+              <button
+                type="button"
+                className="justify-self-start text-sm font-bold text-[var(--forest-800)] underline"
+                onClick={async () => {
+                  setError("");
+                  if (!auth || !email.trim()) {
+                    setError("Enter the owner's email address first.");
+                    return;
+                  }
+                  try {
+                    await sendPasswordResetEmail(auth, email.trim());
+                    setError("Password reset email sent. Check the owner's inbox.");
+                  } catch {
+                    setError("The password reset email could not be sent.");
+                  }
+                }}
+              >
+                Reset password
+              </button>
+            )}
           </form>
           {!firebaseEnabled && (
             <div className="mt-6 rounded-[12px] bg-[var(--forest-50)] p-4 text-xs leading-5">
@@ -175,18 +232,31 @@ export function AdminLoginPage() {
 }
 
 export function ProtectedAdmin() {
-  const [state, setState] = useState<"loading" | "allowed" | "denied">(() =>
-    firebaseEnabled ? "loading" : isDemoAdmin() ? "allowed" : "denied",
+  const [state, setState] = useState<
+    "loading" | "allowed" | "signed-out" | "unauthorized" | "misconfigured"
+  >(() =>
+    firebaseEnabled
+      ? "loading"
+      : isDemoAdmin()
+        ? "allowed"
+        : "signed-out",
   );
   useEffect(() => {
     if (!firebaseEnabled || !auth) return;
-    return onAuthStateChanged(auth, async (user) => {
+    return onAuthStateChanged(auth, (user) => {
       if (!user) {
-        setState("denied");
+        setState("signed-out");
         return;
       }
-      const token = await getIdTokenResult(user);
-      setState(token.claims.admin === true ? "allowed" : "denied");
+      if (!hasConfiguredOwnerUid(firebaseAdminUid)) {
+        setState("misconfigured");
+        return;
+      }
+      setState(
+        isAuthorizedAdminUid(user.uid, firebaseAdminUid)
+          ? "allowed"
+          : "unauthorized",
+      );
     });
   }, []);
   if (state === "loading")
@@ -195,10 +265,48 @@ export function ProtectedAdmin() {
         <p role="status">Checking administrator access...</p>
       </main>
     );
-  return state === "allowed" ? (
-    <AdminLayout />
-  ) : (
-    <Navigate to="/admin/login" replace />
+  if (state === "allowed") return <AdminLayout />;
+  if (state === "signed-out") return <Navigate to="/admin/login" replace />;
+  return (
+    <AdminAccessNotice
+      message={
+        state === "misconfigured"
+          ? OWNER_UID_NOT_CONFIGURED_MESSAGE
+          : UNAUTHORIZED_ADMIN_ACCOUNT_MESSAGE
+      }
+    />
+  );
+}
+
+function AdminAccessNotice({ message }: { message: string }) {
+  const navigate = useNavigate();
+  return (
+    <main className="grid min-h-[100dvh] place-items-center bg-[var(--forest-50)] p-4">
+      <section
+        className="w-full max-w-md rounded-[14px] bg-white p-7 shadow-[0_24px_70px_rgba(13,45,33,.12)]"
+        aria-labelledby="admin-access-title"
+      >
+        <Brand />
+        <h1
+          id="admin-access-title"
+          className="mt-9 font-display text-4xl text-[var(--forest-950)]"
+        >
+          Administrator access denied
+        </h1>
+        <p className="mt-4 text-sm leading-6 text-[var(--muted)]" role="alert">
+          {message}
+        </p>
+        <button
+          className="btn btn-primary mt-7"
+          onClick={async () => {
+            if (auth) await signOut(auth);
+            navigate("/admin/login");
+          }}
+        >
+          Sign out and return to login
+        </button>
+      </section>
+    </main>
   );
 }
 
@@ -442,10 +550,17 @@ export function AdminDashboardPage() {
 export function AdminServicesPage() {
   const [items, setItems] = useState<Service[]>([]);
   const [query, setQuery] = useState("");
-  const load = () =>
-    serviceRepository
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const load = () => {
+    setState("loading");
+    return serviceRepository
       .list()
-      .then((result) => setItems(result.sort((a, b) => a.order - b.order)));
+      .then((result) => {
+        setItems(result.sort((a, b) => a.order - b.order));
+        setState("ready");
+      })
+      .catch(() => setState("error"));
+  };
   useEffect(() => {
     void load();
   }, []);
@@ -466,6 +581,21 @@ export function AdminServicesPage() {
         }
       />
       <div className="surface overflow-hidden">
+        {state === "loading" && <p className="p-6" role="status">Loading services...</p>}
+        {state === "error" && (
+          <div className="p-6" role="alert">
+            <p>Services could not be loaded.</p>
+            <button className="btn btn-secondary mt-4" onClick={() => void load()}>Retry</button>
+          </div>
+        )}
+        {state === "ready" && items.length === 0 && (
+          <div className="p-8 text-center" role="status">
+            <h2 className="font-display text-3xl">No services yet</h2>
+            <p className="mt-3 text-sm text-[var(--muted)]">Create the first Tamlois service, then publish it when its details are ready.</p>
+            <Link to="/admin/services/new" className="btn btn-primary mt-5"><Plus size={17} />Create first service</Link>
+          </div>
+        )}
+        {state === "ready" && items.length > 0 && <>
         <div className="p-4">
           <div className="relative max-w-sm">
             <Search
@@ -532,6 +662,7 @@ export function AdminServicesPage() {
             </tbody>
           </table>
         </div>
+        </>}
       </div>
       <BookingConfiguration />
     </>
@@ -586,7 +717,7 @@ function BookingConfiguration() {
                 incompatibleExtraIds: [],
                 active: false,
                 order: extras.length + 1,
-                placeholder: true,
+                placeholder: false,
               })
             }
           >
@@ -629,10 +760,9 @@ function BookingConfiguration() {
                     )
                   }
                 />
-                <input
+                <select
                   aria-label={`${extra.name} duration`}
                   className="control"
-                  type="number"
                   value={extra.duration}
                   onChange={(e) =>
                     setExtras((items) =>
@@ -643,7 +773,9 @@ function BookingConfiguration() {
                       ),
                     )
                   }
-                />
+                >
+                  <DurationSelectOptions current={extra.duration} />
+                </select>
                 <input
                   aria-label={`${extra.name} order`}
                   className="control"
@@ -948,11 +1080,15 @@ export function AdminServiceEditorPage() {
         depositRequired: false,
         depositAmount: 0,
         active: true,
+        archived: false,
         order: 1,
+        displayOrder: 1,
+        durationMinutes: 60,
+        schedulingMode: "precise-time",
         image: "",
         imageAlt: "",
         variations: [],
-        placeholder: true,
+        placeholder: false,
       });
     else serviceRepository.get(id).then(setItem);
   }, [id, isNew]);
@@ -975,6 +1111,15 @@ export function AdminServiceEditorPage() {
     if (!item) return;
     setPublishError("");
     if (
+      !isSupportedDuration(item.duration) ||
+      item.variations.some((variation) => !isSupportedDuration(variation.duration))
+    ) {
+      setPublishError(
+        "Choose one of the available duration options for the service and every variation.",
+      );
+      return;
+    }
+    if (
       item.active &&
       (!item.summary.trim() || !item.image.trim() || !item.imageAlt.trim())
     ) {
@@ -990,20 +1135,28 @@ export function AdminServiceEditorPage() {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "");
-    await serviceRepository.save({ ...current, slug });
+    await serviceRepository.save({
+      ...current,
+      slug,
+      archived: Boolean(current.archived),
+      durationMinutes: current.duration,
+      displayOrder: current.order,
+      schedulingMode: current.category === "salon" ? "salon-session" : "precise-time",
+      placeholder: false,
+    });
     navigate("/admin/services");
   }
   async function remove() {
-    if (!item || !confirm("Archive this demo service?")) return;
+    if (!item || !confirm("Archive this service? It will disappear from public booking and catalogue pages.")) return;
     const current = item;
-    await serviceRepository.save({ ...current, active: false });
+    await serviceRepository.save({ ...current, active: false, archived: true });
     navigate("/admin/services");
   }
   return (
     <>
       <AdminHeading
         title={isNew ? "New service" : "Edit service"}
-        text="Public fields are marked as placeholder until confirmed."
+        text="Create, review and publish the service shown in the public catalogue and booking flow."
       />
       <form onSubmit={save} className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <div className="surface grid gap-5 p-5 md:grid-cols-2">
@@ -1093,15 +1246,14 @@ export function AdminServiceEditorPage() {
             />
           </div>
           <div className="field">
-            <label>Duration (minutes)</label>
-            <input
-              aria-label="Duration (minutes)"
-              type="number"
-              min="15"
-              step="15"
+            <label>Duration</label>
+            <select
+              aria-label="Duration"
               value={item.duration}
               onChange={(e) => set("duration", Number(e.target.value))}
-            />
+            >
+              <DurationSelectOptions current={item.duration} />
+            </select>
           </div>
           <div className="field">
             <label>Deposit amount</label>
@@ -1201,15 +1353,16 @@ export function AdminServiceEditorPage() {
                     }
                     className="control"
                   />
-                  <input
+                  <select
                     aria-label={`Variation ${index + 1} duration`}
-                    type="number"
                     value={variation.duration}
                     onChange={(e) =>
                       updateVariation(index, "duration", Number(e.target.value))
                     }
                     className="control"
-                  />
+                  >
+                    <DurationSelectOptions current={variation.duration} />
+                  </select>
                   <button
                     type="button"
                     className="text-sm font-bold text-[#8f302f]"
@@ -1329,14 +1482,7 @@ export function AdminBookingsPage() {
     void load();
   }, []);
   async function update(item: Booking, next: BookingStatus) {
-    if (firebaseEnabled && db)
-      await updateBookingWithLockCleanup(db, item, next);
-    else
-      await bookingRepository.save({
-        ...item,
-        status: next,
-        followUpDue: next === "completed",
-      });
+    await bookingRepository.updateStatusAsAdmin(item.id, next);
     load();
   }
   function exportCsv() {
@@ -1534,7 +1680,10 @@ export function AdminBookingsPage() {
                   type="button"
                   className="btn btn-secondary"
                   onClick={async () => {
-                    await bookingRepository.save(item);
+                    await bookingRepository.saveInternalNotesAsAdmin(
+                      item.id,
+                      item.internalNotes,
+                    );
                     await load();
                   }}
                 >
@@ -1566,7 +1715,8 @@ export function AdminAvailabilityPage() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [reason, setReason] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [savingBlock, setSavingBlock] = useState(false);
+  const [blockError, setBlockError] = useState("");
   useEffect(() => {
     availabilityRepository
       .getAdmin()
@@ -1577,6 +1727,7 @@ export function AdminAvailabilityPage() {
   }, []);
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    setBlockError("");
     if (Boolean(start) !== Boolean(end)) {
       window.alert(
         "Enter both a start and end time, or leave both blank for a full-day block.",
@@ -1587,23 +1738,46 @@ export function AdminAvailabilityPage() {
       window.alert("The block end time must be later than its start time.");
       return;
     }
+    if (!reason.trim()) {
+      setBlockError("Enter a reason for this booking block.");
+      return;
+    }
     const block = {
       id: crypto.randomUUID(),
       date,
       start: start || undefined,
       end: end || undefined,
-      reason,
+      reason: reason.trim(),
     };
-    const next = await availabilityRepository.addBlock(block, {
-      ...settings,
-      blockedPeriods: blocks,
-    });
-    setBlocks(next);
-    setSettings((current) => ({ ...current, blockedPeriods: next }));
-    setDate("");
-    setStart("");
-    setEnd("");
-    setReason("");
+    setSavingBlock(true);
+    try {
+      const next = await availabilityRepository.addBlock(block, {
+        ...settings,
+        blockedPeriods: blocks,
+      });
+      setBlocks(next);
+      setSettings((current) => ({ ...current, blockedPeriods: next }));
+      setDate("");
+      setStart("");
+      setEnd("");
+      setReason("");
+    } catch (error) {
+      if (import.meta.env.DEV)
+        console.error("Failed to save booking block", error);
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? String(error.code)
+          : "";
+      setBlockError(
+        code === "permission-denied"
+          ? "Firebase rejected this block. Deploy the current Firestore Rules and confirm you are signed in with the authorised owner account."
+          : code === "unauthenticated"
+            ? "Your administrator session has expired. Sign in again, then retry the block."
+            : "The block could not be saved. Check your connection and try again.",
+      );
+    } finally {
+      setSavingBlock(false);
+    }
   }
   async function remove(id: string) {
     const next = await availabilityRepository.removeBlock(id, {
@@ -1613,43 +1787,11 @@ export function AdminAvailabilityPage() {
     setBlocks(next);
     setSettings((current) => ({ ...current, blockedPeriods: next }));
   }
-  const setRule = <K extends keyof BusinessSettings>(
-    key: K,
-    value: BusinessSettings[K],
-  ) => setSettings((current) => ({ ...current, [key]: value }));
-  async function saveRules() {
-    if (
-      settings.openingHour < 0 ||
-      settings.closingHour > 24 ||
-      settings.openingHour >= settings.closingHour
-    ) {
-      window.alert("Opening time must be earlier than closing time.");
-      return;
-    }
-    if (
-      settings.bookingInterval < 15 ||
-      settings.bookingInterval > 120 ||
-      settings.bufferMinutes < 0 ||
-      settings.bufferMinutes > 180 ||
-      settings.minimumNoticeHours < 0 ||
-      settings.maximumAdvanceDays < 1
-    ) {
-      window.alert(
-        "Review the booking interval, buffer, notice and advance-window ranges.",
-      );
-      return;
-    }
-    await availabilityRepository.saveSettings({
-      ...settings,
-      blockedPeriods: blocks,
-    });
-    setSaved(true);
-  }
   return (
     <>
       <AdminHeading
         title="Availability"
-        text="Configure hours and block full or partial days."
+        text="Manage dated closures and partial-day exceptions to the source-controlled schedule."
       />
       <div className="grid gap-7 xl:grid-cols-[.8fr_1.2fr]">
         <form onSubmit={save} className="surface h-fit p-5">
@@ -1686,19 +1828,34 @@ export function AdminAvailabilityPage() {
               </div>
             </div>
             <div className="field">
-              <label>Internal reason</label>
+              <label>
+                {start || end ? "Internal reason" : "Reason shown on calendar"}
+              </label>
               <input
-                aria-label="Internal reason"
+                aria-label={
+                  start || end
+                    ? "Internal reason"
+                    : "Reason shown on calendar"
+                }
                 required
+                maxLength={start || end ? 500 : 160}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
               />
             </div>
-            <button className="btn btn-primary">Block time</button>
+            {blockError && (
+              <p className="field-error" role="alert">
+                {blockError}
+              </p>
+            )}
+            <button className="btn btn-primary" disabled={savingBlock}>
+              {savingBlock ? "Saving block…" : "Block time"}
+            </button>
           </div>
           <p className="mt-5 text-xs leading-5 text-[var(--muted)]">
-            Leave both times empty to block the full day. Reasons remain
-            admin-only.
+            Leave both times empty to block the full day. That reason is shown
+            to customers on the booking calendar, so do not include private
+            information. Reasons for timed blocks remain admin-only.
           </p>
         </form>
         <section className="surface p-5">
@@ -1735,666 +1892,14 @@ export function AdminAvailabilityPage() {
         </section>
       </div>
       <section className="surface mt-7 p-5">
-        <h2 className="font-bold">Booking rules</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <div className="field">
-            <label htmlFor="opening-hour">Opening hour</label>
-            <input
-              id="opening-hour"
-              type="number"
-              min="0"
-              max="23"
-              value={settings.openingHour}
-              onChange={(e) => setRule("openingHour", Number(e.target.value))}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="closing-hour">Closing hour</label>
-            <input
-              id="closing-hour"
-              type="number"
-              min="1"
-              max="24"
-              value={settings.closingHour}
-              onChange={(e) => setRule("closingHour", Number(e.target.value))}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="interval">Interval (minutes)</label>
-            <input
-              id="interval"
-              type="number"
-              min="15"
-              step="15"
-              value={settings.bookingInterval}
-              onChange={(e) =>
-                setRule("bookingInterval", Number(e.target.value))
-              }
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="notice">Minimum notice (hours)</label>
-            <input
-              id="notice"
-              type="number"
-              min="0"
-              value={settings.minimumNoticeHours}
-              onChange={(e) =>
-                setRule("minimumNoticeHours", Number(e.target.value))
-              }
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="advance">Advance window (days)</label>
-            <input
-              id="advance"
-              type="number"
-              min="1"
-              value={settings.maximumAdvanceDays}
-              onChange={(e) =>
-                setRule("maximumAdvanceDays", Number(e.target.value))
-              }
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="buffer">Buffer (minutes)</label>
-            <input
-              id="buffer"
-              type="number"
-              min="0"
-              step="5"
-              value={settings.bufferMinutes}
-              onChange={(e) => setRule("bufferMinutes", Number(e.target.value))}
-            />
-          </div>
-        </div>
-        <fieldset className="mt-6">
-          <legend className="text-sm font-bold">Closed days</legend>
-          <div className="mt-3 flex flex-wrap gap-3">
-            {[
-              "Sunday",
-              "Monday",
-              "Tuesday",
-              "Wednesday",
-              "Thursday",
-              "Friday",
-              "Saturday",
-            ].map((label, day) => (
-              <label
-                key={label}
-                className="flex min-h-11 items-center gap-2 rounded-full border border-[var(--line)] px-4 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  checked={settings.closedDays.includes(day)}
-                  onChange={(e) =>
-                    setRule(
-                      "closedDays",
-                      e.target.checked
-                        ? [...settings.closedDays, day]
-                        : settings.closedDays.filter((item) => item !== day),
-                    )
-                  }
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <button className="btn btn-primary mt-6" onClick={saveRules}>
-          Save booking rules
-        </button>
-        {saved && (
-          <p
-            className="mt-3 text-sm font-bold text-[var(--forest-700)]"
-            role="status"
-          >
-            Booking rules saved.
-          </p>
-        )}
+        <h2 className="font-bold">Normal booking schedule</h2>
+        <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+          Monday-Saturday, 9:00 a.m.-6:00 p.m. in Africa/Lagos. Salon capacity is three places in each morning, afternoon and evening session. Trichology retains individually calculated appointment times.
+        </p>
+        <p className="mt-3 text-xs font-bold text-[var(--forest-700)]">
+          This schedule is source-controlled. Firestore stores only blocks and capacity overrides.
+        </p>
       </section>
-    </>
-  );
-}
-
-export function AdminContentPage() {
-  const [announcement, setAnnouncement] = useState("");
-  const [offerings, setOfferings] = useState<HomeOffering[]>([]);
-  const [gallery, setGallery] = useState<GalleryItem[]>([]);
-  const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    Promise.all([
-      contentRepository.getAnnouncement(),
-      homeOfferingRepository.list(),
-      galleryRepository.list(),
-    ]).then(([nextAnnouncement, nextOfferings, nextGallery]) => {
-      setAnnouncement(nextAnnouncement);
-      setOfferings(
-        defaultHomeOfferings.map((fallback, index) => ({
-          ...(nextOfferings.find((item) => item.id === fallback.id) ||
-            fallback),
-          sequence: index + 1,
-          active: true,
-        })),
-      );
-      setGallery(nextGallery.sort((a, b) => a.order - b.order));
-    });
-  }, []);
-  const updateOffering = (id: string, patch: Partial<HomeOffering>) =>
-    setOfferings((current) =>
-      current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
-    );
-  const updateGallery = (id: string, patch: Partial<GalleryItem>) =>
-    setGallery((current) =>
-      current.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              ...patch,
-              ...(("consentConfirmed" in patch && !patch.consentConfirmed) ||
-              ("placeholder" in patch && patch.placeholder) ||
-              ("consentRecordReference" in patch &&
-                !patch.consentRecordReference?.trim())
-                ? { isClientResult: false }
-                : {}),
-            }
-          : item,
-      ),
-    );
-  return (
-    <>
-      <AdminHeading
-        title="Public content"
-        text="Edit frequently changing information without creating an unrestricted page builder."
-      />
-      <div className="grid gap-6 xl:grid-cols-2">
-        <section className="surface p-5">
-          <h2 className="font-bold">Homepage announcement</h2>
-          <div className="field mt-5">
-            <label>Announcement text</label>
-            <textarea
-              value={announcement}
-              onChange={(e) => setAnnouncement(e.target.value)}
-              placeholder="Leave blank to hide"
-            />
-          </div>
-          <button
-            className="btn btn-primary mt-5"
-            onClick={async () => {
-              await contentRepository.saveAnnouncement(announcement);
-              setSaved(true);
-            }}
-          >
-            Save announcement
-          </button>
-          {saved && (
-            <p
-              className="mt-3 text-sm font-bold text-[var(--forest-700)]"
-              role="status"
-            >
-              Announcement is now reflected on the homepage.
-            </p>
-          )}
-        </section>
-        <section className="surface p-5">
-          <h2 className="font-bold">Managed content</h2>
-          <div className="mt-4 rule-list text-sm">
-            {[
-              "Featured services",
-              "FAQ entries",
-              "Testimonials",
-              "Result stories",
-              "Contact information",
-              "Social links",
-              "Address",
-              "Lead magnet status",
-            ].map((label) => (
-              <div
-                key={label}
-                className="flex min-h-12 items-center justify-between"
-              >
-                <span>{label}</span>
-                <span className="status placeholder-badge">Seed data</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-5 text-xs leading-5 text-[var(--muted)]">
-            These typed collections are ready for repository-backed editors.
-            Demo content lives in the central data file until Firebase is
-            configured.
-          </p>
-        </section>
-        <section className="surface p-5 xl:col-span-2">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h2 className="font-bold">Homepage Care Loop</h2>
-              <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-                Edit the four core offers and their destinations. Motion timing
-                and care-path order remain fixed for accessibility and
-                consistency.
-              </p>
-            </div>
-            <button
-              className="btn btn-primary"
-              onClick={async () => {
-                await Promise.all(
-                  offerings.map((item) => homeOfferingRepository.save(item)),
-                );
-                setSaved(true);
-              }}
-            >
-              Save Care Loop
-            </button>
-          </div>
-          <div className="mt-6 rule-list">
-            {offerings.map((item) => (
-              <article key={item.id} className="grid gap-4 py-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="font-display text-2xl text-[var(--forest-950)]">
-                    {String(item.sequence).padStart(2, "0")} {item.eyebrow}
-                  </h3>
-                  <span className="status">Core path · always active</span>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="field">
-                    <label>Offering label</label>
-                    <input
-                      value={item.eyebrow}
-                      onChange={(event) =>
-                        updateOffering(item.id, { eyebrow: event.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Image focal point</label>
-                    <input
-                      value={item.image.focalPoint || "center"}
-                      onChange={(event) =>
-                        updateOffering(item.id, {
-                          image: {
-                            ...item.image,
-                            focalPoint: event.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="field">
-                  <label>Title</label>
-                  <input
-                    value={item.title}
-                    onChange={(event) =>
-                      updateOffering(item.id, { title: event.target.value })
-                    }
-                  />
-                </div>
-                <div className="field">
-                  <label>Short description</label>
-                  <textarea
-                    value={item.description}
-                    onChange={(event) =>
-                      updateOffering(item.id, {
-                        description: event.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="field">
-                    <label>Image URL</label>
-                    <input
-                      type="url"
-                      value={item.image.src}
-                      onChange={(event) =>
-                        updateOffering(item.id, {
-                          image: { ...item.image, src: event.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Image alt text</label>
-                    <input
-                      value={item.image.alt}
-                      onChange={(event) =>
-                        updateOffering(item.id, {
-                          image: { ...item.image, alt: event.target.value },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Primary CTA label</label>
-                    <input
-                      value={item.primaryCta.label}
-                      onChange={(event) =>
-                        updateOffering(item.id, {
-                          primaryCta: {
-                            ...item.primaryCta,
-                            label: event.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Primary CTA destination</label>
-                    <input
-                      value={item.primaryCta.href}
-                      onChange={(event) =>
-                        updateOffering(item.id, {
-                          primaryCta: {
-                            ...item.primaryCta,
-                            href: event.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Secondary CTA label</label>
-                    <input
-                      value={item.secondaryCta?.label || ""}
-                      onChange={(event) =>
-                        updateOffering(item.id, {
-                          secondaryCta: {
-                            label: event.target.value,
-                            href: item.secondaryCta?.href || "",
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Secondary CTA destination</label>
-                    <input
-                      value={item.secondaryCta?.href || ""}
-                      onChange={(event) =>
-                        updateOffering(item.id, {
-                          secondaryCta: {
-                            label: item.secondaryCta?.label || "Learn more",
-                            href: event.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-        <section className="surface p-5 xl:col-span-2">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h2 className="font-bold">Gallery records</h2>
-              <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-                Public images use URL-backed records. Client results require
-                explicit consent confirmation before they can be marked as such.
-              </p>
-            </div>
-            <button
-              className="btn btn-secondary"
-              onClick={() =>
-                setGallery((current) => [
-                  ...current,
-                  {
-                    id: crypto.randomUUID(),
-                    image: "",
-                    category: "clinic",
-                    caption: "",
-                    alt: "",
-                    order: current.length + 1,
-                    featured: false,
-                    active: false,
-                    consentConfirmed: false,
-                    isClientResult: false,
-                    placeholder: true,
-                  },
-                ])
-              }
-            >
-              <Plus size={17} /> Add image record
-            </button>
-          </div>
-          <div className="mt-6 rule-list">
-            {gallery.map((item) => (
-              <article
-                key={item.id}
-                className="grid gap-4 py-6 lg:grid-cols-[180px_1fr]"
-              >
-                <div className="overflow-hidden rounded-[12px] bg-[var(--forest-100)]">
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt=""
-                      className="aspect-[4/3] h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="grid aspect-[4/3] place-items-center text-xs font-bold text-[var(--forest-700)]">
-                      Add image URL
-                    </div>
-                  )}
-                </div>
-                <div className="grid gap-4">
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <div className="field md:col-span-2">
-                      <label>Image URL</label>
-                      <input
-                        type="url"
-                        value={item.image}
-                        onChange={(event) =>
-                          updateGallery(item.id, { image: event.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Category</label>
-                      <select
-                        value={item.category}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            category: event.target
-                              .value as GalleryItem["category"],
-                          })
-                        }
-                      >
-                        <option value="trichology">Trichology</option>
-                        <option value="natural-hair">Natural Hair</option>
-                        <option value="clinic">Clinic</option>
-                        <option value="products">Products</option>
-                      </select>
-                    </div>
-                    <div className="field">
-                      <label>Display order</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.order}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            order: Number(event.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="field">
-                      <label>Caption</label>
-                      <textarea
-                        value={item.caption}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            caption: event.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Alt text</label>
-                      <textarea
-                        value={item.alt}
-                        onChange={(event) =>
-                          updateGallery(item.id, { alt: event.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Related service ID (optional)</label>
-                      <input
-                        value={item.relatedServiceId || ""}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            relatedServiceId: event.target.value || undefined,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Consent record reference</label>
-                      <input
-                        value={item.consentRecordReference || ""}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            consentRecordReference:
-                              event.target.value || undefined,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-5 text-xs font-bold">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={item.active}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            active: event.target.checked,
-                          })
-                        }
-                      />{" "}
-                      Visible
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={item.featured}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            featured: event.target.checked,
-                          })
-                        }
-                      />{" "}
-                      Featured
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={item.placeholder}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            placeholder: event.target.checked,
-                          })
-                        }
-                      />{" "}
-                      Placeholder
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={item.consentConfirmed}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            consentConfirmed: event.target.checked,
-                          })
-                        }
-                      />{" "}
-                      Consent confirmed
-                    </label>
-                    <label
-                      title={
-                        !item.consentConfirmed ||
-                        !item.consentRecordReference?.trim() ||
-                        item.placeholder
-                          ? "Confirm consent, add its reference and remove placeholder status first"
-                          : undefined
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        disabled={
-                          !item.consentConfirmed ||
-                          !item.consentRecordReference?.trim() ||
-                          item.placeholder
-                        }
-                        checked={item.isClientResult}
-                        onChange={(event) =>
-                          updateGallery(item.id, {
-                            isClientResult: event.target.checked,
-                          })
-                        }
-                      />{" "}
-                      Genuine client result
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      className="btn btn-primary"
-                      onClick={async () => {
-                        if (
-                          item.isClientResult &&
-                          (!item.consentConfirmed ||
-                            !item.consentRecordReference?.trim() ||
-                            item.placeholder)
-                        )
-                          return;
-                        await galleryRepository.save(item);
-                        setSaved(true);
-                      }}
-                    >
-                      Save image
-                    </button>
-                    <button
-                      className="btn btn-secondary"
-                      onClick={async () => {
-                        const archived = { ...item, active: false };
-                        await galleryRepository.save(archived);
-                        updateGallery(item.id, { active: false });
-                      }}
-                    >
-                      Archive
-                    </button>
-                    <button
-                      className="btn text-[var(--danger)]"
-                      onClick={async () => {
-                        await galleryRepository.remove(item.id);
-                        setGallery((current) =>
-                          current.filter(
-                            (candidate) => candidate.id !== item.id,
-                          ),
-                        );
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-          {saved && (
-            <p
-              className="mt-4 text-sm font-bold text-[var(--forest-700)]"
-              role="status"
-            >
-              Content changes saved.
-            </p>
-          )}
-        </section>
-      </div>
     </>
   );
 }
@@ -2402,16 +1907,45 @@ export function AdminContentPage() {
 export function AdminSettingsPage() {
   const [settings, setSettings] = useState<BusinessSettings>(defaultSettings);
   const [policies, setPolicies] = useState<BookingPolicy[]>([]);
+  const [policiesLoading, setPoliciesLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [policyForm, setPolicyForm] = useState({ title: "", summary: "" });
+  const [editingPolicyId, setEditingPolicyId] = useState<string | null>(null);
+  const [policyBusy, setPolicyBusy] = useState(false);
+  const [reorderingPolicies, setReorderingPolicies] = useState(false);
+  const [policyError, setPolicyError] = useState("");
+  const [policyMessage, setPolicyMessage] = useState("");
+  const [deletingPolicy, setDeletingPolicy] = useState<BookingPolicy | null>(
+    null,
+  );
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const deleteInFlight = useRef(false);
   useEffect(() => {
     Promise.all([
       availabilityRepository.getPublic(),
       bookingConfigurationRepositories.policies.list(),
-    ]).then(([nextSettings, nextPolicies]) => {
-      setSettings(nextSettings);
-      setPolicies(nextPolicies);
-    });
+    ])
+      .then(([nextSettings, nextPolicies]) => {
+        setSettings(nextSettings);
+        setPolicies(nextPolicies);
+      })
+      .catch((error) =>
+        setPolicyError(
+          error instanceof Error
+            ? error.message
+            : "Booking policies could not be loaded.",
+        ),
+      )
+      .finally(() => setPoliciesLoading(false));
   }, []);
+  useEffect(() => {
+    if (!deletingPolicy) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !deleteBusy) setDeletingPolicy(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [deleteBusy, deletingPolicy]);
   const setPayment = <K extends keyof BusinessSettings["payment"]>(
     key: K,
     value: BusinessSettings["payment"][K],
@@ -2422,12 +1956,111 @@ export function AdminSettingsPage() {
     }));
   async function saveBookingSettings() {
     await availabilityRepository.saveSettings(settings);
-    await Promise.all(
-      policies.map((policy) =>
-        bookingConfigurationRepositories.policies.save(policy),
-      ),
-    );
     setSaved(true);
+  }
+  function resetPolicyForm() {
+    setEditingPolicyId(null);
+    setPolicyForm({ title: "", summary: "" });
+    setPolicyError("");
+  }
+  function editPolicy(policy: BookingPolicy) {
+    setEditingPolicyId(policy.id);
+    setPolicyForm({ title: policy.title, summary: policy.summary });
+    setPolicyError("");
+    setPolicyMessage("");
+  }
+  async function submitPolicy(event: React.FormEvent) {
+    event.preventDefault();
+    if (policyBusy) return;
+    setPolicyBusy(true);
+    setPolicyError("");
+    setPolicyMessage("");
+    try {
+      if (editingPolicyId) {
+        const updated =
+          await bookingConfigurationRepositories.policies.updateAsAdmin(
+            editingPolicyId,
+            policyForm,
+          );
+        setPolicies((items) =>
+          items.map((item) => (item.id === updated.id ? updated : item)),
+        );
+        setPolicyMessage(`“${updated.title}” was updated.`);
+      } else {
+        const created =
+          await bookingConfigurationRepositories.policies.createAsAdmin(
+            policyForm,
+          );
+        setPolicies((items) => [...items, created]);
+        setPolicyMessage(`“${created.title}” was created.`);
+      }
+      resetPolicyForm();
+    } catch (error) {
+      setPolicyError(
+        error instanceof Error ? error.message : "The policy could not be saved.",
+      );
+    } finally {
+      setPolicyBusy(false);
+    }
+  }
+  async function movePolicy(id: string, direction: -1 | 1) {
+    if (reorderingPolicies) return;
+    const index = policies.findIndex((policy) => policy.id === id);
+    const destination = index + direction;
+    if (index < 0 || destination < 0 || destination >= policies.length) return;
+    const reordered = [...policies];
+    [reordered[index], reordered[destination]] = [
+      reordered[destination],
+      reordered[index],
+    ];
+    setReorderingPolicies(true);
+    setPolicyError("");
+    try {
+      await bookingConfigurationRepositories.policies.reorderAsAdmin(
+        reordered.map((policy) => policy.id),
+      );
+      setPolicies(
+        reordered.map((policy, displayOrder) => ({
+          ...policy,
+          displayOrder,
+        })),
+      );
+      setPolicyMessage("Policy order was updated.");
+    } catch (error) {
+      setPolicyError(
+        error instanceof Error
+          ? error.message
+          : "The policy order could not be updated.",
+      );
+    } finally {
+      setReorderingPolicies(false);
+    }
+  }
+  async function permanentlyDeletePolicy() {
+    if (!deletingPolicy || deleteInFlight.current) return;
+    deleteInFlight.current = true;
+    setDeleteBusy(true);
+    setPolicyError("");
+    try {
+      await bookingConfigurationRepositories.policies.deleteAsAdmin(
+        deletingPolicy.id,
+      );
+      setPolicies((items) =>
+        items.filter((item) => item.id !== deletingPolicy.id),
+      );
+      if (editingPolicyId === deletingPolicy.id) resetPolicyForm();
+      setPolicyMessage(`“${deletingPolicy.title}” was permanently deleted.`);
+      setDeletingPolicy(null);
+    } catch (error) {
+      setPolicyError(
+        error instanceof Error
+          ? error.message
+          : "The policy could not be deleted.",
+      );
+    } finally {
+      deleteInFlight.current = false;
+      setDeleteBusy(false);
+    }
   }
   return (
     <>
@@ -2435,7 +2068,7 @@ export function AdminSettingsPage() {
         title="Settings"
         text="Configuration status and operating defaults."
       />
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {/* <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {[
           ["Business name", "Tamlois Naturals & Trichology Clinic"],
           ["Timezone", "Africa/Lagos"],
@@ -2470,7 +2103,7 @@ export function AdminSettingsPage() {
             </p>
           </div>
         ))}
-      </div>
+      </div> */}
       <div className="mt-7 grid gap-7 xl:grid-cols-[.8fr_1.2fr]">
         <section className="surface p-5">
           <h2 className="font-bold text-[var(--forest-950)]">
@@ -2606,92 +2239,246 @@ export function AdminSettingsPage() {
                 Booking policies
               </h2>
               <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-                Edit summary, version, effective date and active status.
+                Every saved policy is public. Editing its wording creates the
+                next numeric version.
               </p>
             </div>
-            <span className="status placeholder-badge">Placeholder</span>
+            {editingPolicyId && (
+              <button
+                className="btn btn-secondary shrink-0"
+                disabled={policiesLoading}
+                type="button"
+                onClick={resetPolicyForm}
+              >
+                <Plus size={16} /> New policy
+              </button>
+            )}
           </div>
-          <div className="rule-list mt-5">
-            {policies.map((policy) => (
-              <div className="grid gap-3 py-4" key={policy.id}>
-                <div className="flex items-center justify-between gap-3">
-                  <strong className="text-sm">{policy.title}</strong>
-                  <label className="text-xs">
-                    <input
-                      type="checkbox"
-                      checked={policy.active}
-                      onChange={(e) =>
-                        setPolicies((items) =>
-                          items.map((item) =>
-                            item.id === policy.id
-                              ? { ...item, active: e.target.checked }
-                              : item,
-                          ),
-                        )
-                      }
-                    />{" "}
-                    Active
-                  </label>
-                </div>
-                <textarea
-                  aria-label={`${policy.title} summary`}
-                  className="control min-h-24"
-                  value={policy.summary}
-                  onChange={(e) =>
-                    setPolicies((items) =>
-                      items.map((item) =>
-                        item.id === policy.id
-                          ? { ...item, summary: e.target.value }
-                          : item,
-                      ),
-                    )
+
+          <form
+            aria-busy={policiesLoading || policyBusy}
+            className="mt-6"
+            onSubmit={submitPolicy}
+          >
+            <h3 className="text-sm font-bold text-[var(--forest-950)]">
+              {editingPolicyId
+                ? "Edit policy"
+                : policies.length
+                  ? "Create another policy"
+                  : "Create the first policy"}
+            </h3>
+            <div className="mt-4 grid gap-4">
+              <div className="field">
+                <label htmlFor="policy-title">Policy title</label>
+                <input
+                  id="policy-title"
+                  disabled={policiesLoading}
+                  maxLength={160}
+                  required
+                  value={policyForm.title}
+                  onChange={(event) =>
+                    setPolicyForm((current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
                   }
                 />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    aria-label={`${policy.title} version`}
-                    className="control"
-                    value={policy.version}
-                    onChange={(e) =>
-                      setPolicies((items) =>
-                        items.map((item) =>
-                          item.id === policy.id
-                            ? { ...item, version: e.target.value }
-                            : item,
-                        ),
-                      )
-                    }
-                  />
-                  <input
-                    aria-label={`${policy.title} effective date`}
-                    className="control"
-                    type="date"
-                    value={policy.effectiveFrom}
-                    onChange={(e) =>
-                      setPolicies((items) =>
-                        items.map((item) =>
-                          item.id === policy.id
-                            ? { ...item, effectiveFrom: e.target.value }
-                            : item,
-                        ),
-                      )
-                    }
-                  />
-                </div>
               </div>
+              <div className="field">
+                <label htmlFor="policy-summary">Policy summary</label>
+                <textarea
+                  id="policy-summary"
+                  className="min-h-28"
+                  disabled={policiesLoading}
+                  maxLength={3000}
+                  required
+                  value={policyForm.summary}
+                  onChange={(event) =>
+                    setPolicyForm((current) => ({
+                      ...current,
+                      summary: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  className="btn btn-primary"
+                  disabled={policiesLoading || policyBusy}
+                  type="submit"
+                >
+                  {policyBusy
+                    ? "Saving policy…"
+                    : editingPolicyId
+                      ? "Save policy changes"
+                      : "Create policy"}
+                </button>
+                {editingPolicyId && (
+                  <button
+                    className="btn btn-secondary"
+                    disabled={policyBusy}
+                    type="button"
+                    onClick={resetPolicyForm}
+                  >
+                    Cancel editing
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+
+          {policyError && (
+            <p className="mt-4 text-sm font-bold text-[var(--danger)]" role="alert">
+              {policyError}
+            </p>
+          )}
+          {policyMessage && (
+            <p className="mt-4 text-sm font-bold text-[var(--forest-700)]" role="status">
+              {policyMessage}
+            </p>
+          )}
+
+          {policiesLoading ? (
+            <p className="mt-6 text-sm text-[var(--muted)]" role="status">
+              Loading booking policies…
+            </p>
+          ) : !policies.length ? (
+            <div className="mt-6 rounded-[12px] bg-[var(--forest-50)] p-5">
+              <h3 className="font-bold text-[var(--forest-950)]">
+                No booking policies yet
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                Create the first policy to enable customers to review consent
+                terms and continue through booking.
+              </p>
+            </div>
+          ) : (
+            <div className="rule-list mt-6" aria-label="Booking policy order">
+            {policies.map((policy, index) => (
+              <article className="grid gap-3 py-5" key={policy.id}>
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-[var(--forest-950)] [overflow-wrap:anywhere]">
+                      {policy.title}
+                    </h3>
+                    <p className="mt-1 text-xs font-bold text-[var(--muted)]">
+                      Version {policy.version}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      aria-label={`Move ${policy.title} up`}
+                      className="grid size-11 place-items-center rounded-full text-[var(--forest-800)] hover:bg-[var(--forest-50)]"
+                      disabled={
+                        reorderingPolicies || index === 0
+                      }
+                      title="Move up"
+                      type="button"
+                      onClick={() => movePolicy(policy.id, -1)}
+                    >
+                      <ArrowUp size={18} />
+                    </button>
+                    <button
+                      aria-label={`Move ${policy.title} down`}
+                      className="grid size-11 place-items-center rounded-full text-[var(--forest-800)] hover:bg-[var(--forest-50)]"
+                      disabled={
+                        reorderingPolicies ||
+                        index === policies.length - 1
+                      }
+                      title="Move down"
+                      type="button"
+                      onClick={() => movePolicy(policy.id, 1)}
+                    >
+                      <ArrowDown size={18} />
+                    </button>
+                    <button
+                      aria-label={`Edit ${policy.title}`}
+                      className="grid size-11 place-items-center rounded-full text-[var(--forest-800)] hover:bg-[var(--forest-50)]"
+                      title="Edit policy"
+                      type="button"
+                      onClick={() => editPolicy(policy)}
+                    >
+                      <Pencil size={17} />
+                    </button>
+                    <button
+                      aria-label={`Permanently delete ${policy.title}`}
+                      className="grid size-11 place-items-center rounded-full text-[var(--danger)] hover:bg-[#fff0ec]"
+                      title="Permanently delete policy"
+                      type="button"
+                      onClick={() => setDeletingPolicy(policy)}
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm leading-6 text-[var(--muted)] [overflow-wrap:anywhere]">
+                  {policy.summary}
+                </p>
+              </article>
             ))}
-          </div>
+            </div>
+          )}
         </section>
       </div>
+      {deletingPolicy && (
+        <div
+          aria-labelledby="delete-policy-title"
+          aria-describedby="delete-policy-description"
+          aria-modal="true"
+          className="fixed inset-0 z-50 grid place-items-end bg-[rgba(13,45,33,.46)] sm:place-items-center sm:p-5"
+          role="dialog"
+          onMouseDown={(event) => {
+            if (!deleteBusy && event.target === event.currentTarget)
+              setDeletingPolicy(null);
+          }}
+        >
+          <div className="w-full max-w-lg rounded-t-[14px] bg-white p-6 shadow-[0_24px_80px_rgba(13,45,33,.24)] sm:rounded-[14px] sm:p-7">
+            <h2
+              className="font-display text-3xl text-[var(--forest-950)]"
+              id="delete-policy-title"
+            >
+              Permanently delete this policy?
+            </h2>
+            <p
+              className="mt-4 text-sm leading-6 text-[var(--muted)]"
+              id="delete-policy-description"
+            >
+              You are deleting <strong>“{deletingPolicy.title}”</strong>. It
+              will disappear from future bookings. Existing booking records
+              keep the policy title, summary and version previously accepted.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                autoFocus
+                className="btn btn-primary"
+                disabled={deleteBusy}
+                type="button"
+                onClick={() => setDeletingPolicy(null)}
+              >
+                Keep policy
+              </button>
+              <button
+                className="btn border border-[var(--danger)] bg-transparent text-[var(--danger)] hover:bg-[#fff0ec]"
+                disabled={deleteBusy}
+                type="button"
+                onClick={permanentlyDeletePolicy}
+              >
+                <Trash2 size={17} />
+                {deleteBusy ? "Deleting…" : "Permanently delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <button className="btn btn-primary mt-6" onClick={saveBookingSettings}>
-        Save booking configuration
+        Save payment settings
       </button>
       {saved && (
         <p
           className="mt-3 text-sm font-bold text-[var(--forest-700)]"
           role="status"
         >
-          Booking configuration saved.
+          Payment settings saved.
         </p>
       )}
       <div className="mt-7 rounded-[14px] bg-[#fff0df] p-5 text-sm leading-6 text-[#713f1b]">

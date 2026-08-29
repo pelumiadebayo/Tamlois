@@ -1,8 +1,6 @@
 import type {
-  BookingPolicy,
   Concern,
   IntakeQuestion,
-  GalleryItem,
   HomeOffering,
   Product,
   Service,
@@ -117,7 +115,7 @@ export const homeOfferings: HomeOffering[] = [
     primaryCta: { label: "Explore the gallery", href: "/gallery" },
     secondaryCta: { label: "View client stories", href: "/results" },
     image: {
-      src: "/gallery-image.jpg",
+      src: `${import.meta.env.BASE_URL}gallery/woven-style-765.webp`,
       alt: "Woven natural hairstyle with neatly sectioned twists",
       focalPoint: "center 34%",
       placeholder: false,
@@ -128,79 +126,6 @@ export const homeOfferings: HomeOffering[] = [
       accentToken: "forest-700",
     },
     active: true,
-  },
-];
-
-export const galleryItems: GalleryItem[] = [
-  {
-    id: "gallery-consultation",
-    image: media.consultation.src,
-    category: "trichology",
-    caption:
-      "A calm consultation setting for discussing hair and scalp concerns.",
-    alt: "Black woman in a consultation setting, licensed placeholder",
-    order: 1,
-    featured: true,
-    active: true,
-    relatedServiceId: "svc-consult",
-    consentConfirmed: false,
-    isClientResult: false,
-    placeholder: true,
-  },
-  {
-    id: "gallery-natural-hair",
-    image: media.hero.src,
-    category: "natural-hair",
-    caption: "Healthy natural-hair texture presented as editorial inspiration.",
-    alt: "Nigerian woman with natural textured hair, licensed placeholder",
-    order: 2,
-    featured: true,
-    active: true,
-    relatedServiceId: "svc-natural",
-    consentConfirmed: false,
-    isClientResult: false,
-    placeholder: true,
-  },
-  {
-    id: "gallery-clinic",
-    image: media.practitioner.src,
-    category: "clinic",
-    caption: "Professional care in a focused clinic and salon environment.",
-    alt: "Black female hair professional in a studio, licensed placeholder",
-    order: 3,
-    featured: false,
-    active: true,
-    consentConfirmed: false,
-    isClientResult: false,
-    placeholder: true,
-  },
-  {
-    id: "gallery-products",
-    image:
-      "https://images.pexels.com/photos/30595022/pexels-photo-30595022.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    category: "products",
-    caption:
-      "A clean placeholder arrangement for hair and scalp care products.",
-    alt: "Hair-care products on a clean surface, licensed placeholder",
-    order: 4,
-    featured: true,
-    active: true,
-    consentConfirmed: false,
-    isClientResult: false,
-    placeholder: true,
-  },
-  {
-    id: "gallery-confidence",
-    image: media.results.src,
-    category: "natural-hair",
-    caption: "Natural-hair confidence imagery; not a verified Tamlois result.",
-    alt: "Smiling Black woman with natural hair, licensed placeholder",
-    order: 5,
-    featured: false,
-    active: true,
-    consentConfirmed: false,
-    isClientResult: false,
-    placeholder: true,
   },
 ];
 
@@ -219,15 +144,6 @@ const baseService = {
   imageAlt: "Professional hair and scalp consultation, placeholder image",
   placeholder: true as const,
 };
-
-export const bookingMainServiceIds = [
-  "svc-analysis",
-  "svc-consult",
-  "svc-therapy",
-  "svc-loss",
-  "svc-treatment",
-  "svc-natural",
-] as const;
 
 export const services: Service[] = [
   {
@@ -552,81 +468,6 @@ export const intakeQuestions: IntakeQuestion[] = [
     required: false,
     order: 2,
     active: true,
-  },
-];
-
-export const bookingPolicies: BookingPolicy[] = [
-  {
-    id: "appointments",
-    version: "2026-08-placeholder-v1",
-    effectiveFrom: "2026-08-01",
-    title: "Appointment-only care",
-    summary:
-      "All clinic and salon services require an appointment. Walk-ins are not assumed.",
-    fullText:
-      "Placeholder policy: all services are appointment-only and availability is only secured after the required booking stage is completed.",
-    active: true,
-    placeholder: true,
-  },
-  {
-    id: "notice",
-    version: "2026-08-placeholder-v1",
-    effectiveFrom: "2026-08-01",
-    title: "Notice and timing",
-    summary:
-      "Book at least 4 hours ahead. Arrive on time; late arrival may shorten or move the appointment.",
-    fullText:
-      "Placeholder policy: minimum notice, maximum booking window, lateness and no-show rules must be confirmed by the clinic before launch.",
-    active: true,
-    placeholder: true,
-  },
-  {
-    id: "payment",
-    version: "2026-08-placeholder-v1",
-    effectiveFrom: "2026-08-01",
-    title: "Payment and deposits",
-    summary:
-      "A full payment or 50% demo deposit may be selected. Remaining balance is due at the clinic.",
-    fullText:
-      "Placeholder policy: payment, deposit, refund and balance-due terms are illustrative and do not create a live transaction.",
-    active: true,
-    placeholder: true,
-  },
-  {
-    id: "changes",
-    version: "2026-08-placeholder-v1",
-    effectiveFrom: "2026-08-01",
-    title: "Cancellation and rescheduling",
-    summary:
-      "Contact the clinic at least 24 hours before the appointment to request a change.",
-    fullText:
-      "Placeholder policy: late cancellation, rescheduling, no-show and refund terms require final owner approval.",
-    active: true,
-    placeholder: true,
-  },
-  {
-    id: "preparation",
-    version: "2026-08-placeholder-v1",
-    effectiveFrom: "2026-08-01",
-    title: "Preparation and accurate information",
-    summary:
-      "Follow the selected service preparation note and provide complete, accurate intake information.",
-    fullText:
-      "Preparation can affect the appointment. The clinic may change or decline a service if important health or treatment information is missing.",
-    active: true,
-    placeholder: true,
-  },
-  {
-    id: "privacy",
-    version: "2026-08-placeholder-v1",
-    effectiveFrom: "2026-08-01",
-    title: "Privacy and optional photos",
-    summary:
-      "Booking details are used to manage care. Optional photos are private appointment-preparation material, never public results.",
-    fullText:
-      "Optional photos do not provide an online diagnosis. In a live build they require explicit consent, private storage and short-lived secure access.",
-    active: true,
-    placeholder: true,
   },
 ];
 
