@@ -4,7 +4,7 @@ A React website, booking application and sole-owner administration area for Taml
 
 ## Stack
 
-React 19, TypeScript, Vite, Tailwind CSS 4, Firebase modular Web SDK, React Hook Form, Zod, date-fns, Lucide, Vitest, React Testing Library and Playwright.
+React 19, TypeScript, Vite, Tailwind CSS 4, Firebase Web/Admin SDKs, Firebase Functions v2, Firestore, Zod, Paystack Transaction API, Vitest and Playwright.
 
 ## Local setup
 
@@ -21,11 +21,11 @@ Policy acknowledgement precedes Category → Service → Schedule → Details �
 
 The ordinary schedule is typed source configuration: Africa/Lagos, Monday–Saturday, 09:00–18:00; Sunday closed. Salon has three three-hour sessions with capacity three. Trichology keeps duration-aware start times in 30-minute intervals.
 
-In Firebase mode, an invisible Anonymous Authentication session owns each public booking. Availability reads only non-sensitive deterministic lock and operational-exception documents. Final confirmation runs a Firestore transaction that rechecks the active service, blocks, capacity override and every lock before atomically creating the private booking plus its lock(s). There are no temporary checkout holds and no production seed.
+In Firebase mode, an invisible Anonymous Authentication session owns each public booking. Availability reads only non-sensitive deterministic lock and operational-exception documents. A Firebase Functions v2 backend rechecks the active service, policies, authoritative payment settings, blocks, capacity override and every lock before atomically creating a private provisional booking and its lock(s). Online-payment holds default to 15 minutes; expired provisional locks are reclaimable transactionally, so correctness does not depend on cleanup.
 
-Salon lock IDs are `{date}_{sessionId}_seat-1` through `seat-3`. Trichology locks each required unit as `{date}_{HH-MM}`, including the configured buffer. Cancellation deletes future locks atomically; completion and no-show preserve historical occupancy.
+Salon lock IDs are `{date}_{sessionId}_seat-1` through `seat-3`. Trichology locks each required unit as `{date}_{HH-MM}`, including the configured buffer. Server-controlled cancellation releases locks; completion and no-show preserve historical occupancy.
 
-Production Firebase booking is pay-at-clinic only. Real Paystack verification, webhooks and email delivery remain disabled because they require a trusted backend. The browser-only design prevents normal transaction races, but Security Rules cannot mathematically derive every consecutive Trichology lock from service duration; see [Architecture](docs/ARCHITECTURE.md).
+Production payment uses Paystack Redirect Checkout initialized by Firebase Functions. Amounts are recalculated in integer kobo; callbacks never confirm payment; the signed webhook and callback verification share one idempotent finalization transaction. Full payment, configured deposits and owner-approved pay-at-clinic are supported. No Paystack secret ships to the browser. See [Paystack setup](docs/PAYSTACK_SETUP.md).
 
 ## Admin authentication
 
@@ -40,17 +40,21 @@ The Care Loop starts with Natural Hair Salon, followed by Trichology Care, Produ
 ```bash
 npm run lint
 npm run test
+npm run test:functions
+npm run test:functions:emulator
 npm run test:rules
 npm run test:e2e
 npm run build
+npm run build:functions
 ```
 
-Java 21 is required for Firestore emulator tests. No Cloud Functions or billing account is required.
+Java 21 is required for Firestore emulator tests. Production Functions require the Firebase Blaze plan; budget alerts and Artifact Registry cleanup are documented before deployment.
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Firebase setup](docs/FIREBASE_SETUP.md)
+- [Paystack setup](docs/PAYSTACK_SETUP.md)
 - [Manual setup and handover](docs/MANUAL_SETUP_AND_HANDOVER.md)
 - [Design system](docs/DESIGN_SYSTEM.md)
 - [Gallery workflow](docs/GALLERY_WORKFLOW.md)
