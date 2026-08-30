@@ -23,9 +23,19 @@ import { LeadCapture } from "../components/LeadCapture";
 import { SEO } from "../components/SEO";
 import { contentRepository } from "../repositories/contentRepository";
 import { CareLoop } from "../components/CareLoop";
-import { FEATURED_PRODUCT_STOREFRONT_URL } from "../config/commerce";
+import {
+  FEATURED_PRODUCT_STOREFRONT_URL,
+  MOISTURISING_HAIR_MIST_STOREFRONT_URL,
+  SCALP_CLEANSING_TREATMENT_STOREFRONT_URL,
+} from "../config/commerce";
 import { publicHomeContent } from "../repositories/homeContentRepository";
 import type { HomeOffering } from "../types";
+
+const featuredProductUrls: Record<string, string> = {
+  "prd-cleanse": SCALP_CLEANSING_TREATMENT_STOREFRONT_URL,
+  "prd-mist": MOISTURISING_HAIR_MIST_STOREFRONT_URL,
+  "prd-oil": FEATURED_PRODUCT_STOREFRONT_URL,
+};
 
 export default function Home() {
   const { services } = useServices();
@@ -144,7 +154,10 @@ export default function Home() {
               <ProductCard
                 key={product.id}
                 product={product}
-                storefrontUrl={FEATURED_PRODUCT_STOREFRONT_URL}
+                storefrontUrl={
+                  featuredProductUrls[product.id] ??
+                  FEATURED_PRODUCT_STOREFRONT_URL
+                }
               />
             ))}
           </div>

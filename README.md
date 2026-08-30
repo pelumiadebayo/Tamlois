@@ -27,7 +27,7 @@ Salon lock IDs are `{date}_{sessionId}_seat-1` through `seat-3`. Trichology lock
 
 Production payment uses Paystack Redirect Checkout initialized by Firebase Functions. Amounts are recalculated in integer kobo; callbacks never confirm payment; the signed webhook and callback verification share one idempotent finalization transaction. Full payment, configured deposits and owner-approved pay-at-clinic are supported. No Paystack secret ships to the browser. See [Paystack setup](docs/PAYSTACK_SETUP.md).
 
-Live retail products are managed in the official [Tamlois Paystack Storefront](https://paystack.shop/tamls). The website keeps a branded `/shop` introduction plus three static homepage promotional cards that link directly to the configured Storefront product; it has no local cart, stock, variants or retail orders. Appointment payments and retail Storefront checkout are separate integrations. See [Paystack Storefront setup](docs/PAYSTACK_STOREFRONT_SETUP.md).
+Live retail products are managed in the official [Tamlois Paystack Storefront](https://paystack.shop/tamls). The website keeps a branded `/shop` introduction plus three static homepage promotional cards that link directly to their configured Storefront product URLs; it has no local cart, stock, variants or retail orders. Appointment payments and retail Storefront checkout are separate integrations. See [Paystack Storefront setup](docs/PAYSTACK_STOREFRONT_SETUP.md).
 
 ## Admin authentication
 

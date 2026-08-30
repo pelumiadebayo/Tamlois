@@ -6,7 +6,19 @@ The official Tamlois retail shop is:
 https://paystack.shop/tamls
 ```
 
-The Tamlois website contains a branded `/shop` landing page and three static homepage promotional cards. All three cards currently link directly to:
+The Tamlois website contains a branded `/shop` landing page and three static homepage promotional cards. The Moisturising Hair Mist card links directly to:
+
+```text
+https://paystack.shop/tamls?product=moisturising-hair-mist-qfygyk
+```
+
+The Scalp Cleansing Treatment card links directly to:
+
+```text
+https://paystack.shop/tamls?product=scalp-cleansing-treatment-mhxror
+```
+
+The Botanical Scalp Oil card links directly to:
 
 ```text
 https://paystack.shop/tamls?product=botanical-scalp-oil-hkxrdj
@@ -52,7 +64,7 @@ Retail Storefront checkout and appointment payments are separate:
 2. Review all Storefront product copy and avoid treatment, cure or guaranteed-outcome claims.
 3. Confirm current images, prices, variants, stock, discounts and delivery settings in Paystack.
 4. Confirm retail order notifications and fulfilment ownership.
-5. Test homepage, `/shop`, footer and admin Storefront links on mobile and desktop.
+5. Test each homepage product card plus the `/shop`, footer and admin Storefront links on mobile and desktop.
 6. Confirm the external link opens in a new tab and the original Tamlois page remains usable.
 7. Review Paystack’s standard transaction fees for successful Storefront sales.
 

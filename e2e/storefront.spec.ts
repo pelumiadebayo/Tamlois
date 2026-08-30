@@ -3,6 +3,10 @@ import { expect, test } from "@playwright/test";
 const storefrontUrl = "https://paystack.shop/tamls";
 const featuredProductUrl =
   "https://paystack.shop/tamls?product=botanical-scalp-oil-hkxrdj";
+const moisturisingHairMistUrl =
+  "https://paystack.shop/tamls?product=moisturising-hair-mist-qfygyk";
+const scalpCleansingTreatmentUrl =
+  "https://paystack.shop/tamls?product=scalp-cleansing-treatment-mhxror";
 
 test("shop is a branded, catalogue-free transition to Paystack Storefront", async ({
   page,
@@ -38,10 +42,24 @@ test("homepage and navigation share the intentional Storefront journey", async (
   });
   await expect(featuredProducts).toHaveCount(3);
   for (const product of await featuredProducts.all()) {
-    await expect(product).toHaveAttribute("href", featuredProductUrl);
     await expect(product).toHaveAttribute("target", "_blank");
     await expect(product).toHaveAttribute("rel", "noopener noreferrer");
   }
+  await expect(
+    page.getByRole("link", {
+      name: /Shop Moisturising hair mist on the official Paystack Storefront.*new tab/i,
+    }),
+  ).toHaveAttribute("href", moisturisingHairMistUrl);
+  await expect(
+    page.getByRole("link", {
+      name: /Shop Scalp cleansing treatment on the official Paystack Storefront.*new tab/i,
+    }),
+  ).toHaveAttribute("href", scalpCleansingTreatmentUrl);
+  await expect(
+    page.getByRole("link", {
+      name: /Shop Botanical scalp oil on the official Paystack Storefront.*new tab/i,
+    }),
+  ).toHaveAttribute("href", featuredProductUrl);
   await page.getByRole("link", { name: "Shop", exact: true }).first().click();
   await expect(page).toHaveURL(/#\/shop$/);
 });

@@ -1,6 +1,10 @@
 export const DEFAULT_PAYSTACK_STOREFRONT_URL = "https://paystack.shop/tamls";
 export const FEATURED_PRODUCT_STOREFRONT_URL =
   "https://paystack.shop/tamls?product=botanical-scalp-oil-hkxrdj";
+export const MOISTURISING_HAIR_MIST_STOREFRONT_URL =
+  "https://paystack.shop/tamls?product=moisturising-hair-mist-qfygyk";
+export const SCALP_CLEANSING_TREATMENT_STOREFRONT_URL =
+  "https://paystack.shop/tamls?product=scalp-cleansing-treatment-mhxror";
 
 const PAYSTACK_STOREFRONT_HOST = "paystack.shop";
 

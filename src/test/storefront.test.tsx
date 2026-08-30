@@ -5,6 +5,8 @@ import { StorefrontLink } from "../components/StorefrontLink";
 import {
   DEFAULT_PAYSTACK_STOREFRONT_URL,
   FEATURED_PRODUCT_STOREFRONT_URL,
+  MOISTURISING_HAIR_MIST_STOREFRONT_URL,
+  SCALP_CLEANSING_TREATMENT_STOREFRONT_URL,
   resolveStorefrontUrl,
 } from "../config/commerce";
 import { analytics } from "../lib/analytics";
@@ -24,6 +26,18 @@ describe("Paystack Storefront configuration", () => {
     expect(resolveStorefrontUrl(FEATURED_PRODUCT_STOREFRONT_URL)).toBe(
       FEATURED_PRODUCT_STOREFRONT_URL,
     );
+    expect(MOISTURISING_HAIR_MIST_STOREFRONT_URL).toBe(
+      "https://paystack.shop/tamls?product=moisturising-hair-mist-qfygyk",
+    );
+    expect(resolveStorefrontUrl(MOISTURISING_HAIR_MIST_STOREFRONT_URL)).toBe(
+      MOISTURISING_HAIR_MIST_STOREFRONT_URL,
+    );
+    expect(SCALP_CLEANSING_TREATMENT_STOREFRONT_URL).toBe(
+      "https://paystack.shop/tamls?product=scalp-cleansing-treatment-mhxror",
+    );
+    expect(
+      resolveStorefrontUrl(SCALP_CLEANSING_TREATMENT_STOREFRONT_URL),
+    ).toBe(SCALP_CLEANSING_TREATMENT_STOREFRONT_URL);
   });
 
   it("rejects malformed, non-HTTPS and non-Paystack Storefront URLs", () => {
