@@ -1,20 +1,101 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ShoppingBag, X } from 'lucide-react';
-import { EmptyState, PageIntro, ProductCard } from '../components/Cards';
-import { SEO } from '../components/SEO';
-import { products } from '../data/content';
-import { currency } from '../lib/booking';
-import { commerceProvider, shopifyEnabled } from '../lib/adapters';
-import type { Product } from '../types';
+import { useEffect } from "react";
+import { ArrowRight, Check, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
+import { SEO } from "../components/SEO";
+import { StorefrontLink } from "../components/StorefrontLink";
+import { analytics, storefrontAnalyticsProperties } from "../lib/analytics";
+
+const storefrontBenefits = [
+  "Current product details, prices and availability",
+  "Delivery options managed in one official Tamlois store",
+  "Secure shopping and checkout through Paystack Storefront",
+];
 
 export default function ShopPage() {
-  const [category, setCategory] = useState('All');
-  const [selected, setSelected] = useState<Product | null>(null);
-  const [items, setItems] = useState<Product[]>(shopifyEnabled ? [] : products);
-  const [state, setState] = useState<'ready' | 'loading' | 'error'>(shopifyEnabled ? 'loading' : 'ready');
-  useEffect(() => { if (!shopifyEnabled) return; commerceProvider.listProducts().then((result) => { setItems(result); setState('ready'); }).catch(() => setState('error')); }, []);
-  const categories = ['All', ...new Set(items.map((product) => product.category))];
-  const filtered = useMemo(() => items.filter((product) => category === 'All' || product.category === category), [category, items]);
-  const buy = async (product: Product) => { try { await commerceProvider.buy(product); } catch (error) { window.alert(error instanceof Error ? error.message : 'Checkout could not be started.'); } };
-  return <><SEO title="Shop" description="Explore scalp and natural-hair care products from Tamlois." /><PageIntro title="Products selected to support your routine" text={shopifyEnabled ? 'Browse the connected Tamlois collection and continue to secure Shopify checkout.' : 'Should be connected before launch.'}><span className={`status ${shopifyEnabled ? '' : 'placeholder-badge'}`}>{shopifyEnabled ? 'Shopify connected' : 'Demo shop. No live checkout'}</span></PageIntro><section className="section-space"><div className="container-shell"><div className="no-scrollbar flex gap-2 overflow-x-auto pb-2">{categories.map((item) => <button key={item} className={`btn ${category === item ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setCategory(item)}>{item}</button>)}</div>{state === 'loading' && <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3].map((item) => <div key={item} className="animate-pulse"><div className="aspect-[4/5] rounded-[14px] bg-[var(--forest-100)]" /><div className="mt-4 h-5 w-2/3 bg-[var(--forest-100)]" /></div>)}</div>}{state === 'error' && <EmptyState title="The shop could not load" text="Check the commerce configuration and try again." action={<button className="btn btn-secondary" onClick={() => location.reload()}>Retry</button>} />}{state === 'ready' && filtered.length > 0 && <div className="mt-10 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((product) => <ProductCard key={product.id} product={product} onView={setSelected} onBuy={buy} />)}</div>}{state === 'ready' && !filtered.length && <EmptyState title="Nothing in this category" text="Choose a different category to continue browsing." />}</div></section>{selected && <div className="fixed inset-0 z-50 grid place-items-end bg-[rgba(13,45,33,.46)] p-0 sm:place-items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="product-title" onMouseDown={(event) => event.target === event.currentTarget && setSelected(null)}><div className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-[14px] bg-[var(--paper)] p-5 shadow-[0_24px_80px_rgba(13,45,33,.24)] sm:rounded-[14px] sm:p-7"><div className="flex justify-end"><button autoFocus aria-label="Close product details" className="grid size-11 place-items-center rounded-full border border-[var(--line)]" onClick={() => setSelected(null)}><X /></button></div><div className="mt-3 grid gap-7 md:grid-cols-2"><img src={selected.image} alt={selected.imageAlt} className="aspect-[4/5] w-full rounded-[14px] object-cover" /><div className="self-center"><span className="status">{selected.category}</span><h2 id="product-title" className="mt-5 font-display text-4xl text-[var(--forest-950)]">{selected.title}</h2><p className="mt-4 leading-7 text-[var(--muted)]">{selected.summary}{!shopifyEnabled && ' This is placeholder product copy and not clinical advice.'}</p><p className="mt-5 text-xl font-bold">{currency(selected.price)}</p><button className="btn btn-primary mt-6" disabled={!selected.available} onClick={() => buy(selected)}><ShoppingBag size={17} />{selected.available ? shopifyEnabled ? 'Continue to Shopify' : 'Buy in demo mode' : 'Currently unavailable'}</button></div></div></div></div>}</>;
+  useEffect(() => {
+    analytics.track(
+      "shop_page_viewed",
+      storefrontAnalyticsProperties("shop", "page"),
+    );
+  }, []);
+
+  return (
+    <>
+      <SEO
+        title="Hair & Scalp Care Products"
+        description="Explore the official Tamlois Storefront for available hair and scalp-care products, current prices and secure checkout."
+      />
+      <section className="section-space bg-[var(--cream)]">
+        <div className="container-shell grid gap-12 lg:grid-cols-[.78fr_1.22fr] lg:gap-20">
+          <div className="self-start">
+            <ShieldCheck
+              size={30}
+              strokeWidth={1.6}
+              className="text-[var(--forest-700)]"
+              aria-hidden="true"
+            />
+            <h2 className="mt-6 max-w-xl font-display text-[clamp(2.3rem,5vw,4.25rem)] leading-[.98] tracking-[-.025em] text-[var(--forest-950)]">
+              One official place to shop
+            </h2>
+            <p className="mt-6 max-w-xl text-base leading-7 text-[var(--ink)]">
+              Care for your hair and scalp beyond the clinic. Products can support a consistent home routine alongside professional care. Tamlois keeps every retail detail in one official Storefront so you always see the current information.
+            </p>
+          </div>
+
+          <div className="border-t border-[var(--line)]">
+            <ul aria-label="Benefits of the official Tamlois Storefront">
+              {storefrontBenefits.map((benefit) => (
+                <li
+                  key={benefit}
+                  className="flex min-h-20 items-center gap-4 border-b border-[var(--line)] py-5 text-sm font-semibold text-[var(--forest-950)]"
+                >
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--forest-100)]">
+                    <Check size={16} aria-hidden="true" />
+                  </span>
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+            <div className="pt-8">
+              <StorefrontLink
+                label="Visit the Tamlois Storefront"
+                sourcePage="shop"
+                sourceSection="primary-action"
+              />
+              <p className="mt-4 max-w-xl text-xs leading-5 text-[var(--muted)]">
+                Opens the official Tamlois shop on Paystack Storefront in a new
+                tab.
+              </p>
+              <Link
+                to="/services"
+                className="mt-6 inline-flex min-h-11 items-center gap-2 font-bold text-[var(--forest-800)]"
+              >
+                Explore professional services
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-space">
+        <div className="container-shell">
+          <div className="max-w-3xl border-t border-[var(--line)] pt-6">
+            <h2 className="font-display text-3xl text-[var(--forest-950)]">
+              Products complement individual care
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
+              Products support general hair and scalp-care routines but do not
+              replace professional assessment or medical advice. If you are
+              unsure what suits your needs, book an assessment before making a
+              care decision.
+            </p>
+            <Link to="/booking" className="btn btn-secondary mt-6">
+              Book an assessment
+            </Link>
+          </div>
+        </div>
+      </section>
+    </>
+  );
 }

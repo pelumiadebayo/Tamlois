@@ -27,6 +27,8 @@ Salon lock IDs are `{date}_{sessionId}_seat-1` through `seat-3`. Trichology lock
 
 Production payment uses Paystack Redirect Checkout initialized by Firebase Functions. Amounts are recalculated in integer kobo; callbacks never confirm payment; the signed webhook and callback verification share one idempotent finalization transaction. Full payment, configured deposits and owner-approved pay-at-clinic are supported. No Paystack secret ships to the browser. See [Paystack setup](docs/PAYSTACK_SETUP.md).
 
+Live retail products are managed in the official [Tamlois Paystack Storefront](https://paystack.shop/tamls). The website keeps a branded `/shop` introduction plus three static homepage promotional cards that link directly to the configured Storefront product; it has no local cart, stock, variants or retail orders. Appointment payments and retail Storefront checkout are separate integrations. See [Paystack Storefront setup](docs/PAYSTACK_STOREFRONT_SETUP.md).
+
 ## Admin authentication
 
 Firebase Email/Password administration is restricted to the single configured owner UID. There is no public signup or customer-account UI, and another authenticated user is not an administrator. Firestore Rules are authoritative; the matching Vite UID is only routing feedback.
@@ -55,8 +57,8 @@ Java 21 is required for Firestore emulator tests. Production Functions require t
 - [Architecture](docs/ARCHITECTURE.md)
 - [Firebase setup](docs/FIREBASE_SETUP.md)
 - [Paystack setup](docs/PAYSTACK_SETUP.md)
+- [Paystack Storefront setup](docs/PAYSTACK_STOREFRONT_SETUP.md)
 - [Manual setup and handover](docs/MANUAL_SETUP_AND_HANDOVER.md)
 - [Design system](docs/DESIGN_SYSTEM.md)
 - [Gallery workflow](docs/GALLERY_WORKFLOW.md)
 - [GitHub Pages deployment](docs/GITHUB_PAGES_DEPLOYMENT.md)
-- [Shopify setup](docs/SHOPIFY_SETUP.md)

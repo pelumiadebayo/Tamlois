@@ -34,6 +34,8 @@ import {
 import { format } from "date-fns";
 import { Brand } from "../components/Layout";
 import { SEO } from "../components/SEO";
+import { StorefrontLink } from "../components/StorefrontLink";
+import { commerceConfig } from "../config/commerce";
 import { currency } from "../lib/booking";
 import { defaultSettings } from "../lib/availability";
 import {
@@ -2174,42 +2176,29 @@ export function AdminSettingsPage() {
         title="Settings"
         text="Configuration status and operating defaults."
       />
-      {/* <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {[
-          ["Business name", "Tamlois Naturals & Trichology Clinic"],
-          ["Timezone", "Africa/Lagos"],
-          ["Payment mode", "Mock only"],
-          ["Firebase", firebaseEnabled ? "Configured" : "Not configured"],
-          [
-            "Shopify",
-            shopifyEnabled ? "Storefront connected" : "Demo products",
-          ],
-          ["Notifications", "Mock provider"],
-          [
-            "Authentication",
-            firebaseEnabled ? "Firebase ready" : "Demo session",
-          ],
-          [
-            "App Check",
-            import.meta.env.VITE_FIREBASE_APP_CHECK_SITE_KEY
-              ? "Configured"
-              : "Not configured",
-          ],
-          [
-            "Analytics",
-            import.meta.env.VITE_GA_MEASUREMENT_ID
-              ? "ID present"
-              : "Console adapter",
-          ],
-        ].map(([label, value]) => (
-          <div key={label} className="surface p-5">
-            <p className="text-xs font-bold text-[var(--muted)]">{label}</p>
-            <p className="mt-3 font-semibold text-[var(--forest-950)]">
-              {value}
+      <section className="surface mt-7 p-5 sm:p-6" aria-labelledby="retail-storefront-title">
+        <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div>
+            <h2 id="retail-storefront-title" className="font-bold text-[var(--forest-950)]">
+              Paystack Storefront
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+              Products, product images, prices, inventory and retail orders are
+              managed in Paystack Storefront. Tamlois does not maintain a
+              duplicate product catalogue or upload product images here.
+            </p>
+            <p className="mt-4 break-all text-xs font-semibold text-[var(--forest-700)]">
+              {commerceConfig.storefrontUrl || "Storefront URL is not configured correctly."}
             </p>
           </div>
-        ))}
-      </div> */}
+          <StorefrontLink
+            label="Open Paystack Storefront"
+            sourcePage="admin-settings"
+            sourceSection="retail-storefront"
+            className="btn btn-secondary"
+          />
+        </div>
+      </section>
       <div className="mt-7 grid gap-7 xl:grid-cols-[.8fr_1.2fr]">
         <section className="surface p-5">
           <h2 className="font-bold text-[var(--forest-950)]">
@@ -2594,7 +2583,8 @@ export function AdminSettingsPage() {
       <div className="mt-7 rounded-[14px] bg-[#fff0df] p-5 text-sm leading-6 text-[#713f1b]">
         <strong>Launch checklist:</strong> Firebase, owner account, App Check,
         contact information, policies, payment verification, email delivery,
-        Shopify and analytics remain manual configuration items.
+        Paystack Storefront link verification and analytics remain manual
+        configuration items.
       </div>
     </>
   );

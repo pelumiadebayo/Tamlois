@@ -22,8 +22,8 @@ import { ArrowLink, ProductCard, ServiceCard } from "../components/Cards";
 import { LeadCapture } from "../components/LeadCapture";
 import { SEO } from "../components/SEO";
 import { contentRepository } from "../repositories/contentRepository";
-import { shopifyEnabled } from "../lib/adapters";
 import { CareLoop } from "../components/CareLoop";
+import { FEATURED_PRODUCT_STOREFRONT_URL } from "../config/commerce";
 import { publicHomeContent } from "../repositories/homeContentRepository";
 import type { HomeOffering } from "../types";
 
@@ -121,31 +121,32 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-space bg-[var(--cream)]">
+      <section
+        className="section-space bg-[var(--cream)]"
+        aria-labelledby="featured-products-title"
+      >
         <div className="container-shell">
           <div className="flex flex-col items-start justify-between gap-5 md:flex-row md:items-end">
             <div>
-              <h2 className="section-title">Care continues at home</h2>
+              <h2 id="featured-products-title" className="section-title">
+                Care continues at home
+              </h2>
               <p className="lede mt-4">
-                {shopifyEnabled
-                  ? "A preview of the product category. Live availability and checkout are in the connected shop."
-                  : "Demo products show how a Shopify-connected shop can fit the clinic experience."}
+                Explore three featured Tamlois hair and scalp-care products.
+                Current availability and secure checkout are provided through
+                Paystack Storefront.
               </p>
             </div>
-            <ArrowLink to="/shop">
-              Visit the {shopifyEnabled ? "connected" : "demo"} shop
-            </ArrowLink>
+            <ArrowLink to="/shop">Visit the official shop</ArrowLink>
           </div>
           <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {products
-              .filter((product) => product.featured)
-              .map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  hideBuy={shopifyEnabled}
-                />
-              ))}
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                storefrontUrl={FEATURED_PRODUCT_STOREFRONT_URL}
+              />
+            ))}
           </div>
         </div>
       </section>

@@ -1,9 +1,8 @@
-import { ArrowRight, CalendarDays, Clock3, ShoppingBag } from 'lucide-react';
+import { ArrowRight, CalendarDays, Clock3, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Product, Service } from '../types';
 import { currency } from '../lib/booking';
-import { analytics } from '../lib/analytics';
-import { MockCommerceProvider } from '../lib/adapters';
+import { analytics, storefrontAnalyticsProperties } from '../lib/analytics';
 
 export function ServiceCard({ service }: { service: Service }) {
   return <article className="group grid overflow-hidden rounded-[14px] border border-[var(--line)] bg-white md:grid-cols-[180px_1fr]">
@@ -18,14 +17,60 @@ export function ServiceCard({ service }: { service: Service }) {
   </article>;
 }
 
-export function ProductCard({ product, onView, onBuy, hideBuy = false }: { product: Product; onView?: (product: Product) => void; onBuy?: (product: Product) => void; hideBuy?: boolean }) {
-  const commerce = new MockCommerceProvider();
-  return <article className="group">
-    <button type="button" className="block w-full overflow-hidden rounded-[14px] bg-[var(--forest-50)] text-left" onClick={() => { analytics.track('product_clicked', { product: product.id }); onView?.(product); }}>
-      <img src={product.image} alt={product.imageAlt} width="600" height="720" loading="lazy" className="aspect-[4/5] w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]" />
-    </button>
-    <div className="pt-4"><div className="flex items-start justify-between gap-4"><h3 className="font-semibold text-[var(--forest-950)]">{product.title}</h3><span className="shrink-0 text-sm font-bold">{currency(product.price)}</span></div><p className="mt-2 text-sm leading-6 text-[var(--muted)]">{product.summary}</p><div className="mt-4 flex gap-3">{onView ? <button className="btn btn-secondary" onClick={() => onView(product)}>View product</button> : <Link className="btn btn-secondary" to="/shop">View in shop</Link>}{!hideBuy && <button className="btn btn-primary" disabled={!product.available} onClick={() => onBuy ? onBuy(product) : commerce.buy(product)}><ShoppingBag size={16} />{product.available ? 'Buy' : 'Unavailable'}</button>}</div></div>
-  </article>;
+export function ProductCard({
+  product,
+  storefrontUrl,
+}: {
+  product: Product;
+  storefrontUrl: string;
+}) {
+  const trackClick = () => {
+    analytics.track(
+      'storefront_link_clicked',
+      storefrontAnalyticsProperties('home', `featured-product-${product.id}`),
+    );
+  };
+
+  return (
+    <article className="group">
+      <a
+        href={storefrontUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Shop ${product.title} on the official Paystack Storefront — opens in a new tab`}
+        onClick={trackClick}
+        className="block rounded-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--forest-700)]"
+      >
+        <span className="block overflow-hidden rounded-[14px] bg-[var(--forest-50)]">
+          <img
+            src={product.image}
+            alt={product.imageAlt}
+            width="600"
+            height="720"
+            loading="lazy"
+            className="aspect-[4/5] w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+          />
+        </span>
+        <span className="block pt-4">
+          <span className="flex items-start justify-between gap-4">
+            <span className="font-semibold text-[var(--forest-950)]">
+              {product.title}
+            </span>
+            <span className="shrink-0 text-sm font-bold">
+              {currency(product.price)}
+            </span>
+          </span>
+          <span className="mt-2 block text-sm leading-6 text-[var(--muted)]">
+            {product.summary}
+          </span>
+          <span className="btn btn-primary mt-4">
+            View product
+            <ExternalLink size={16} aria-hidden="true" />
+          </span>
+        </span>
+      </a>
+    </article>
+  );
 }
 
 export function PageIntro({ title, text, children }: { title: string; text: string; children?: React.ReactNode }) {

@@ -89,9 +89,9 @@ export const homeOfferings: HomeOffering[] = [
     eyebrow: "Hair & Scalp Products",
     title: "Shop our Hair and Scalp Care Products",
     description:
-      "Explore carefully selected healthy hair products that continues to support consistent care at home.",
+      "Visit the official Tamlois Storefront for current hair and scalp-care products that support consistent routines at home.",
     primaryCta: { label: "Shop hair and scalp care", href: "/shop" },
-    secondaryCta: { label: "View featured products", href: "/shop" },
+    secondaryCta: { label: "About the official store", href: "/shop" },
     image: {
       src: "https://images.pexels.com/photos/30595022/pexels-photo-30595022.jpeg?auto=compress&cs=tinysrgb&w=1400",
       alt: "Refined hair-care product arrangement, licensed placeholder",
@@ -568,63 +568,42 @@ export const concerns: Concern[] = [
 
 const productImage =
   "https://images.pexels.com/photos/30595022/pexels-photo-30595022.jpeg?auto=compress&cs=tinysrgb&w=900";
+
 export const products: Product[] = [
-  [
-    "prd-cleanse",
-    "Scalp cleansing treatment",
-    "A demo clarifying pre-wash treatment.",
-    12500,
-    "Scalp care",
-    true,
-    true,
-  ],
-  [
-    "prd-mist",
-    "Moisturising hair mist",
-    "A lightweight demo hydration mist.",
-    8500,
-    "Moisture",
-    true,
-    true,
-  ],
-  [
-    "prd-oil",
-    "Botanical scalp oil",
-    "A demo finishing oil. Suitability varies by scalp.",
-    10000,
-    "Scalp care",
-    true,
-    true,
-  ],
-  [
-    "prd-bonnet",
-    "Satin bonnet",
-    "A demo adjustable sleep bonnet.",
-    7500,
-    "Accessories",
-    true,
-    false,
-  ],
-  [
-    "prd-aftercare",
-    "Consultation aftercare kit",
-    "A demo kit selected after a clinic visit.",
-    28000,
-    "Bundles",
-    false,
-    false,
-  ],
-].map(([id, title, summary, price, category, available, featured], index) => ({
-  id,
-  title,
-  summary,
-  price,
-  category,
-  available,
-  featured,
-  image: `${productImage}&sig=${index}`,
-  imageAlt: `${title}, placeholder product image`,
-})) as Product[];
+  {
+    id: "prd-cleanse",
+    title: "Scalp cleansing treatment",
+    summary: "A demo clarifying pre-wash treatment.",
+    price: 12500,
+    category: "Scalp care",
+    available: true,
+    featured: true,
+    image: `${productImage}&sig=0`,
+    imageAlt: "Scalp cleansing treatment, placeholder product image",
+  },
+  {
+    id: "prd-mist",
+    title: "Moisturising hair mist",
+    summary: "A lightweight demo hydration mist.",
+    price: 8500,
+    category: "Moisture",
+    available: true,
+    featured: true,
+    image: `${productImage}&sig=1`,
+    imageAlt: "Moisturising hair mist, placeholder product image",
+  },
+  {
+    id: "prd-oil",
+    title: "Botanical scalp oil",
+    summary: "A demo finishing oil. Suitability varies by scalp.",
+    price: 10000,
+    category: "Scalp care",
+    available: true,
+    featured: true,
+    image: `${productImage}&sig=2`,
+    imageAlt: "Botanical scalp oil, placeholder product image",
+  },
+];
 
 export const faqs = [
   [

@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { contact } from "../data/content";
-import { analytics } from "../lib/analytics";
+import { StorefrontLink } from "./StorefrontLink";
+import { analytics, storefrontAnalyticsProperties } from "../lib/analytics";
 
 const links = [
   ["/services", "Services"],
@@ -61,6 +62,13 @@ export function Layout() {
               <NavLink
                 key={to}
                 to={to}
+                onClick={() => {
+                  if (to === "/shop")
+                    analytics.track(
+                      "navigation_storefront_clicked",
+                      storefrontAnalyticsProperties("site", "desktop-navigation"),
+                    );
+                }}
                 className={({ isActive }) =>
                   `text-[13px] font-semibold ${isActive ? "text-[var(--forest-800)] underline decoration-2 underline-offset-8" : "text-[var(--ink)] hover:text-[var(--forest-700)]"}`
                 }
@@ -104,6 +112,13 @@ export function Layout() {
               <NavLink
                 key={to}
                 to={to}
+                onClick={() => {
+                  if (to === "/shop")
+                    analytics.track(
+                      "navigation_storefront_clicked",
+                      storefrontAnalyticsProperties("site", "mobile-navigation"),
+                    );
+                }}
                 className="flex min-h-12 items-center justify-between border-b border-[var(--line)] text-sm font-semibold"
               >
                 {label}
@@ -160,6 +175,13 @@ export function Layout() {
               <Link to="/privacy">Privacy</Link>
               <Link to="/terms">Terms</Link>
               <Link to="/cancellation-policy">Cancellation</Link>
+              <StorefrontLink
+                label="Shop products"
+                sourcePage="site"
+                sourceSection="footer"
+                sourceEvent="navigation_storefront_clicked"
+                className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-[var(--forest-800)]"
+              />
               <Link to="/admin/login">Admin</Link>
             </div>
           </div>
