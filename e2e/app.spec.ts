@@ -390,7 +390,6 @@ test("22 a published admin-created service appears in booking", async ({
   await page.getByLabel("Category", { exact: true }).selectOption("salon");
   await page.getByLabel("Short summary").fill("A newly published salon appointment.");
   await page.getByLabel("Image URL").fill("https://example.com/salon-service.webp");
-  await page.getByLabel("Image alt text").fill("Natural hair salon appointment");
   await page.getByRole("button", { name: "Save service" }).click();
 
   await acceptPolicy(page, "/#/booking?category=salon");

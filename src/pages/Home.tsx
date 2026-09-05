@@ -309,8 +309,8 @@ export default function Home() {
                 className="aspect-[16/9] w-full object-cover"
               />
               <div className="absolute inset-x-0 bottom-0 bg-[rgba(13,45,33,.88)] p-5 text-white">
-                <p className="font-semibold">Illustrative result layout</p>
-                {/* <p className="mt-1 text-xs text-[var(--forest-100)]">
+                {/* <p className="font-semibold">Illustrative result layout</p>
+                <p className="mt-1 text-xs text-[var(--forest-100)]">
                   Use only client-approved media with written consent. No
                   outcome is guaranteed.
                 </p> */}

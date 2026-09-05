@@ -27,13 +27,20 @@ export class FirestoreServiceRepository implements Repository<Service> {
   async save(service: Service) {
     const reference = doc(this.firestore, "services", service.id);
     const existing = await getDoc(reference);
-    await setDoc(reference, serviceToFirestore(service, !existing.exists()), { merge: true });
-    await recordAdminAudit(
-      this.firestore,
-      existing.exists() ? "service.updated" : "service.created",
-      "services",
-      service.id,
-    );
+    await setDoc(reference, serviceToFirestore(service, !existing.exists()));
+    try {
+      await recordAdminAudit(
+        this.firestore,
+        existing.exists() ? "service.updated" : "service.created",
+        "services",
+        service.id,
+      );
+    } catch (error) {
+      // The service write has already succeeded. An audit-log failure must not
+      // make the editor report that the service itself was not saved.
+      if (import.meta.env.DEV)
+        console.error("Firestore service audit write failed", error);
+    }
     return service;
   }
 

@@ -213,11 +213,6 @@ export function ServiceDetailPage() {
             <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold">
               <span>{currency(service.price)}</span>
               <span>{service.duration} minutes</span>
-              <span>
-                {service.consultationRequired
-                  ? "Consultation required"
-                  : "Direct booking available"}
-              </span>
             </div>
             <div className="mt-8">
               <Link

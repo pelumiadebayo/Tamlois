@@ -29,7 +29,6 @@ test("owner creates, edits and archives a Firestore service while public content
   await page.getByLabel("Name").fill("Emulator scalp consultation");
   await page.getByLabel("Summary").fill("A production-shaped emulator service.");
   await page.getByLabel("Image URL").fill("https://example.com/scalp.jpg");
-  await page.getByLabel("Image alt text").fill("Scalp consultation room");
   await page.getByRole("button", { name: /Save service/i }).click();
   await page.goto("/#/services");
   await expect(page.getByText("Emulator scalp consultation")).toBeVisible();

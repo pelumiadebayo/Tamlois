@@ -11,7 +11,7 @@ export function ServiceCard({ service }: { service: Service }) {
       <p className="text-xs font-bold text-[var(--forest-700)]">{service.category}</p>
       <h3 className="mt-2 font-display text-2xl leading-tight text-[var(--forest-950)]">{service.name}</h3>
       <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{service.summary}</p>
-      <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold text-[var(--muted)]"><span className="flex items-center gap-1"><Clock3 size={15} />{service.duration} min</span><span>{currency(service.price)}</span>{service.consultationRequired && <span>Consultation required</span>}</div>
+      <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold text-[var(--muted)]"><span className="flex items-center gap-1"><Clock3 size={15} />{service.duration} min</span><span>{currency(service.price)}</span></div>
       <div className="mt-auto flex flex-wrap gap-3 pt-5"><Link to={`/services/${service.slug}`} className="btn btn-secondary">View service</Link><Link to={`/booking?service=${service.id}`} className="btn btn-primary"><CalendarDays size={16} />Book now</Link></div>
     </div>
   </article>;

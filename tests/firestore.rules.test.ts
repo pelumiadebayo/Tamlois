@@ -242,6 +242,55 @@ describe("single-owner authorization and public catalogue", () => {
       ),
     );
   });
+
+  it("lets only the owner edit a valid service", async () => {
+    const owner = testEnvironment.authenticatedContext(ownerUid).firestore();
+    await assertSucceeds(
+      updateDoc(doc(owner, "services", "salon-service"), {
+        summary: "Updated natural hair care.",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+
+    const ordinary = testEnvironment
+      .authenticatedContext("ordinary-authenticated-user")
+      .firestore();
+    await assertFails(
+      updateDoc(doc(ordinary, "services", "salon-service"), {
+        summary: "Unauthorised change.",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("lets the owner repair a legacy service missing createdAt exactly once", async () => {
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+      const legacy = serviceRecord("legacy-service");
+      delete (legacy as Partial<typeof legacy>).createdAt;
+      await setDoc(doc(context.firestore(), "services", "legacy-service"), legacy);
+    });
+
+    const owner = testEnvironment.authenticatedContext(ownerUid).firestore();
+    await assertSucceeds(
+      updateDoc(doc(owner, "services", "legacy-service"), {
+        summary: "Repaired legacy service.",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+
+    const repaired = await getDoc(doc(owner, "services", "legacy-service"));
+    const createdAt = repaired.data()?.createdAt;
+    await assertFails(
+      updateDoc(doc(owner, "services", "legacy-service"), {
+        createdAt: new Date("2020-01-01T00:00:00Z"),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    expect((await getDoc(doc(owner, "services", "legacy-service"))).data()?.createdAt).toEqual(
+      createdAt,
+    );
+  });
 });
 
 describe("persisted payment and hold settings", () => {

@@ -1,3 +1,4 @@
+import { Timestamp } from "firebase/firestore";
 import { describe, expect, it } from "vitest";
 import { serviceFromFirestore, serviceToFirestore } from "../repositories/firestoreModels";
 import type { Service } from "../types";
@@ -41,6 +42,26 @@ describe("Firestore document adapters", () => {
       placeholder: false,
     });
     expect(Object.values(record)).not.toContain(undefined);
+  });
+
+  it("does not replay unknown legacy document fields during an edit", () => {
+    const createdAt = Timestamp.fromDate(new Date("2026-08-28T09:00:00Z"));
+    const legacyRuntimeService = {
+      ...service,
+      createdAt,
+      legacyVisibility: "published",
+    } as Service & { legacyVisibility: string };
+
+    const record = serviceToFirestore(legacyRuntimeService, false);
+
+    expect(record).not.toHaveProperty("legacyVisibility");
+    expect(record.createdAt).toBe(createdAt);
+  });
+
+  it("adds a server-created timestamp when editing a legacy service without one", () => {
+    const record = serviceToFirestore(service, false);
+
+    expect(record).toHaveProperty("createdAt");
   });
 
   it("hydrates canonical service fields for existing UI consumers", () => {

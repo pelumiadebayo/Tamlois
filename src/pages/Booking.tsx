@@ -468,11 +468,6 @@ function ServiceStep({
                     <span className="status capitalize">
                       {service.category}
                     </span>
-                    {service.featured && (
-                      <span className="status ml-2 placeholder-badge">
-                        Featured
-                      </span>
-                    )}
                     {service.category === "salon" && service.placeholder && (
                       <span className="status ml-2 placeholder-badge">
                         Demo service
@@ -491,11 +486,6 @@ function ServiceStep({
                 </p>
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-[var(--forest-800)]">
                   <span>{service.duration} minutes</span>
-                  <span>
-                    {service.consultationRequired
-                      ? "Consultation required"
-                      : "No prior consultation required"}
-                  </span>
                 </div>
               </button>
               <button

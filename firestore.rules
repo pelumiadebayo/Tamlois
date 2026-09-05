@@ -47,6 +47,15 @@ service cloud.firestore {
       return data.createdAt == resource.data.createdAt &&
         data.updatedAt is timestamp && data.updatedAt == request.time;
     }
+    function validServiceUpdateTimestamps(data) {
+      return (
+          (resource.data.keys().hasAny(['createdAt']) &&
+            data.createdAt == resource.data.createdAt) ||
+          (!resource.data.keys().hasAny(['createdAt']) &&
+            data.createdAt is timestamp && data.createdAt == request.time)
+        ) &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
 
     function validService(data) {
       return data.keys().hasAll([
@@ -335,7 +344,7 @@ service cloud.firestore {
     match /services/{id} {
       allow get, list: if isAdmin() || (resource.data.active == true && resource.data.archived == false);
       allow create: if isAdmin() && request.resource.data.id == id && validService(request.resource.data) && validCreateTimestamps(request.resource.data);
-      allow update: if isAdmin() && request.resource.data.id == id && validService(request.resource.data) && validUpdateTimestamps(request.resource.data);
+      allow update: if isAdmin() && request.resource.data.id == id && validService(request.resource.data) && validServiceUpdateTimestamps(request.resource.data);
       allow delete: if isAdmin();
     }
     match /serviceExtras/{id} {

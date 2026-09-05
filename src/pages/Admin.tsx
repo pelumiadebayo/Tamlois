@@ -39,6 +39,11 @@ import { commerceConfig } from "../config/commerce";
 import { currency } from "../lib/booking";
 import { defaultSettings } from "../lib/availability";
 import {
+  isValidServiceImage,
+  nextServiceOrder,
+  prepareServiceForSave,
+} from "../lib/serviceForm";
+import {
   auth,
   firebaseEnabled,
   firebaseAdminUid,
@@ -1063,9 +1068,14 @@ export function AdminServiceEditorPage() {
   const navigate = useNavigate();
   const isNew = !id || id === "new";
   const [item, setItem] = useState<Service | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [publishError, setPublishError] = useState("");
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
-    if (isNew)
+    let active = true;
+    setItem(null);
+    setLoadError("");
+    if (isNew) {
       setItem({
         id: crypto.randomUUID(),
         slug: "",
@@ -1095,9 +1105,35 @@ export function AdminServiceEditorPage() {
         variations: [],
         placeholder: false,
       });
-    else serviceRepository.get(id).then(setItem);
+    } else {
+      serviceRepository
+        .get(id)
+        .then((service) => {
+          if (!active) return;
+          if (service) setItem(service);
+          else setLoadError("This service could not be found.");
+        })
+        .catch(() => {
+          if (active)
+            setLoadError(
+              "The service could not be loaded. Check your connection and try again.",
+            );
+        });
+    }
+    return () => {
+      active = false;
+    };
   }, [id, isNew]);
-  if (!item) return <p>Loading service...</p>;
+  if (loadError)
+    return (
+      <div className="surface p-6" role="alert">
+        <p>{loadError}</p>
+        <Link to="/admin/services" className="btn btn-secondary mt-4">
+          Back to services
+        </Link>
+      </div>
+    );
+  if (!item) return <p role="status">Loading service...</p>;
   const set = <K extends keyof Service>(key: K, value: Service[K]) =>
     setItem((current) => (current ? { ...current, [key]: value } : current));
   const updateVariation = (
@@ -1113,7 +1149,7 @@ export function AdminServiceEditorPage() {
     );
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    if (!item) return;
+    if (!item || saving) return;
     setPublishError("");
     if (
       !isSupportedDuration(item.duration) ||
@@ -1124,32 +1160,69 @@ export function AdminServiceEditorPage() {
       );
       return;
     }
+    if (!item.name.trim() || !item.summary.trim() || !item.image.trim()) {
+      setPublishError(
+        "Complete every field marked required before saving the service.",
+      );
+      return;
+    }
+    if (!isValidServiceImage(item.image)) {
+      setPublishError(
+        "Use an HTTPS image URL or a site-relative image path beginning with /.",
+      );
+      return;
+    }
+    if (!Number.isFinite(item.price) || item.price < 0) {
+      setPublishError("Enter a valid service price.");
+      return;
+    }
     if (
-      item.active &&
-      (!item.summary.trim() || !item.image.trim() || !item.imageAlt.trim())
+      item.variations.some(
+        (variation) =>
+          !variation.name.trim() ||
+          !Number.isFinite(variation.price) ||
+          variation.price < 0,
+      )
     ) {
       setPublishError(
-        "Active services require a summary, image URL and meaningful image alt text. Hide the service to save an incomplete draft.",
+        "Complete the required name, price and duration for every variation.",
       );
       return;
     }
     const current = item;
-    const slug =
-      current.slug ||
-      current.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
-    await serviceRepository.save({
-      ...current,
-      slug,
-      archived: Boolean(current.archived),
-      durationMinutes: current.duration,
-      displayOrder: current.order,
-      schedulingMode: current.category === "salon" ? "salon-session" : "precise-time",
-      placeholder: false,
-    });
-    navigate("/admin/services");
+    setSaving(true);
+    try {
+      const services = await serviceRepository.list();
+      const order = isNew
+        ? nextServiceOrder(services)
+        : current.order;
+      const prepared = prepareServiceForSave(current, order);
+      if (
+        services.some(
+          (service) =>
+            service.id !== prepared.id && service.slug === prepared.slug,
+        )
+      ) {
+        setPublishError(
+          "Another service already uses this name. Choose a distinct service name.",
+        );
+        return;
+      }
+      await serviceRepository.save(prepared);
+      navigate("/admin/services");
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? String(error.code)
+          : "";
+      setPublishError(
+        code.includes("permission-denied")
+          ? "Firebase denied this service update. Confirm that the latest Firestore Rules are deployed and that you are signed in with the owner account."
+          : "The service could not be saved. Check your connection and try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
   async function remove() {
     if (!item || !confirm("Archive this service? It will disappear from public booking and catalogue pages.")) return;
@@ -1166,7 +1239,7 @@ export function AdminServiceEditorPage() {
       <form onSubmit={save} className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <div className="surface grid gap-5 p-5 md:grid-cols-2">
           <div className="field">
-            <label>Name</label>
+            <label>Name (required)</label>
             <input
               aria-label="Name"
               required
@@ -1175,18 +1248,10 @@ export function AdminServiceEditorPage() {
             />
           </div>
           <div className="field">
-            <label>URL slug</label>
-            <input
-              aria-label="URL slug"
-              value={item.slug}
-              onChange={(e) => set("slug", e.target.value)}
-              placeholder="Generated from name when blank"
-            />
-          </div>
-          <div className="field">
-            <label>Category</label>
+            <label>Category (required)</label>
             <select
               aria-label="Category"
+              required
               value={item.category}
               onChange={(e) =>
                 set("category", e.target.value as Service["category"])
@@ -1197,9 +1262,10 @@ export function AdminServiceEditorPage() {
             </select>
           </div>
           <div className="field">
-            <label>Type</label>
+            <label>Type (required)</label>
             <select
               aria-label="Type"
+              required
               value={item.type}
               onChange={(e) => set("type", e.target.value as Service["type"])}
             >
@@ -1208,22 +1274,55 @@ export function AdminServiceEditorPage() {
               <option value="package">Package</option>
             </select>
           </div>
+          <div className="field">
+            <label>Image URL (required)</label>
+            <input
+              aria-label="Image URL"
+              type="text"
+              inputMode="url"
+              required
+              value={item.image}
+              onChange={(e) => set("image", e.target.value)}
+              placeholder="https://… or /media/service.webp"
+            />
+          </div>
+          <div className="field">
+            <label>Price (NGN) (required)</label>
+            <input
+              aria-label="Price (NGN)"
+              type="number"
+              min="0"
+              required
+              value={Number.isFinite(item.price) ? item.price : ""}
+              onChange={(e) =>
+                set(
+                  "price",
+                  e.target.value === "" ? Number.NaN : Number(e.target.value),
+                )
+              }
+            />
+          </div>
+          <div className="field">
+            <label>Duration (required)</label>
+            <select
+              aria-label="Duration"
+              required
+              value={item.duration}
+              onChange={(e) => set("duration", Number(e.target.value))}
+            >
+              <DurationSelectOptions current={item.duration} />
+            </select>
+          </div>
           <div className="field md:col-span-2">
-            <label>Short summary</label>
+            <label>Short summary (required)</label>
             <textarea
               aria-label="Short summary"
+              required
               value={item.summary}
               onChange={(e) => set("summary", e.target.value)}
             />
           </div>
-          <div className="field md:col-span-2">
-            <label>Full description</label>
-            <textarea
-              aria-label="Full description"
-              value={item.description}
-              onChange={(e) => set("description", e.target.value)}
-            />
-          </div>
+
           <div className="field md:col-span-2">
             <label>Suitable concerns (comma separated)</label>
             <input
@@ -1240,62 +1339,7 @@ export function AdminServiceEditorPage() {
               }
             />
           </div>
-          <div className="field">
-            <label>Price (NGN)</label>
-            <input
-              aria-label="Price (NGN)"
-              type="number"
-              min="0"
-              value={item.price}
-              onChange={(e) => set("price", Number(e.target.value))}
-            />
-          </div>
-          <div className="field">
-            <label>Duration</label>
-            <select
-              aria-label="Duration"
-              value={item.duration}
-              onChange={(e) => set("duration", Number(e.target.value))}
-            >
-              <DurationSelectOptions current={item.duration} />
-            </select>
-          </div>
-          <div className="field">
-            <label>Deposit amount</label>
-            <input
-              aria-label="Deposit amount"
-              type="number"
-              min="0"
-              value={item.depositAmount}
-              onChange={(e) => set("depositAmount", Number(e.target.value))}
-            />
-          </div>
-          <div className="field">
-            <label>Display order</label>
-            <input
-              aria-label="Display order"
-              type="number"
-              value={item.order}
-              onChange={(e) => set("order", Number(e.target.value))}
-            />
-          </div>
-          <div className="field md:col-span-2">
-            <label>Image URL</label>
-            <input
-              aria-label="Image URL"
-              type="url"
-              value={item.image}
-              onChange={(e) => set("image", e.target.value)}
-            />
-          </div>
-          <div className="field md:col-span-2">
-            <label>Image alt text</label>
-            <input
-              aria-label="Image alt text"
-              value={item.imageAlt}
-              onChange={(e) => set("imageAlt", e.target.value)}
-            />
-          </div>
+
           {[
             ["preparation", "Preparation"],
             ["expectation", "What to expect"],
@@ -1338,39 +1382,59 @@ export function AdminServiceEditorPage() {
               {item.variations.map((variation, index) => (
                 <div
                   key={variation.id}
-                  className="grid gap-3 rounded-[12px] border border-[var(--line)] p-4 sm:grid-cols-[1fr_140px_140px_auto]"
+                  className="grid items-end gap-3 rounded-[12px] border border-[var(--line)] p-4 sm:grid-cols-[1fr_140px_150px_auto]"
                 >
-                  <input
-                    aria-label={`Variation ${index + 1} name`}
-                    value={variation.name}
-                    onChange={(e) =>
-                      updateVariation(index, "name", e.target.value)
-                    }
-                    placeholder="Variation name"
-                    className="control"
-                  />
-                  <input
-                    aria-label={`Variation ${index + 1} price`}
-                    type="number"
-                    value={variation.price}
-                    onChange={(e) =>
-                      updateVariation(index, "price", Number(e.target.value))
-                    }
-                    className="control"
-                  />
-                  <select
-                    aria-label={`Variation ${index + 1} duration`}
-                    value={variation.duration}
-                    onChange={(e) =>
-                      updateVariation(index, "duration", Number(e.target.value))
-                    }
-                    className="control"
-                  >
-                    <DurationSelectOptions current={variation.duration} />
-                  </select>
+                  <div className="field">
+                    <label>Variation name (required)</label>
+                    <input
+                      aria-label={`Variation ${index + 1} name`}
+                      required
+                      value={variation.name}
+                      onChange={(e) =>
+                        updateVariation(index, "name", e.target.value)
+                      }
+                      className="control"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Price (required)</label>
+                    <input
+                      aria-label={`Variation ${index + 1} price`}
+                      type="number"
+                      min="0"
+                      required
+                      value={
+                        Number.isFinite(variation.price) ? variation.price : ""
+                      }
+                      onChange={(e) =>
+                        updateVariation(
+                          index,
+                          "price",
+                          e.target.value === ""
+                            ? Number.NaN
+                            : Number(e.target.value),
+                        )
+                      }
+                      className="control"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Duration (required)</label>
+                    <select
+                      aria-label={`Variation ${index + 1} duration`}
+                      required
+                      value={variation.duration}
+                      onChange={(e) =>
+                        updateVariation(index, "duration", Number(e.target.value))
+                      }
+                      className="control"
+                    >
+                      <DurationSelectOptions current={variation.duration} />
+                    </select>
+                  </div>
                   <button
                     type="button"
-                    className="text-sm font-bold text-[#8f302f]"
+                    className="min-h-12 px-2 text-sm font-bold text-[#8f302f]"
                     onClick={() =>
                       set(
                         "variations",
@@ -1388,8 +1452,9 @@ export function AdminServiceEditorPage() {
           </section>
         </div>
         <aside className="surface h-fit p-5">
-          <h2 className="font-bold">Publishing</h2>
-          <label className="mt-5 flex items-center gap-3 text-sm">
+          <h2 className="font-bold">Service options</h2>
+
+          <label className="mt-4 flex items-center gap-3 text-sm">
             <input
               type="checkbox"
               checked={item.active}
@@ -1401,51 +1466,11 @@ export function AdminServiceEditorPage() {
           <label className="mt-4 flex items-center gap-3 text-sm">
             <input
               type="checkbox"
-              checked={Boolean(item.featured)}
-              onChange={(e) => set("featured", e.target.checked)}
-              className="size-5 accent-[var(--forest-800)]"
-            />
-            Featured within category
-          </label>
-          <div className="field mt-4">
-            <label>Intake schema</label>
-            <select
-              value={item.intakeSchemaId || ""}
-              onChange={(e) =>
-                set("intakeSchemaId", e.target.value || undefined)
-              }
-            >
-              <option value="">No service-specific intake</option>
-              <option value="intake-salon">Salon intake</option>
-              <option value="intake-trichology">Trichology intake</option>
-            </select>
-          </div>
-          <label className="mt-4 flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
               checked={Boolean(item.photoUploadEnabled)}
               onChange={(e) => set("photoUploadEnabled", e.target.checked)}
               className="size-5 accent-[var(--forest-800)]"
             />
             Allow optional preparation photo
-          </label>
-          <label className="mt-4 flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={item.consultationRequired}
-              onChange={(e) => set("consultationRequired", e.target.checked)}
-              className="size-5 accent-[var(--forest-800)]"
-            />
-            Consultation required
-          </label>
-          <label className="mt-4 flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={item.depositRequired}
-              onChange={(e) => set("depositRequired", e.target.checked)}
-              className="size-5 accent-[var(--forest-800)]"
-            />
-            Deposit required
           </label>
           {publishError && (
             <p className="mt-5 field-error" role="alert">
@@ -1453,7 +1478,13 @@ export function AdminServiceEditorPage() {
             </p>
           )}
           <div className="mt-6 grid gap-3">
-            <button className="btn btn-primary">Save service</button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={saving}
+            >
+              {saving ? "Saving service…" : "Save service"}
+            </button>
             {!isNew && (
               <Link to={`/services/${item.slug}`} className="btn btn-secondary">
                 Preview public page
