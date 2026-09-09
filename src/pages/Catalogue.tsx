@@ -5,7 +5,7 @@ import { PageIntro, ServiceCard } from "../components/Cards";
 import { SEO } from "../components/SEO";
 import { useServices } from "../hooks/useServices";
 import { analytics } from "../lib/analytics";
-import { currency } from "../lib/booking";
+import { currency, formatDuration } from "../lib/booking";
 import { filterServices } from "../lib/catalogue";
 
 export function ServicesPage() {
@@ -212,7 +212,7 @@ export function ServiceDetailPage() {
             <p className="lede mt-6">{service.summary}</p>
             <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold">
               <span>{currency(service.price)}</span>
-              <span>{service.duration} minutes</span>
+              <span>{formatDuration(service.duration)}</span>
             </div>
             <div className="mt-8">
               <Link
@@ -250,7 +250,7 @@ export function ServiceDetailPage() {
                     >
                       <span>{variation.name}</span>
                       <span className="font-bold">
-                        {currency(variation.price)} · {variation.duration} min
+                        {currency(variation.price)} · {formatDuration(variation.duration)}
                       </span>
                     </div>
                   ))}

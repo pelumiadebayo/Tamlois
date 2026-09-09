@@ -36,7 +36,7 @@ import { Brand } from "../components/Layout";
 import { SEO } from "../components/SEO";
 import { StorefrontLink } from "../components/StorefrontLink";
 import { commerceConfig } from "../config/commerce";
-import { currency } from "../lib/booking";
+import { currency, formatDuration } from "../lib/booking";
 import { defaultSettings } from "../lib/availability";
 import {
   isValidServiceImage,
@@ -99,7 +99,7 @@ function DurationSelectOptions({ current }: { current: number }) {
     <>
       {!isSupportedDuration(current) && (
         <option value={current} disabled>
-          Unsupported duration ({current} minutes)
+          Unsupported duration ({formatDuration(current)})
         </option>
       )}
       {durationOptions.map((option) => (
@@ -649,7 +649,7 @@ export function AdminServicesPage() {
                     </td>
                     <td className="p-4 capitalize">{item.type}</td>
                     <td className="p-4">{currency(item.price)}</td>
-                    <td className="p-4">{item.duration} min</td>
+                    <td className="p-4">{formatDuration(item.duration)}</td>
                     <td className="p-4">
                       <button
                         onClick={() => toggle(item)}
@@ -742,7 +742,7 @@ function BookingConfiguration() {
                 <div>
                   <strong className="text-sm">{extra.name}</strong>
                   <p className="mt-1 text-xs text-[var(--muted)]">
-                    {currency(extra.price)} · {extra.duration} min ·{" "}
+                    {currency(extra.price)} · {formatDuration(extra.duration)} ·{" "}
                     {extra.compatibleServiceIds.length} services
                   </p>
                 </div>

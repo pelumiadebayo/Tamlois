@@ -6,6 +6,7 @@ import {
   canTransitionBooking,
   compatibleExtras,
   configuredPaymentModes,
+  formatDuration,
   generateBookingReference,
   isPolicyConsentCurrent,
   policyBundleVersion,
@@ -47,6 +48,14 @@ const bookingPolicies: BookingPolicy[] = [
 ];
 
 describe("booking helpers", () => {
+  it("formats service durations in the same units used by the editor", () => {
+    expect(formatDuration(15)).toBe("15 minutes");
+    expect(formatDuration(60)).toBe("1 hour");
+    expect(formatDuration(75)).toBe("1 hour 15 minutes");
+    expect(formatDuration(90)).toBe("1 hour 30 minutes");
+    expect(formatDuration(120)).toBe("2 hours");
+  });
+
   it("requires only full name, phone and email in customer details", () => {
     expect(
       bookingSchema.safeParse({

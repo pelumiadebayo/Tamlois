@@ -96,6 +96,21 @@ export const currency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+export function formatDuration(totalMinutes: number) {
+  const minutes = Number.isFinite(totalMinutes)
+    ? Math.max(0, Math.round(totalMinutes))
+    : 0;
+  if (minutes < 60)
+    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  const hourLabel = `${hours} hour${hours === 1 ? "" : "s"}`;
+  return remainingMinutes
+    ? `${hourLabel} ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`
+    : hourLabel;
+}
+
 export function policyBundleVersion(policies: BookingPolicy[]) {
   const source = [...policies]
     .sort(

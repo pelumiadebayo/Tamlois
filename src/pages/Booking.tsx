@@ -48,6 +48,7 @@ import {
   compatibleExtras,
   configuredPaymentModes,
   currency,
+  formatDuration,
   isPolicyConsentCurrent,
   policyBundleVersion,
   policyConsentSnapshots,
@@ -302,7 +303,7 @@ function BookingSummary({
         ? `${time}–${bookingEndTime(service, time, date, totals?.totalDuration || service.duration)}`
         : "Not chosen",
     ],
-    ["Duration", totals ? `${totals.totalDuration} min` : "—"],
+    ["Duration", totals ? formatDuration(totals.totalDuration) : "—"],
     ["Subtotal", totals ? currency(totals.subtotal) : "—"],
     ["Due now", totals ? currency(totals.amountDueNow) : "—"],
   ];
@@ -485,7 +486,7 @@ function ServiceStep({
                   {service.summary}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-[var(--forest-800)]">
-                  <span>{service.duration} minutes</span>
+                  <span>{formatDuration(service.duration)}</span>
                 </div>
               </button>
               <button
@@ -581,7 +582,7 @@ function ExtrasStep({
                   {extra.description}
                 </span>
                 <span className="mt-3 block text-xs font-bold text-[var(--forest-700)]">
-                  Adds {extra.duration} minutes
+                  Adds {formatDuration(extra.duration)}
                 </span>
               </span>
             </label>
@@ -758,7 +759,7 @@ function ScheduleStep({
               <strong>
                 {time}–{endTime(time, parseISO(date), totalDuration)}
               </strong>{" "}
-              · {totalDuration} minutes at {settings.address}
+              · {formatDuration(totalDuration)} at {settings.address}
             </Notice>
           )}
         </section>
@@ -1634,7 +1635,7 @@ function SummaryStep({
       <div className="mt-7 grid gap-3 rounded-[14px] bg-[var(--forest-50)] p-5 text-sm">
         <p className="flex justify-between">
           <span>Total duration</span>
-          <strong>{totals.totalDuration} min</strong>
+          <strong>{formatDuration(totals.totalDuration)}</strong>
         </p>
         <p className="flex justify-between">
           <span>Subtotal</span>
