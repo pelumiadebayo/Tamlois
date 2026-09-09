@@ -12,6 +12,11 @@ import {
   type User,
 } from "firebase/auth";
 import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import {
+  connectFunctionsEmulator,
+  getFunctions,
+  type Functions,
+} from "firebase/functions";
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -50,16 +55,19 @@ export let firebaseApp: FirebaseApp | null = null;
 export let auth: ReturnType<typeof getAuth> | null = null;
 export let db: ReturnType<typeof getFirestore> | null = null;
 export let appCheck: AppCheck | null = null;
+export let functions: Functions | null = null;
 
 if (firebaseEnabled) {
   firebaseApp = initializeApp(config);
   auth = getAuth(firebaseApp);
   db = getFirestore(firebaseApp);
+  functions = getFunctions(firebaseApp, "africa-south1");
   if (import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true") {
     connectAuthEmulator(auth, "http://127.0.0.1:9099", {
       disableWarnings: true,
     });
     connectFirestoreEmulator(db, "127.0.0.1", 8080);
+    connectFunctionsEmulator(functions, "127.0.0.1", 5001);
   }
   const appCheckKey = import.meta.env.VITE_FIREBASE_APP_CHECK_SITE_KEY;
   if (appCheckKey)
