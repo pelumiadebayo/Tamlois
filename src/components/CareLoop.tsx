@@ -317,11 +317,6 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
                 <span>Image unavailable</span>
               </div>
             )}
-            {active.image.placeholder && (
-              <span className="care-loop-placeholder">
-                Tamlois
-              </span>
-            )}
           </div>
           <article
             key={`copy-${active.id}`}

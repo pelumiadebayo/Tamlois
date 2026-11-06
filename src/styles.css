@@ -602,18 +602,7 @@ img {
   height: 100%;
   object-fit: cover;
 }
-.care-loop-placeholder {
-  position: absolute;
-  z-index: 1;
-  top: 1rem;
-  right: 1rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-surface-page) 92%, transparent);
-  padding: 0.4rem 0.65rem;
-  color: var(--forest-900);
-  font-size: 0.63rem;
-  font-weight: 750;
-}
+
 .care-loop-image-fallback,
 .gallery-image-fallback {
   display: grid;
