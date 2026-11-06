@@ -63,7 +63,7 @@ export function Layout() {
 
   return (
     <div className="min-h-[100dvh]">
-      <header className="site-header sticky top-0 z-40 border-b border-[var(--color-commerce-primary)] backdrop-blur-md">
+      <header className="site-header sticky top-0 z-40 border-b border-[var(--color-accent-ochre)] backdrop-blur-md">
         <div className="container-shell flex h-[72px] items-center justify-between gap-5">
           <Brand />
           <nav
