@@ -13,7 +13,7 @@ export const media = {
     alt: "Nigerian woman with natural textured hair, licensed placeholder portrait",
   },
   practitioner: {
-    src: "https://images.pexels.com/photos/30270932/pexels-photo-30270932/free-photo-of-professional-hair-stylist-in-new-orleans-studio.jpeg?auto=compress&cs=tinysrgb&w=1100",
+    src: "../../media/owner.jpg",
     alt: "Black female hair professional in a studio, licensed placeholder for Popoola Adebola Opeyemi",
   },
   consultation: {
@@ -474,8 +474,8 @@ export const intakeQuestions: IntakeQuestion[] = [
 export const concerns: Concern[] = [
   [
     "hair-shedding-and-thinning",
-    "Hair shedding and thinning",
-    "Changes in density, part width or daily shedding can feel unsettling.",
+    "Hair Thinning & Shedding",
+    "Noticing more shedding, less fullness or changes in your parting can feel unsettling.",
     [
       "more hair than usual during washing",
       "a wider-looking part",
@@ -491,8 +491,8 @@ export const concerns: Concern[] = [
   ],
   [
     "dry-itchy-or-flaky-scalp",
-    "Dry, itchy or flaky scalp",
-    "Persistent discomfort or flakes deserve careful assessment rather than guesswork.",
+    "Scalp Irritation & Build-up",
+    "Itching, flakes or product build-up can make your scalp feel uncomfortable.",
     ["visible flakes", "itching or tightness", "product build-up"],
     [
       "irritation",
@@ -504,8 +504,8 @@ export const concerns: Concern[] = [
   ],
   [
     "breakage-and-weak-hair",
-    "Breakage and weak hair",
-    "Short broken strands and difficulty retaining length can have several contributing factors.",
+    "Dry, Brittle or Breaking Hair",
+    "Dryness, roughness and short broken strands can make length harder to retain.",
     ["short uneven strands", "knots and tangles", "rough or brittle feel"],
     [
       "heat or chemical stress",
@@ -514,44 +514,7 @@ export const concerns: Concern[] = [
       "handling practices",
     ],
     ["svc-consult", "svc-treatment"],
-  ],
-  [
-    "slow-or-inconsistent-growth",
-    "Slow or inconsistent growth",
-    "Growth and length retention are different. A careful history can help clarify what you are noticing.",
-    [
-      "areas that seem slower",
-      "difficulty retaining length",
-      "changes from your usual pattern",
-    ],
-    [
-      "breakage",
-      "scalp environment",
-      "routine inconsistency",
-      "medical factors",
-    ],
-    ["svc-consult"],
-  ],
-  [
-    "natural-hair-maintenance",
-    "Natural-hair maintenance",
-    "Build a routine that supports your texture without turning care into a full-time job.",
-    [
-      "persistent dryness",
-      "difficult detangling",
-      "uncertain product layering",
-    ],
-    ["routine fit", "product use", "handling", "protective styling habits"],
-    ["svc-natural", "svc-treatment"],
-  ],
-  [
-    "post-treatment-scalp-care",
-    "Post-treatment scalp care",
-    "A gentle care plan can support comfort after a completed treatment or procedure.",
-    ["sensitivity", "dryness", "uncertainty about products"],
-    ["treatment aftercare", "irritant exposure", "healing stage"],
-    ["svc-consult", "svc-therapy"],
-  ],
+  ]
 ].map(([slug, name, summary, signs, factors, relatedServiceIds]) => ({
   slug: slug as string,
   name: name as string,

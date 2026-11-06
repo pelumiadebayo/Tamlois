@@ -339,11 +339,7 @@ function AdminLayout() {
             <X />
           </button>
         </div>
-        <div className="mt-7">
-          <span className="status placeholder-badge">
-            {firebaseEnabled ? "Firebase" : "Demo data"}
-          </span>
-        </div>
+        
         <nav className="mt-6 grid gap-1" aria-label="Admin navigation">
           {adminLinks.map(([to, label, Icon]) => (
             <NavLink

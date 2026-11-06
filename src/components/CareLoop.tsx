@@ -163,7 +163,7 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
           <div key={`actions-${active.id}`} className="care-loop-actions">
             <Link
               to={active.primaryCta.href}
-              className={`btn ${active.id === "products" ? "btn-commerce" : "btn-primary"}`}
+              className="btn btn-commerce"
               onClick={() =>
                 analytics.track(ctaEvents[active.id], { action: "primary" })
               }

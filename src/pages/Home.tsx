@@ -3,8 +3,15 @@ import {
   CalendarDays,
   Check,
   ClipboardCheck,
+  GitBranch,
+  Leaf,
   Microscope,
+  ScanSearch,
+  ShieldPlus,
   ShieldCheck,
+  Sprout,
+  TrendingDown,
+  type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -27,6 +34,78 @@ import { publicHomeContent } from "../repositories/homeContentRepository";
 import type { HomeOffering } from "../types";
 import { useProducts } from "../hooks/useProducts";
 import { publicProducts } from "../commerce/products";
+
+const concernIcons: Record<string, LucideIcon> = {
+  "hair-shedding-and-thinning": TrendingDown,
+  "dry-itchy-or-flaky-scalp": ScanSearch,
+  "breakage-and-weak-hair": GitBranch,
+  "slow-or-inconsistent-growth": Sprout,
+  "natural-hair-maintenance": Leaf,
+  "post-treatment-scalp-care": ShieldPlus,
+};
+
+function HomeConcernsSection() {
+  return (
+    <section
+      className="concerns-showcase"
+      aria-labelledby="home-concerns-title"
+    >
+      <div className="container-shell">
+        <div className="concerns-showcase-layout">
+          <header className="concerns-showcase-header">
+            <p className="concerns-eyebrow">Hair &amp; scalp concerns</p>
+            <h2 id="home-concerns-title" className="section-title">
+              Common Hair &amp; Scalp Concerns We Support
+            </h2>
+          </header>
+
+          <div className="concerns-grid">
+            {concerns.map((concern) => {
+              const Icon = concernIcons[concern.slug] ?? ScanSearch;
+              return (
+                <Link
+                  key={concern.slug}
+                  to={`/concerns/${concern.slug}`}
+                  className="concern-card"
+                  aria-labelledby={`concern-${concern.slug}-action concern-${concern.slug}-title`}
+                  aria-describedby={`concern-${concern.slug}-description`}
+                >
+                  <span
+                    id={`concern-${concern.slug}-action`}
+                    className="sr-only"
+                  >
+                    Learn about
+                  </span>
+                  <span className="concern-card-top" aria-hidden="true">
+                    <span className="concern-card-icon">
+                      <Icon size={25} strokeWidth={1.6} />
+                    </span>
+                  </span>
+                  <h3
+                    id={`concern-${concern.slug}-title`}
+                    className="concern-card-title"
+                  >
+                    {concern.name}
+                  </h3>
+                  <p
+                    id={`concern-${concern.slug}-description`}
+                    className="concern-card-description sr-only"
+                  >
+                    {concern.summary}
+                  </p>
+                  <span className="concern-card-arrow" aria-hidden="true">
+                    <ArrowRight size={19} strokeWidth={1.7} />
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   const { services } = useServices();
@@ -69,6 +148,7 @@ export default function Home() {
         </div>
       )}
       <CareLoop offerings={offerings} />
+      <HomeConcernsSection />
 
       <section
         className="care-paths section-space"
@@ -146,43 +226,6 @@ export default function Home() {
           {productState === "error" && <div className="surface mt-10 p-6" role="alert"><p>Products could not be loaded right now.</p><button className="btn btn-secondary mt-4" onClick={() => void retryProducts()}>Retry</button></div>}
           {productState === "ready" && featuredProducts.length > 0 && <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">{featuredProducts.map((product) => <ProductCard key={product.id} product={product} sourcePage="home" />)}</div>}
           {productState === "ready" && featuredProducts.length === 0 && <p className="mt-10 text-sm text-[var(--muted)]">Featured products are being prepared. Visit the official Storefront to see current availability.</p>}
-        </div>
-      </section>
-
-      <section className="section-raised section-space">
-        <div className="container-shell">
-          <h2 className="section-title">Start with what you notice</h2>
-          <p className="lede mt-5">
-            You do not need to know the name of a service. Choose the concern
-            that feels closest, then explore a safe next step.
-          </p>
-          <div className="mt-10 grid gap-x-8 md:grid-cols-2 lg:grid-cols-3">
-            {concerns.map((concern) => (
-              <Link
-                key={concern.slug}
-                to={`/concerns/${concern.slug}`}
-                className="concern-card group border-t border-[var(--line)] py-6"
-              >
-                <h3 className="font-display text-2xl text-[var(--forest-950)]">
-                  {concern.name}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                  {concern.summary}
-                </p>
-                <span className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[var(--forest-800)]">
-                  Understand this concern
-                  <ArrowRight
-                    size={16}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                </span>
-              </Link>
-            ))}
-          </div>
-          <p className="mt-8 rounded-[12px] bg-[var(--forest-50)] p-4 text-sm leading-6 text-[var(--ink)]">
-            <strong>Important:</strong> Website information is educational. It
-            is not a diagnosis or an emergency medical service.
-          </p>
         </div>
       </section>
 
@@ -345,10 +388,10 @@ export default function Home() {
       <section className="section-inverse section-space">
         <div className="container-shell grid items-end gap-8 md:grid-cols-[1fr_auto]">
           <div>
-            <h2 className="max-w-3xl font-display text-[clamp(2.5rem,6vw,5rem)] leading-none">
+            <h2 className="section-title">
               Not sure where to begin?
             </h2>
-            <p className="mt-5 max-w-xl text-[var(--forest-100)]">
+            <p className="lede max-w-xl">
               Start with a consultation, or contact the clinic with a short note
               about what you have noticed.
             </p>

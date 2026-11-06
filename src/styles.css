@@ -141,10 +141,10 @@ img {
   margin-inline: auto;
 }
 .section-space {
-  padding-block: clamp(4rem, 8vw, 7.5rem);
+  padding-block: clamp(2.75rem, 5vw, 4.5rem);
 }
 .page-hero {
-  padding-block: clamp(3.5rem, 7vw, 6.5rem);
+  padding-block: clamp(3rem, 5vw, 4.75rem);
   border-bottom: 1px solid var(--line);
 }
 .page-title {
@@ -159,17 +159,23 @@ img {
 .section-title {
   max-width: 760px;
   font-family: "DM Serif Display", Georgia, serif;
-  font-size: clamp(2.15rem, 5vw, 4rem);
-  line-height: 1;
+  font-size: clamp(2.1rem, 3vw, 2.85rem);
+  line-height: 0.98;
   letter-spacing: -0.025em;
   color: var(--forest-950);
   text-wrap: balance;
 }
 .lede {
   max-width: 62ch;
-  font-size: clamp(1.05rem, 2vw, 1.25rem);
-  line-height: 1.75;
+  font-size: clamp(1rem, 1.35vw, 1.125rem);
+  line-height: 1.65;
   color: var(--muted);
+}
+.section-title + .lede {
+  margin-top: 1rem;
+}
+.page-title + .lede {
+  margin-top: 1.25rem;
 }
 .btn {
   display: inline-flex;
@@ -277,15 +283,139 @@ img {
   font-size: 0.7rem;
   font-weight: 800;
 }
+.concerns-showcase {
+  background: var(--color-surface-botanical);
+  padding-block: clamp(2.25rem, 4vw, 3.5rem) clamp(1.5rem, 2vw, 2rem);
+}
+.concerns-showcase + .care-paths {
+  padding-top: clamp(2.25rem, 3vw, 2.75rem);
+}
+.concerns-showcase-layout {
+  display: grid;
+  gap: clamp(1.75rem, 3vw, 3rem);
+}
+.concerns-showcase-header {
+  display: grid;
+  align-content: start;
+  max-width: 480px;
+  gap: 0.8rem;
+}
+.concerns-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-brand-primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.concerns-eyebrow::after {
+  width: 2.5rem;
+  height: 2px;
+  background: var(--color-accent-ochre);
+  content: "";
+}
+.concerns-grid {
+  display: grid;
+  gap: 0.85rem;
+}
 .concern-card {
-  padding-inline: 0.85rem;
+  position: relative;
+  display: flex;
+  min-height: 148px;
+  flex-direction: column;
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 42%, var(--color-border));
+  border-radius: 12px;
+  background: var(--color-surface-page);
+  padding: 1.25rem;
+  color: var(--color-brand-deep);
   transition:
-    background-color 180ms ease,
-    border-color 180ms ease;
+    transform 180ms var(--ease-out),
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
 }
 .concern-card:hover {
-  border-color: var(--color-commerce-primary);
+  transform: translateY(-3px);
+  border-color: var(--color-brand-primary);
+  background: color-mix(
+    in srgb,
+    var(--color-surface-page) 94%,
+    var(--color-surface-botanical)
+  );
+  box-shadow: 0 12px 28px rgba(12, 48, 34, 0.08);
+}
+.concern-card:focus-visible {
+  border-color: var(--color-brand-primary);
+}
+.concern-card-top {
+  display: flex;
+  align-items: center;
+  margin-bottom: auto;
+}
+.concern-card-icon,
+.concern-card-arrow {
+  display: grid;
+  place-items: center;
+  color: var(--color-brand-primary);
+}
+.concern-card-icon {
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 999px;
   background: var(--color-surface-botanical);
+}
+.concern-card-arrow {
+  position: absolute;
+  right: 1.15rem;
+  bottom: 1.1rem;
+  transition:
+    transform 180ms var(--ease-out),
+    color 180ms ease;
+}
+.concern-card:hover .concern-card-arrow,
+.concern-card:focus-visible .concern-card-arrow {
+  transform: translateX(4px);
+  color: var(--color-brand-primary);
+}
+.concern-card-title {
+  max-width: calc(100% - 2.25rem);
+  margin-top: 1rem;
+  font-size: clamp(1rem, 1.25vw, 1.18rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+@media (min-width: 640px) {
+  .concerns-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .concerns-showcase-layout {
+    grid-template-columns: minmax(360px, 1fr) minmax(0, 1.55fr);
+    align-items: start;
+  }
+  .concerns-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 639px) {
+  .concern-card {
+    min-height: 132px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .concern-card,
+  .concern-card-arrow {
+    transition-duration: 0.01ms;
+  }
+  .concern-card:hover {
+    transform: none;
+  }
 }
 .testimonial-quote {
   box-shadow: inset 0 1px 0 var(--color-accent-ochre);
@@ -432,15 +562,7 @@ img {
   background: var(--forest-950);
   box-shadow: 0 24px 70px var(--shadow-brand-soft);
 }
-.care-loop-stage[data-offering="salon"] {
-  background: var(--color-surface-botanical);
-}
-.care-loop-stage[data-offering="products"] {
-  background: var(--color-surface-product);
-}
-.care-loop-stage[data-offering="gallery"] {
-  background: var(--color-surface-editorial);
-}
+
 .care-loop-image-wrap {
   position: absolute;
   inset: 0;
@@ -485,8 +607,17 @@ img {
   z-index: 2;
   width: min(390px, calc(100% - 3rem));
   padding: 1.25rem;
-  border-radius: 14px;
-  background: var(--color-overlay-card);
+  background: linear-gradient(
+    145deg,
+    rgba(240, 200, 181, 0.94),
+    rgba(250, 248, 242, 0.96)
+  );
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  box-shadow:
+    0 16px 36px rgba(12, 48, 34, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  padding: 24px;
   box-shadow: 0 18px 55px var(--shadow-brand-soft);
   backdrop-filter: blur(10px);
   animation: care-loop-copy-in 520ms var(--ease-out) both;
@@ -539,7 +670,7 @@ img {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  background: var(--forest-900);
+  background: #a95035;
   color: #fff;
   transition:
     transform 180ms var(--ease-out),
@@ -592,7 +723,7 @@ img {
 }
 
 .care-paths {
-  background: var(--color-surface-botanical);
+  background: wheat;
 }
 .care-paths-heading {
   display: grid;
@@ -625,7 +756,7 @@ img {
   margin: 0.75rem 0 0;
   color: var(--forest-950);
   font-family: "DM Serif Display", Georgia, serif;
-  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-size: clamp(1.65rem, 2.4vw, 2.25rem);
   font-weight: 400;
   line-height: 1.05;
 }

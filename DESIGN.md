@@ -40,9 +40,9 @@ typography:
     letterSpacing: "-0.03em"
   title:
     fontFamily: "DM Serif Display, Georgia, serif"
-    fontSize: "clamp(2.15rem, 5vw, 4rem)"
+    fontSize: "clamp(2.1rem, 3vw, 2.85rem)"
     fontWeight: 400
-    lineHeight: 1
+    lineHeight: 0.98
     letterSpacing: "-0.025em"
   body:
     fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
@@ -66,7 +66,7 @@ spacing:
   content: "20px"
   panel: "32px"
   shell-gutter: "1rem"
-  section: "clamp(4rem, 8vw, 7.5rem)"
+  section: "clamp(2.75rem, 5vw, 4.5rem)"
 components:
   button-primary:
     backgroundColor: "{colors.brand-primary}"
@@ -247,7 +247,7 @@ The palette combines botanical authority with warm editorial fields. Forest owns
 
 ## Layout
 
-The system uses a centred shell capped at 1240px with 1rem gutters on each side. Public sections receive a fluid 64-120px vertical rhythm, allowing the long-form journey to read as a sequence of appointments and explanations instead of a dashboard. Page introductions use their own 56-104px vertical band and terminate in a ruled divider.
+The system uses a centred shell capped at 1240px with 1rem gutters on each side. Public sections receive a compact fluid 44-72px vertical rhythm, allowing the long-form journey to remain editorial without unnecessary scrolling. Page introductions use their own 48-76px vertical band and terminate in a ruled divider.
 
 Desktop compositions pair unequal columns rather than defaulting to symmetrical cards: editorial copy sits beside photography, a ledger list, or a working panel. Repeated collections use two columns for service cards and three for concerns or products where room permits. White space and section-level background changes establish hierarchy before containers do.
 
