@@ -12,7 +12,7 @@ import {
 function config(enabled: boolean): ChristmasThemeConfig {
   return {
     enabled,
-    announcement: "A season of care — holiday appointments are now open",
+    announcement: "A season of care!! holiday appointments are now open",
     announcementCta: "Book early",
     announcementHref: "/booking",
     campaignLabel: "Christmas at Tamlois",
@@ -56,7 +56,7 @@ describe("Christmas homepage components", () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByText("A season of care — holiday appointments are now open"),
+      screen.getByText("A season of care!! holiday appointments are now open"),
     ).toBeVisible();
     expect(screen.getByRole("link", { name: "Book early" })).toHaveAttribute(
       "href",

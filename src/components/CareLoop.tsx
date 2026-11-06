@@ -196,7 +196,6 @@ export function CareLoop({
               }
             >
               {active.primaryCta.label}
-              <ArrowRight size={16} />
               
             </Link>
             {active.secondaryCta && (

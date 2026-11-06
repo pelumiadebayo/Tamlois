@@ -33,7 +33,6 @@ export function ChristmasAnnouncement({
         }
       >
         {config.announcementCta}
-        <ArrowRight size={16} aria-hidden="true" />
       </Link>
       <span className="christmas-announcement-flourish" aria-hidden="true">
         <img

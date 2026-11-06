@@ -16,7 +16,7 @@ export const christmasTheme: ChristmasThemeConfig = {
   enabled: parseChristmasThemeEnabled(
     import.meta.env.VITE_CHRISTMAS_THEME_ENABLED,
   ),
-  announcement: "A season of care — holiday appointments are now open",
+  announcement: "A season of care!! holiday appointments are now open",
   announcementCta: "Book early",
   announcementHref: "/booking",
   campaignLabel: "Christmas at Tamlois",
