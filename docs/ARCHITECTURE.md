@@ -6,6 +6,8 @@ Demo mode uses typed fixtures and local repositories. Firebase mode requires com
 
 UI components call typed repository interfaces. They do not call Firestore directly. Booking policies use a dedicated repository because their create, edit, reorder and permanent-delete operations have different versioning guarantees from generic records. Gallery metadata and optimized assets remain static repository content.
 
+Commerce uses the same boundary: public UI and Admin consume a typed `CommerceProvider`. Demo mode uses professional fixtures; Firebase mode uses `PaystackCommerceProvider`, which reads a Firestore cache and invokes authenticated callable Functions. The browser never calls Paystack directly.
+
 ## Authentication
 
 Public booking silently reuses or creates a Firebase Anonymous Authentication session. Its UID becomes `bookings.ownerUid` and every related `bookingLocks.ownerUid`. Customers see no account or Firebase identity UI.
@@ -30,6 +32,9 @@ Firestore stores exceptions, not the normal week.
 ## Firestore model
 
 - `services/{serviceId}`: owner-managed catalogue; only active, non-archived records are public.
+- `productsCache/{productId}`: safe Paystack-derived display cache. Public queries include `visible == true`; only the owner can edit presentation fields. Trusted Functions own source identity, name, description, price, currency, availability and media fields.
+- `commerceSyncState/paystack`: owner-only synchronization lock, result counters, last successful time and safe error text.
+- `productSyncDetails/{productId}`: reserved owner-only operational detail; never exposed publicly.
 - `bookingPolicies/{policyId}`: publicly readable title/summary records ordered by `displayOrder`; owner-only create, versioned edit, reorder and permanent delete. There is no visibility or archive state.
 - `bookings/{bookingId}`: private customer identity, contact details, consent, historical service/extras snapshots, immutable accepted policy title/summary/version snapshots, status and `lockIds`.
 - `bookingLocks/{lockId}`: non-sensitive owner UID, booking ID, service type, date/time, optional Salon session or Trichology unit, active status and timestamp. No name, email, phone, concern or note.
@@ -45,6 +50,10 @@ Firestore stores exceptions, not the normal week.
 - `leads` and `enquiries`: constrained public submissions, owner-readable.
 
 Collections appear only after their first write. Production is not seeded. Gallery is not a Firestore collection.
+
+## Product synchronization
+
+Owner-authenticated Firebase callable Functions use the server-only Paystack secret and official Product/Storefront APIs. Full sync is paginated, retryable and protected by an expiring lock. New records start hidden; existing source fields update without replacing title, summary, image, category, featured, visibility or order overrides. Items absent from the Storefront response become `missing-from-paystack` rather than being deleted. Public pages keep last-known-good data during API failures. Checkout remains external to Paystack Storefront; Tamlois stores no retail orders or card data.
 
 The booking route loads every policy and fails closed when none exist. Acceptance records a bundle version plus an ordered copy of each policy's ID, title, summary and numeric version. Immediately before final submission, the route reloads the policy collection; changed or deleted policies invalidate stale consent and return the customer to policy review. Deleting a policy never traverses or rewrites historical bookings.
 

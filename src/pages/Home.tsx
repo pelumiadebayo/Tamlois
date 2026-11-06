@@ -13,7 +13,6 @@ import {
   faqs,
   homeOfferings,
   media,
-  products,
   testimonials,
 } from "../data/content";
 import { useServices } from "../hooks/useServices";
@@ -23,22 +22,15 @@ import { LeadCapture } from "../components/LeadCapture";
 import { SEO } from "../components/SEO";
 import { contentRepository } from "../repositories/contentRepository";
 import { CareLoop } from "../components/CareLoop";
-import {
-  FEATURED_PRODUCT_STOREFRONT_URL,
-  MOISTURISING_HAIR_MIST_STOREFRONT_URL,
-  SCALP_CLEANSING_TREATMENT_STOREFRONT_URL,
-} from "../config/commerce";
+import { commerceConfig } from "../config/commerce";
 import { publicHomeContent } from "../repositories/homeContentRepository";
 import type { HomeOffering } from "../types";
-
-const featuredProductUrls: Record<string, string> = {
-  "prd-cleanse": SCALP_CLEANSING_TREATMENT_STOREFRONT_URL,
-  "prd-mist": MOISTURISING_HAIR_MIST_STOREFRONT_URL,
-  "prd-oil": FEATURED_PRODUCT_STOREFRONT_URL,
-};
+import { useProducts } from "../hooks/useProducts";
+import { publicProducts } from "../commerce/products";
 
 export default function Home() {
   const { services } = useServices();
+  const { products, state: productState, retry: retryProducts } = useProducts();
   const [announcement, setAnnouncement] = useState("");
   const [offerings, setOfferings] = useState<HomeOffering[]>(homeOfferings);
   useEffect(() => {
@@ -53,6 +45,7 @@ export default function Home() {
   const featured = services
     .filter((service) => service.active && service.type !== "package")
     .slice(0, 4);
+  const featuredProducts = publicProducts(products, true);
   return (
     <>
       <SEO
@@ -69,7 +62,7 @@ export default function Home() {
       />
       {announcement && (
         <div
-          className="bg-[var(--forest-950)] px-4 py-3 text-center text-sm font-semibold text-white"
+          className="bg-[var(--color-brand-deep)] px-4 py-3 text-center text-sm font-semibold text-white"
           role="status"
         >
           {announcement}
@@ -132,7 +125,7 @@ export default function Home() {
       </section>
 
       <section
-        className="section-space bg-[var(--cream)]"
+        className="section-product section-space"
         aria-labelledby="featured-products-title"
       >
         <div className="container-shell">
@@ -147,24 +140,16 @@ export default function Home() {
                 Paystack Storefront.
               </p>
             </div>
-            <ArrowLink to="/shop">Visit the official shop</ArrowLink>
+            <a href={commerceConfig.storefrontUrl || "/shop"} target="_blank" rel="noopener noreferrer" className="commerce-link inline-flex min-h-11 items-center gap-2 font-bold">Shop all products <ArrowRight size={18} /></a>
           </div>
-          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                storefrontUrl={
-                  featuredProductUrls[product.id] ??
-                  FEATURED_PRODUCT_STOREFRONT_URL
-                }
-              />
-            ))}
-          </div>
+          {productState === "loading" && <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Loading featured products">{[1, 2, 3].map((item) => <div key={item} className="aspect-[4/5] animate-pulse rounded-[14px] bg-[var(--forest-100)]" />)}</div>}
+          {productState === "error" && <div className="surface mt-10 p-6" role="alert"><p>Products could not be loaded right now.</p><button className="btn btn-secondary mt-4" onClick={() => void retryProducts()}>Retry</button></div>}
+          {productState === "ready" && featuredProducts.length > 0 && <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">{featuredProducts.map((product) => <ProductCard key={product.id} product={product} sourcePage="home" />)}</div>}
+          {productState === "ready" && featuredProducts.length === 0 && <p className="mt-10 text-sm text-[var(--muted)]">Featured products are being prepared. Visit the official Storefront to see current availability.</p>}
         </div>
       </section>
 
-      <section className="section-space">
+      <section className="section-raised section-space">
         <div className="container-shell">
           <h2 className="section-title">Start with what you notice</h2>
           <p className="lede mt-5">
@@ -176,7 +161,7 @@ export default function Home() {
               <Link
                 key={concern.slug}
                 to={`/concerns/${concern.slug}`}
-                className="group border-t border-[var(--line)] py-6"
+                className="concern-card group border-t border-[var(--line)] py-6"
               >
                 <h3 className="font-display text-2xl text-[var(--forest-950)]">
                   {concern.name}
@@ -201,7 +186,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-space bg-[var(--cream)]">
+      <section className="section-botanical section-space">
         <div className="container-shell">
           <h2 className="section-title">
             Care built around a proper first look
@@ -217,7 +202,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-space">
+      <section className="section-inverse section-space">
         <div className="container-shell grid gap-12 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <h2 className="section-title">How care moves forward</h2>
@@ -247,7 +232,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-space bg-[var(--forest-50)]">
+      <section className="section-editorial section-space">
         <div className="container-shell grid items-center gap-12 lg:grid-cols-[.85fr_1.15fr]">
           <figure>
             <div className="overflow-hidden rounded-[14px]">
@@ -293,7 +278,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-space">
+      <section className="section-raised section-space">
         <div className="container-shell">
           <h2 className="section-title">
             Progress needs context, not promises
@@ -319,13 +304,13 @@ export default function Home() {
             <div className="rule-list">
               {testimonials.map((item) => (
                 <figure key={item.id} className="py-6">
-                  <blockquote className="font-display text-2xl leading-tight text-[var(--forest-950)]">
+                  <blockquote className="testimonial-quote font-display text-2xl leading-tight text-[var(--forest-950)]">
                     “{item.quote}”
                   </blockquote>
                   <figcaption className="mt-4 text-xs font-semibold text-[var(--muted)]">
                     {item.name}
                     <br />
-                    <span className="text-[#8b4e22]">{item.label}</span>
+                    <span className="text-[var(--color-commerce-primary)]">{item.label}</span>
                   </figcaption>
                 </figure>
               ))}
@@ -334,7 +319,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-space">
+      <section className="section-botanical section-space">
         <div className="container-shell grid gap-10 lg:grid-cols-[1fr_.9fr]">
           <div>
             <h2 className="section-title">Questions before you book</h2>
@@ -357,7 +342,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-space bg-[var(--forest-900)] text-white">
+      <section className="section-inverse section-space">
         <div className="container-shell grid items-end gap-8 md:grid-cols-[1fr_auto]">
           <div>
             <h2 className="max-w-3xl font-display text-[clamp(2.5rem,6vw,5rem)] leading-none">

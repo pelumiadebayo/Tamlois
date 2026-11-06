@@ -2,24 +2,79 @@
 
 :root {
   color-scheme: light;
-  --forest-950: #0d2d21;
+  /* Official Tamlois palette: role-based tokens are the source of truth. */
+  --color-brand-primary: #174b35;
+  --color-brand-deep: #0c3022;
+  --color-commerce-primary: #a95035;
+  --color-accent-terracotta: var(--color-commerce-primary);
+  --color-commerce-hover: #8d412d;
+  --color-commerce-pressed: #713223;
+  --color-accent-ochre: #d6a23e;
+  --color-surface-product: #f0c8b5;
+  --color-surface-editorial: #e7c9cc;
+  --color-accent-peach: var(--color-surface-product);
+  --color-accent-rose: var(--color-surface-editorial);
+  --color-surface-botanical: #dce8dd;
+  --color-surface-page: #faf8f2;
+  --color-surface-raised: #ffffff;
+  --color-surface-admin: #f4f6f3;
+  --color-text-strong: #29342f;
+  --color-text-body: var(--color-text-strong);
+  --color-text-muted: #68746e;
+  --color-border: #c5d2c9;
+  --color-border-interactive: #87988e;
+  --color-state-error: #8f302f;
+  --color-state-error-surface: #fff0ec;
+  --color-state-warning: #713f1b;
+  --color-state-warning-surface: #fff0df;
+  --color-action-primary: var(--color-brand-primary);
+  --color-action-commerce: var(--color-commerce-primary);
+  --color-focus: var(--color-accent-ochre);
+  --color-text-disabled: #8d9992;
+  --color-surface-disabled: #f1f3ef;
+  --color-overlay-card: rgba(250, 248, 242, 0.94);
+  --color-overlay-scrim: rgba(12, 48, 34, 0.62);
+  --shadow-brand-soft: rgba(12, 48, 34, 0.14);
+  --shadow-brand-strong: rgba(12, 48, 34, 0.24);
+
+  /* Compatibility aliases for established components. */
+  --forest-950: var(--color-brand-deep);
   --forest-900: #123d2c;
-  --forest-800: #174b35;
+  --forest-800: var(--color-brand-primary);
   --forest-700: #1e6144;
-  --forest-100: #dce9df;
-  --forest-50: #eef4ef;
-  --paper: #f7f8f3;
-  --cream: #f1efe4;
-  --ink: #202823;
-  --muted: #647168;
-  --line: #ccd5ce;
-  --warm: #bd7a42;
-  --danger: #a73535;
+  --forest-300: #90aa98;
+  --forest-100: var(--color-surface-botanical);
+  --forest-50: color-mix(
+    in srgb,
+    var(--color-surface-botanical) 58%,
+    var(--color-surface-page)
+  );
+  --paper: var(--color-surface-page);
+  --cream: var(--color-surface-botanical);
+  --ink: var(--color-text-strong);
+  --muted: var(--color-text-muted);
+  --line: var(--color-border);
+  --warm: var(--color-accent-ochre);
+  --danger: var(--color-state-error);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   font-family: Manrope, ui-sans-serif, system-ui, sans-serif;
   color: var(--ink);
   background: var(--paper);
   font-synthesis: none;
+}
+
+@theme inline {
+  --color-tamlois-primary: var(--color-brand-primary);
+  --color-tamlois-deep: var(--color-brand-deep);
+  --color-tamlois-commerce: var(--color-commerce-primary);
+  --color-tamlois-ochre: var(--color-accent-ochre);
+  --color-tamlois-peach: var(--color-surface-product);
+  --color-tamlois-rose: var(--color-surface-editorial);
+  --color-tamlois-sage: var(--color-surface-botanical);
+  --color-tamlois-ivory: var(--color-surface-page);
+  --color-tamlois-charcoal: var(--color-text-strong);
+  --color-tamlois-muted: var(--color-text-muted);
+  --color-tamlois-border: var(--color-border);
 }
 
 * {
@@ -33,6 +88,19 @@ body {
   min-width: 320px;
   min-height: 100dvh;
   background: var(--paper);
+}
+.site-header {
+  background: color-mix(
+    in srgb,
+    var(--color-surface-page) 94%,
+    transparent
+  );
+}
+.site-footer a {
+  transition: color 160ms ease;
+}
+.site-footer a:hover {
+  color: var(--color-accent-ochre);
 }
 body,
 button,
@@ -126,10 +194,20 @@ img {
 }
 .btn-primary {
   background: var(--forest-800);
-  color: #fff;
+  color: var(--color-surface-raised);
 }
 .btn-primary:hover {
   background: var(--forest-950);
+}
+.btn-commerce {
+  background: var(--color-commerce-primary);
+  color: var(--color-surface-raised);
+}
+.btn-commerce:hover {
+  background: var(--color-commerce-hover);
+}
+.btn-commerce:active {
+  background: var(--color-commerce-pressed);
 }
 .btn-secondary {
   border: 1px solid var(--forest-800);
@@ -143,6 +221,75 @@ img {
   color: var(--forest-800);
   padding-inline: 0.3rem;
   min-height: 44px;
+}
+
+.section-page {
+  background: var(--color-surface-page);
+}
+.section-raised {
+  background: var(--color-surface-raised);
+}
+.section-botanical {
+  background: var(--color-surface-botanical);
+}
+.section-product {
+  background: var(--color-surface-product);
+}
+.section-editorial {
+  background: var(--color-surface-editorial);
+}
+.section-inverse {
+  background: var(--color-brand-deep);
+  color: var(--color-surface-page);
+}
+.section-inverse .section-title,
+.section-inverse h2,
+.section-inverse h3 {
+  color: var(--color-surface-page);
+}
+.section-inverse .lede,
+.section-inverse p {
+  color: var(--color-surface-botanical);
+}
+.page-hero-botanical {
+  background: var(--color-surface-botanical);
+}
+.page-hero-editorial {
+  background: var(--color-surface-editorial);
+}
+.page-hero-product {
+  background: var(--color-surface-product);
+}
+.commerce-link {
+  color: var(--color-commerce-primary);
+}
+.commerce-link:hover {
+  color: var(--color-commerce-hover);
+}
+.featured-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  background: var(--color-accent-ochre);
+  padding: 0.3rem 0.65rem;
+  color: var(--color-brand-deep);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.concern-card {
+  padding-inline: 0.85rem;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+.concern-card:hover {
+  border-color: var(--color-commerce-primary);
+  background: var(--color-surface-botanical);
+}
+.testimonial-quote {
+  box-shadow: inset 0 1px 0 var(--color-accent-ochre);
+  padding-top: 1rem;
 }
 
 /* Homepage Care Loop: one stable promise, four connected routes. */
@@ -207,7 +354,11 @@ img {
     background-color 180ms ease;
 }
 .care-loop-rail button.is-active {
-  background: rgba(220, 233, 223, 0.35);
+  background: color-mix(
+    in srgb,
+    var(--color-surface-botanical) 35%,
+    transparent
+  );
   color: var(--forest-950);
 }
 .care-loop-number {
@@ -226,6 +377,10 @@ img {
 }
 .care-loop-rail button.is-active .care-loop-progress {
   animation: care-loop-progress linear forwards;
+}
+.care-loop:has(.care-loop-stage[data-offering="products"])
+  .care-loop-progress {
+  background: var(--color-commerce-primary);
 }
 @keyframes care-loop-progress {
   to {
@@ -275,16 +430,16 @@ img {
   overflow: hidden;
   border-radius: 14px;
   background: var(--forest-950);
-  box-shadow: 0 24px 70px rgba(13, 45, 33, 0.14);
+  box-shadow: 0 24px 70px var(--shadow-brand-soft);
 }
 .care-loop-stage[data-offering="salon"] {
-  background: var(--cream);
+  background: var(--color-surface-botanical);
 }
 .care-loop-stage[data-offering="products"] {
-  background: var(--forest-50);
+  background: var(--color-surface-product);
 }
 .care-loop-stage[data-offering="gallery"] {
-  background: var(--forest-900);
+  background: var(--color-surface-editorial);
 }
 .care-loop-image-wrap {
   position: absolute;
@@ -304,7 +459,7 @@ img {
   top: 1rem;
   right: 1rem;
   border-radius: 999px;
-  background: rgba(247, 248, 243, 0.92);
+  background: color-mix(in srgb, var(--color-surface-page) 92%, transparent);
   padding: 0.4rem 0.65rem;
   color: var(--forest-900);
   font-size: 0.63rem;
@@ -331,8 +486,8 @@ img {
   width: min(390px, calc(100% - 3rem));
   padding: 1.25rem;
   border-radius: 14px;
-  background: rgba(247, 248, 243, 0.94);
-  box-shadow: 0 18px 55px rgba(13, 45, 33, 0.14);
+  background: var(--color-overlay-card);
+  box-shadow: 0 18px 55px var(--shadow-brand-soft);
   backdrop-filter: blur(10px);
   animation: care-loop-copy-in 520ms var(--ease-out) both;
   -webkit-backdrop-filter: blur(10px);
@@ -393,6 +548,12 @@ img {
 .care-loop-card-action:hover {
   background: var(--forest-700);
 }
+.care-loop-stage[data-offering="products"] .care-loop-card-action {
+  background: var(--color-commerce-primary);
+}
+.care-loop-stage[data-offering="products"] .care-loop-card-action:hover {
+  background: var(--color-commerce-hover);
+}
 .care-loop-card-action:active {
   transform: scale(0.96);
 }
@@ -431,7 +592,7 @@ img {
 }
 
 .care-paths {
-  background: var(--cream);
+  background: var(--color-surface-botanical);
 }
 .care-paths-heading {
   display: grid;
@@ -492,7 +653,7 @@ img {
 }
 
 .gallery-section {
-  background: var(--paper);
+  background: var(--color-surface-editorial);
 }
 .gallery-filters {
   display: flex;
@@ -512,7 +673,7 @@ img {
   font-weight: 750;
 }
 .gallery-filters button.is-active {
-  border-bottom-color: var(--forest-800);
+  border-bottom-color: var(--color-commerce-primary);
   color: var(--forest-950);
 }
 .gallery-grid {
@@ -553,7 +714,7 @@ img {
   right: 0.8rem;
   bottom: 0.8rem;
   border-radius: 999px;
-  background: rgba(247, 248, 243, 0.92);
+  background: color-mix(in srgb, var(--color-surface-page) 92%, transparent);
   padding: 0.38rem 0.6rem;
   color: var(--forest-900);
   font-size: 0.62rem;
@@ -627,7 +788,7 @@ img {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 900px) {
   .care-loop-layout {
     display: grid;
     height: auto;
@@ -657,7 +818,7 @@ img {
     min-height: 0;
     aspect-ratio: auto;
     margin-block: 0.85rem 0;
-    box-shadow: 0 18px 48px rgba(13, 45, 33, 0.12);
+    box-shadow: 0 18px 48px color-mix(in srgb, var(--color-brand-deep) 12%, transparent);
   }
   .care-loop-image-wrap {
     position: absolute;
@@ -778,9 +939,9 @@ img {
 .control {
   width: 100%;
   min-height: 48px;
-  border: 1px solid #aab7ae;
+  border: 1px solid var(--color-border-interactive);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface-raised);
   padding: 0.72rem 0.85rem;
   color: var(--ink);
   transition:
@@ -796,7 +957,7 @@ img {
 .field textarea:focus,
 .control:focus {
   border-color: var(--forest-700);
-  box-shadow: 0 0 0 3px rgba(30, 97, 68, 0.14);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest-700) 14%, transparent);
   outline: 0;
 }
 .field-error {
@@ -806,7 +967,7 @@ img {
 .surface {
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--color-surface-raised);
 }
 .rule-list > * + * {
   border-top: 1px solid var(--line);
@@ -823,16 +984,14 @@ img {
   font-weight: 700;
 }
 .placeholder-badge {
-  background: #fff0df;
-  color: #7c431b;
+  background: var(--color-state-warning-surface);
+  color: var(--color-state-warning);
 }
 .paper-lines {
-  background-image: linear-gradient(
-    to bottom,
-    transparent calc(100% - 1px),
-    rgba(23, 75, 53, 0.12) 1px
-  );
-  background-size: 100% 2.4rem;
+  background: var(--color-surface-raised);
+}
+.paper-lines > * + * {
+  border-top: 1px solid var(--color-border);
 }
 .no-scrollbar {
   scrollbar-width: none;
@@ -862,9 +1021,9 @@ img {
   display: block;
   width: 100%;
   min-height: 48px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-border-interactive);
   border-radius: 14px;
-  background: #fff;
+  background: var(--color-surface-raised);
   padding: 1.1rem;
   transition:
     border-color 160ms ease,
@@ -915,7 +1074,7 @@ img {
 .booking-stepper button[aria-current="step"] > span,
 .booking-stepper button:not(:disabled):not([aria-current="step"]) > span {
   background: var(--forest-800);
-  color: #fff;
+  color: var(--color-surface-raised);
 }
 .calendar-grid {
   display: grid;
@@ -929,9 +1088,9 @@ img {
   min-height: 84px;
   place-items: center;
   gap: 0.1rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-border-interactive);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface-raised);
   color: var(--forest-950);
 }
 .calendar-grid button span,
@@ -945,20 +1104,20 @@ img {
 .calendar-grid button.is-selected {
   border-color: var(--forest-800);
   background: var(--forest-800);
-  color: #fff;
+  color: var(--color-surface-raised);
 }
 .calendar-grid button.is-selected span,
 .calendar-grid button.is-selected small {
-  color: #dce9df;
+  color: var(--color-surface-botanical);
 }
 .calendar-grid button:disabled {
   text-decoration: line-through;
 }
 .time-slot {
   min-height: 48px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-border-interactive);
   border-radius: 12px;
-  background: white;
+  background: var(--color-surface-raised);
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--forest-950);
@@ -966,7 +1125,7 @@ img {
 .time-slot.is-selected {
   border-color: var(--forest-800);
   background: var(--forest-800);
-  color: white;
+  color: var(--color-surface-raised);
 }
 .icon-button {
   display: inline-grid;
@@ -974,7 +1133,7 @@ img {
   height: 42px;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-border-interactive);
   border-radius: 999px;
   background: transparent;
   color: var(--forest-950);
@@ -1023,7 +1182,7 @@ img {
   gap: 0.25rem;
   border-bottom: 1px solid var(--line);
   border-right: 1px solid var(--line);
-  background: #fff;
+  background: var(--color-surface-raised);
   color: var(--forest-950);
   text-align: center;
 }
@@ -1050,9 +1209,9 @@ img {
   max-width: calc(100% - 0.5rem);
   margin-inline: auto;
   border-radius: 8px;
-  background: #f8dfdc;
+  background: var(--color-state-error-surface);
   padding: 0.22rem 0.4rem;
-  color: #8f302f;
+  color: var(--color-state-error);
   line-height: 1.15;
 }
 .salon-calendar-grid button .salon-space-compact {
@@ -1060,18 +1219,18 @@ img {
 }
 .salon-calendar-grid button.is-selected {
   background: var(--forest-800);
-  color: #fff;
+  color: var(--color-surface-raised);
 }
 .salon-calendar-grid button.is-selected small {
   color: var(--forest-100);
 }
 .salon-calendar-grid button:disabled {
   cursor: not-allowed;
-  background: #f3f4ef;
-  color: #9ba59f;
+  background: var(--color-surface-disabled);
+  color: var(--color-text-disabled);
 }
 .salon-calendar-grid button:disabled small {
-  color: #8d9992;
+  color: var(--color-text-disabled);
 }
 .salon-calendar-grid button.is-outside {
   color: transparent;
@@ -1093,13 +1252,13 @@ img {
   overflow: auto;
   border: 0;
   border-radius: 18px;
-  background: #fff;
+  background: var(--color-surface-raised);
   color: var(--forest-950);
   padding: 0;
-  box-shadow: 0 28px 80px rgba(13, 45, 33, 0.24);
+  box-shadow: 0 28px 80px var(--shadow-brand-strong);
 }
 .salon-session-dialog::backdrop {
-  background: rgba(8, 31, 22, 0.62);
+  background: var(--color-overlay-scrim);
   backdrop-filter: blur(3px);
 }
 .salon-session-panel {

@@ -21,7 +21,13 @@ const links = [
   ["/contact", "Contact"],
 ];
 
-export function Brand({ compact = false }: { compact?: boolean }) {
+export function Brand({
+  compact = false,
+  inverse = false,
+}: {
+  compact?: boolean;
+  inverse?: boolean;
+}) {
   return (
     <Link to="/" className="flex items-center gap-3" aria-label="Tamlois home">
       <span
@@ -29,10 +35,16 @@ export function Brand({ compact = false }: { compact?: boolean }) {
         aria-hidden="true"
       >
         {" "}
-        <img rel="icon" src="./logo.png" />
+        <img
+          src={`${import.meta.env.BASE_URL}logo.png`}
+          alt=""
+          className={inverse ? "brightness-0 invert" : ""}
+        />
       </span>
       {!compact && (
-        <span className="max-w-[210px] text-[12px] font-bold leading-[1.25] text-[var(--forest-950)]">
+        <span
+          className={`max-w-[210px] text-[12px] font-bold leading-[1.25] ${inverse ? "text-[var(--color-surface-page)]" : "text-[var(--forest-950)]"}`}
+        >
           Tamlois Naturals &<br />
           Trichology Clinic
         </span>
@@ -51,11 +63,11 @@ export function Layout() {
 
   return (
     <div className="min-h-[100dvh]">
-      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[rgba(247,248,243,.94)] backdrop-blur-md">
+      <header className="site-header sticky top-0 z-40 border-b border-[var(--line)] backdrop-blur-md">
         <div className="container-shell flex h-[72px] items-center justify-between gap-5">
           <Brand />
           <nav
-            className="hidden items-center gap-5 lg:flex"
+            className="hidden items-center gap-5 xl:flex"
             aria-label="Primary navigation"
           >
             {links.map(([to, label]) => (
@@ -70,7 +82,7 @@ export function Layout() {
                     );
                 }}
                 className={({ isActive }) =>
-                  `text-[13px] font-semibold ${isActive ? "text-[var(--forest-800)] underline decoration-2 underline-offset-8" : "text-[var(--ink)] hover:text-[var(--forest-700)]"}`
+                  `text-[13px] font-semibold ${isActive ? "text-[var(--forest-800)] underline decoration-[var(--color-commerce-primary)] decoration-2 underline-offset-8" : "text-[var(--ink)] hover:text-[var(--forest-700)]"}`
                 }
               >
                 {label}
@@ -90,7 +102,7 @@ export function Layout() {
               <CalendarDays size={19} />
             </Link>
             <button
-              className="grid size-12 place-items-center rounded-full border border-[var(--line)] lg:hidden"
+              className="grid size-12 place-items-center rounded-full border border-[var(--line)] xl:hidden"
               onClick={() => setOpen((value) => !value)}
               aria-expanded={open}
               aria-controls="mobile-menu"
@@ -102,7 +114,7 @@ export function Layout() {
         </div>
         <div
           id="mobile-menu"
-          className={`overflow-hidden border-t border-[var(--line)] bg-[var(--paper)] transition-[max-height,opacity] duration-200 ${open ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"} lg:hidden`}
+          className={`overflow-hidden border-t border-[var(--line)] bg-[var(--color-surface-page)] transition-[max-height,opacity] duration-200 ${open ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"} xl:hidden`}
         >
           <nav
             className="container-shell grid py-3"
@@ -131,21 +143,21 @@ export function Layout() {
       <main id="main-content">
         <Outlet />
       </main>
-      <footer className="border-t border-[var(--line)] bg-[var(--cream)]">
+      <footer className="site-footer border-t border-white/15 bg-[var(--color-brand-deep)] text-[var(--color-surface-page)]">
         <div className="container-shell grid gap-12 py-16 md:grid-cols-[1.3fr_.7fr_.8fr]">
           <div>
-            <Brand />
-            <p className="mt-5 max-w-md text-sm leading-7 text-[var(--muted)]">
+            <Brand inverse />
+            <p className="mt-5 max-w-md text-sm leading-7 text-[var(--color-surface-botanical)]">
               Professional trichology and natural hair care focused on healthy
               scalp, hair growth and hair-loss management through personalised,
               evidence-informed care.
             </p>
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[var(--forest-950)]">
+            <h2 className="text-sm font-bold text-white">
               Visit and contact
             </h2>
-            <div className="mt-4 grid gap-3 text-sm text-[var(--muted)]">
+            <div className="mt-4 grid gap-3 text-sm text-[var(--color-surface-botanical)]">
               <p>{contact.address}</p>
               <a
                 href={`tel:${contact.phone}`}
@@ -167,10 +179,10 @@ export function Layout() {
             </div>
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[var(--forest-950)]">
+            <h2 className="text-sm font-bold text-white">
               Information
             </h2>
-            <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm text-[var(--muted)]">
+            <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm text-[var(--color-surface-botanical)]">
               <Link to="/faq">FAQ</Link>
               <Link to="/privacy">Privacy</Link>
               <Link to="/terms">Terms</Link>
@@ -180,14 +192,14 @@ export function Layout() {
                 sourcePage="site"
                 sourceSection="footer"
                 sourceEvent="navigation_storefront_clicked"
-                className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-[var(--forest-800)]"
+                className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-white"
               />
               <Link to="/admin/login">Admin</Link>
             </div>
           </div>
         </div>
-        <div className="border-t border-[var(--line)] py-5">
-          <div className="container-shell text-xs text-[var(--muted)]">
+        <div className="border-t border-white/15 py-5">
+          <div className="container-shell text-xs text-[var(--color-surface-botanical)]">
             © {new Date().getFullYear()} Tamlois Natural & More | Tamlois
             Trichology Clinic. All rights reserved.
           </div>

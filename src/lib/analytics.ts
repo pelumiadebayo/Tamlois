@@ -17,6 +17,7 @@ export type AnalyticsEvent =
   | "home_products_cta_clicked"
   | "home_gallery_cta_clicked"
   | "storefront_link_clicked"
+  | "product_clicked"
   | "shop_page_viewed"
   | "homepage_storefront_clicked"
   | "navigation_storefront_clicked";

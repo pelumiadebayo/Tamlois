@@ -40,7 +40,7 @@ This is the launch-blocking checklist. Every value below is absent, illustrative
 
 Firebase's web API key and project identifiers are browser configuration, not database security. Service-account JSON, private keys and Admin SDK credentials are secrets and must stay in a trusted server or CI secret store.
 
-No Cloud Functions, Google Cloud API enablement, Blaze upgrade, billing link or production seed is required for the current booking flow. Collections appear after their first successful write.
+Cloud Functions and a billing-enabled Firebase project are required for Paystack booking payments and product synchronization. Collections appear after their first successful write.
 
 ## GitHub Pages
 
@@ -54,15 +54,14 @@ No Cloud Functions, Google Cloud API enablement, Blaze upgrade, billing link or 
 8. Update Firebase authorised domains and App Check.
 9. Verify every hash route and the booking/admin journeys on the deployed URL.
 
-## Shopify
+## Paystack Storefront products
 
-- Add `VITE_SHOPIFY_STORE_DOMAIN`.
-- For Storefront API, add a least-privilege public Storefront token to `VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN`.
-- For Buy Button, add the collection ID to `VITE_SHOPIFY_BUY_BUTTON_COLLECTION_ID` and place the embed behind the commerce adapter.
-- Confirm product/variant mapping, currency, inventory, delivery, tax, returns and allowed domains.
-- Implement and test error, empty and loading states against the live store.
-- Remove demo products only when live product retrieval and checkout are verified.
-- Never expose Shopify Admin API secrets.
+1. Set `VITE_COMMERCE_PROVIDER=paystack` and the public Storefront URL.
+2. Run `firebase functions:secrets:set PAYSTACK_SECRET_KEY`; never add the secret to Vite or Firestore.
+3. Deploy Functions and Firestore Rules, then run the first sync in **Admin → Products**.
+4. Review each new hidden product, add accessible alt text/category or an optional HTTPS image override, then publish or feature it.
+5. Confirm product URLs, stock, delivery, returns and retail notifications in Paystack.
+6. See `docs/PAYSTACK_STOREFRONT_SETUP.md` for exact commands and troubleshooting.
 
 ## Payments
 
@@ -93,7 +92,7 @@ Choose a transactional provider such as Postmark, Resend, SendGrid or an approve
 | Services, prices, durations, packages, clinical copy                 | Admin Services / Firestore `services`                                     | Create and publish verified production records; demo fixtures are not copied into Firebase                                                      |
 | Service images                                                       | `src/data/content.ts` / admin media integration                           | `image`, `imageAlt`                                                                                                                            |
 | Concern education and referral copy                                  | `src/data/content.ts`                                                     | `concerns` after clinical review                                                                                                               |
-| Products and prices                                                  | `src/data/content.ts` or Shopify                                          | `products` and commerce provider                                                                                                               |
+| Products and prices                                                  | Paystack Storefront / Firestore `productsCache`                           | Sync in Admin Products; edit price/stock in Paystack and presentation fields in Tamlois                                                       |
 | Testimonials                                                         | `src/data/content.ts` then `testimonials`                                 | Replace all illustrative records                                                                                                               |
 | Result stories and before/after media                                | `src/pages/ContentPages.tsx` then `results`                               | Add consented stories and capture context                                                                                                      |
 | Address, phone, WhatsApp, email, Instagram, map                      | `src/data/content.ts` and environment variables                           | `contact` object and `VITE_BUSINESS_*`                                                                                                         |

@@ -49,15 +49,16 @@ export function ServicesPage() {
         description="Explore Tamlois trichology, scalp and natural-hair services."
       />
       <PageIntro
+        tone="botanical"
         title="Care that starts with understanding"
         text="Browse assessment, treatment and maintenance services. All prices and durations are placeholders until confirmed."
       />
-      <section className="section-space">
+      <section className="section-raised section-space">
         <div className="container-shell">
           {error && (
             <div
               role="alert"
-              className="mb-6 rounded-[12px] bg-[#fff0ec] p-4 text-sm text-[#7d3028]"
+              className="mb-6 rounded-[12px] bg-[var(--color-state-error-surface)] p-4 text-sm text-[var(--color-state-error)]"
             >
               {error}{" "}
               <button
@@ -76,6 +77,7 @@ export function ServicesPage() {
               />
               <input
                 className="control pl-11"
+                style={{ paddingLeft: "2.75rem" }}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search services or concerns"
@@ -152,6 +154,7 @@ export function PackagesPage() {
         description="Explore placeholder service packages from Tamlois."
       />
       <PageIntro
+        tone="editorial"
         title="Care plans with a clear sequence"
         text="Packages are illustrative until the clinic confirms the included services, prices and treatment order."
       />

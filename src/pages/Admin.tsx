@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   Package,
+  ShoppingBag,
   Pencil,
   Plus,
   Search,
@@ -60,7 +61,6 @@ import {
   AvailabilityBlockConflictError,
   availabilityRepository,
 } from "../repositories/availabilityRepository";
-import { shopifyEnabled } from "../lib/adapters";
 import type {
   BlockedPeriod,
   Booking,
@@ -75,6 +75,7 @@ import type {
 const adminLinks = [
   ["/admin", "Overview", LayoutDashboard],
   ["/admin/services", "Services", Package],
+  ["/admin/products", "Products", ShoppingBag],
   ["/admin/bookings", "Bookings", Users],
   ["/admin/availability", "Availability", CalendarClock],
   ["/admin/settings", "Settings", Settings],
@@ -324,7 +325,7 @@ function AdminLayout() {
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
   return (
-    <div className="min-h-[100dvh] bg-[#f3f5f2] lg:grid lg:grid-cols-[250px_1fr]">
+    <div className="min-h-[100dvh] bg-[var(--color-surface-admin)] lg:grid lg:grid-cols-[250px_1fr]">
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-[280px] border-r border-[var(--line)] bg-white p-5 transition-transform duration-200 lg:static lg:w-auto lg:translate-x-0 ${menu ? "translate-x-0" : "-translate-x-full"}`}
       >
@@ -2214,9 +2215,9 @@ export function AdminSettingsPage() {
               Paystack Storefront
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
-              Products, product images, prices, inventory and retail orders are
-              managed in Paystack Storefront. Tamlois does not maintain a
-              duplicate product catalogue or upload product images here.
+              Paystack remains the source of truth for product details, prices
+              and stock. Use the Products page to synchronize the safe website
+              cache and manage Tamlois presentation settings.
             </p>
             <p className="mt-4 break-all text-xs font-semibold text-[var(--forest-700)]">
               {commerceConfig.storefrontUrl || "Storefront URL is not configured correctly."}

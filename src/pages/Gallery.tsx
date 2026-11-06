@@ -37,6 +37,7 @@ export default function GalleryPage() {
         description="Explore Tamlois natural-hair styling and clearly identified editorial reference imagery."
       />
       <PageIntro
+        tone="editorial"
         title="Texture, technique and a considered approach"
         text="Tamlois imagery is identified separately from licensed editorial placeholders. Nothing is presented as a client result unless written consent and honest context are confirmed."
       />

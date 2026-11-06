@@ -22,8 +22,14 @@ export function resolveStorefrontUrl(value?: string): string | null {
 }
 
 export const commerceConfig = {
-  provider: "paystack-storefront",
+  provider: import.meta.env.VITE_COMMERCE_PROVIDER === "disabled" ? "disabled" : "paystack",
   storefrontUrl: resolveStorefrontUrl(
     import.meta.env.VITE_PAYSTACK_STOREFRONT_URL,
   ),
+  storefrontSlug: "tamls",
+  knownProductUrls: {
+    "prd-cleanse": SCALP_CLEANSING_TREATMENT_STOREFRONT_URL,
+    "prd-mist": MOISTURISING_HAIR_MIST_STOREFRONT_URL,
+    "prd-oil": FEATURED_PRODUCT_STOREFRONT_URL,
+  } as Record<string, string>,
 } as const;

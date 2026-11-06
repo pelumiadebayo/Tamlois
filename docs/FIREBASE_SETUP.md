@@ -13,6 +13,8 @@ VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_FIREBASE_ADMIN_UID=0CZw1AFTjMXudXtvFST0z2ufET02
+VITE_COMMERCE_PROVIDER=paystack
+VITE_PAYSTACK_STOREFRONT_URL=https://paystack.shop/tamls
 VITE_DEFAULT_PAYMENT_MODE=clinic
 ```
 
@@ -27,9 +29,10 @@ In Firebase Console → **Authentication → Sign-in method**:
 
 If Anonymous is disabled, customers receive “Online booking is not enabled yet” and no availability or booking write is attempted. Existing anonymous sessions are reused. The public UI never asks a customer to register.
 
-Create the sole owner in **Authentication → Users → Add user**, then copy the User UID. Put the UID in both:
+Create the sole owner in **Authentication → Users → Add user**, then copy the User UID. Put the UID in these three places:
 
 - `ownerUid()` in `firestore.rules` — authoritative;
+- `OWNER_UID` in `functions/src/domain.ts` — authoritative for callable Functions;
 - `VITE_FIREBASE_ADMIN_UID` — routing and feedback only.
 
 Firestore Rules cannot read Vite, `.env.local` or GitHub variables. Creating another Email/Password user does not grant access because its UID differs. There is no custom claim or signup bootstrap.
@@ -38,7 +41,7 @@ Firestore Rules cannot read Vite, `.env.local` or GitHub variables. Creating ano
 
 The existing target is `(default)`, Standard edition, `africa-south1`. Do not seed production and do not manually create empty collections. They appear after their first successful write.
 
-The normal Africa/Lagos schedule and Salon sessions are typed in `src/config/businessSchedule.ts`. Firestore persists `services`, `bookingPolicies`, `bookings`, `bookingLocks`, `blockedPeriods`, `blockedPeriodDetails`, `capacityOverrides`, `capacityOverrideDetails`, `businessSettings`, `publicBookingSettings`, `auditLogs`, `leads` and `enquiries`. Booking PII exists only in `bookings`; lock and public operational documents contain no customer PII. A full-day `blockedPeriods` unit repeats a bounded `publicReason` so the customer calendar can explain the closure. Do not enter names, contact details or other private information in that field. Timed-block and capacity-adjustment reasons remain in owner-only detail collections. Gallery stays static.
+The normal Africa/Lagos schedule and Salon sessions are typed in `src/config/businessSchedule.ts`. Firestore persists booking/catalogue collections plus `productsCache` and owner-only `commerceSyncState`. Booking PII exists only in `bookings`; product cache documents contain no Paystack secret or customer data. A full-day `blockedPeriods` unit repeats a bounded public closure reason. Gallery stays static.
 
 ### Payment and hold settings
 
@@ -64,6 +67,18 @@ firebase deploy --only firestore:rules,firestore:indexes
 ```
 
 This does not deploy collections, seed data, Functions or frontend code.
+
+### Paystack product Functions
+
+Store the Paystack secret separately and deploy the trusted product integration:
+
+```bash
+firebase functions:secrets:set PAYSTACK_SECRET_KEY
+npm run build:functions
+firebase deploy --only functions:importPaystackProduct,functions:syncPaystackStorefrontProducts,functions:refreshPaystackProduct,functions:refreshAllPaystackProducts
+```
+
+The non-secret Storefront slug parameter defaults to `tamls`. Then open **Admin → Products**, run the first sync, review hidden imports and deliberately publish selected products. Deploy the updated Rules before using the product page. See `docs/PAYSTACK_STOREFRONT_SETUP.md` for field ownership, image behavior and troubleshooting.
 
 ## 4. App Check
 
@@ -93,13 +108,12 @@ CI already installs Java 21. Rules tests cover anonymous ownership, denied booki
 
 1. Create the replacement Email/Password user and copy its UID.
 2. Replace `ownerUid()` in `firestore.rules`.
-3. Replace `VITE_FIREBASE_ADMIN_UID` locally and in GitHub variables.
-4. Deploy the Rules and rebuild the frontend.
-5. Verify the new owner is allowed and the old UID is denied.
-6. Only then disable/delete the previous owner account.
+3. Replace `OWNER_UID` in `functions/src/domain.ts` and deploy Functions.
+4. Replace `VITE_FIREBASE_ADMIN_UID` locally and in GitHub variables.
+5. Deploy the Rules and rebuild the frontend.
+6. Verify the new owner is allowed and the old UID is denied.
+7. Only then disable/delete the previous owner account.
 
 ## 7. Deliberate limitations
 
-No Cloud Functions, paid backend, billing upgrade or Google Cloud API enablement is required. Normal concurrent capacity is protected by Firestore transactions. Rules cannot fully prove that a malicious browser created every consecutive Trichology unit derived from duration; a trusted backend is required for absolute enforcement later.
-
-Real Paystack verification/webhooks and production email are also unavailable without a trusted backend. Firebase mode stays pay-at-clinic and always shows an on-screen booking confirmation.
+Cloud Functions and a billing-enabled Firebase project are required for Paystack booking payments and Storefront product synchronization. Rules cannot fully prove that a malicious browser created every consecutive Trichology unit derived from duration; the existing booking Functions provide the trusted payment boundary. Production email remains unavailable until a provider is configured.

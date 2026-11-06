@@ -69,6 +69,7 @@ const AdminAvailabilityPage = lazy(() =>
 const AdminSettingsPage = lazy(() =>
   import("./pages/Admin").then((m) => ({ default: m.AdminSettingsPage })),
 );
+const AdminProductsPage = lazy(() => import("./pages/AdminProducts"));
 
 function LoadingPage() {
   return (
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="services" element={<AdminServicesPage />} />
           <Route path="services/new" element={<AdminServiceEditorPage />} />
           <Route path="services/:id" element={<AdminServiceEditorPage />} />
+          <Route path="products" element={<AdminProductsPage />} />
           <Route path="bookings" element={<AdminBookingsPage />} />
           <Route path="availability" element={<AdminAvailabilityPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />

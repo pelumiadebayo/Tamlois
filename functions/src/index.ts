@@ -32,6 +32,11 @@ import {
   type PaymentGateway,
 } from "./paystack.js";
 import { isValidPaystackSignature } from "./webhook.js";
+import {
+  PaystackCommerceError,
+  PaystackCommerceService,
+  isAuthorizedProductAdmin,
+} from "./paystackCommerce.js";
 
 if (!getApps().length) initializeApp();
 
@@ -46,6 +51,10 @@ const ENFORCE_APP_CHECK = defineBoolean("ENFORCE_APP_CHECK", {
   default: true,
   description:
     "Require valid Firebase App Check tokens for customer payment callables.",
+});
+const PAYSTACK_STOREFRONT_SLUG = defineString("PAYSTACK_STOREFRONT_SLUG", {
+  default: "tamls",
+  description: "Public Paystack Storefront slug owned by Tamlois.",
 });
 
 const commonOptions = {
@@ -77,6 +86,16 @@ function requireAuthentication<T>(request: CallableRequest<T>) {
   return request.auth.uid;
 }
 
+function requireOwner<T>(request: CallableRequest<T>) {
+  const uid = requireAuthentication(request);
+  if (!isAuthorizedProductAdmin(uid, OWNER_UID))
+    throw new HttpsError(
+      "permission-denied",
+      "Only the configured Tamlois owner can manage products.",
+    );
+  return uid;
+}
+
 function enforceOrigin<T>(request: CallableRequest<T>) {
   const origin = request.rawRequest.headers.origin;
   if (!origin) return;
@@ -87,7 +106,7 @@ function enforceOrigin<T>(request: CallableRequest<T>) {
   if (!allowed.includes(origin.replace(/\/$/, "")))
     throw new HttpsError(
       "permission-denied",
-      "This frontend origin is not authorized for payment operations.",
+      "This frontend origin is not authorized for secure operations.",
     );
 }
 
@@ -100,7 +119,7 @@ function enforceCallableRequestSize<T>(request: CallableRequest<T>) {
   )
     throw new HttpsError(
       "resource-exhausted",
-      "The payment request is larger than the supported limit.",
+      "The secure request is larger than the supported limit.",
     );
 }
 
@@ -147,6 +166,102 @@ function toHttpsError(error: unknown): never {
     "The secure payment service is temporarily unavailable.",
   );
 }
+
+function parseCommerceInput<T>(schema: z.ZodType<T>, data: unknown) {
+  const parsed = schema.safeParse(data);
+  if (!parsed.success)
+    throw new HttpsError(
+      "invalid-argument",
+      "The product request contains invalid or incomplete fields.",
+      parsed.error.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code })),
+    );
+  return parsed.data;
+}
+
+function commerceError(error: unknown): never {
+  if (error instanceof HttpsError) throw error;
+  if (error instanceof PaystackCommerceError) {
+    const code = error.code === "NOT_FOUND" ? "not-found" :
+      error.code === "INVALID_URL" ? "invalid-argument" :
+      error.code === "WRONG_STOREFRONT" ? "permission-denied" :
+      error.code === "SYNC_RUNNING" ? "already-exists" : "unavailable";
+    throw new HttpsError(code, error.message, { reason: error.code });
+  }
+  logger.error("Paystack product operation failed", { errorName: error instanceof Error ? error.name : "unknown" });
+  throw new HttpsError("internal", "The product service is temporarily unavailable.");
+}
+
+function commerceService() {
+  return new PaystackCommerceService(
+    firestore,
+    PAYSTACK_SECRET_KEY.value(),
+    PAYSTACK_STOREFRONT_SLUG.value(),
+  );
+}
+
+const importProductSchema = z.object({ productUrl: z.string().url().max(500) }).strict();
+const refreshProductSchema = z.object({ productId: z.string().min(1).max(128) }).strict();
+const emptySchema = z.object({}).strict();
+
+export const importPaystackProduct = onCall(
+  { ...commonOptions, timeoutSeconds: 120, secrets: [PAYSTACK_SECRET_KEY], enforceAppCheck: ENFORCE_APP_CHECK },
+  async (request) => {
+    try {
+      enforceCallableRequestSize(request);
+      enforceOrigin(request);
+      const uid = requireOwner(request);
+      const input = parseCommerceInput(importProductSchema, request.data);
+      const product = await commerceService().importProduct(input.productUrl);
+      logger.info("Paystack product imported", { uid, productId: String(product?.id ?? "") });
+      return product;
+    } catch (error) { return commerceError(error); }
+  },
+);
+
+export const syncPaystackStorefrontProducts = onCall(
+  { ...commonOptions, timeoutSeconds: 300, memory: "512MiB", secrets: [PAYSTACK_SECRET_KEY], enforceAppCheck: ENFORCE_APP_CHECK },
+  async (request) => {
+    try {
+      enforceCallableRequestSize(request);
+      enforceOrigin(request);
+      const uid = requireOwner(request);
+      parseCommerceInput(emptySchema, request.data ?? {});
+      const result = await commerceService().sync(uid);
+      logger.info("Paystack Storefront synchronized", { uid, ...result });
+      return result;
+    } catch (error) { return commerceError(error); }
+  },
+);
+
+export const refreshPaystackProduct = onCall(
+  { ...commonOptions, timeoutSeconds: 120, secrets: [PAYSTACK_SECRET_KEY], enforceAppCheck: ENFORCE_APP_CHECK },
+  async (request) => {
+    try {
+      enforceCallableRequestSize(request);
+      enforceOrigin(request);
+      const uid = requireOwner(request);
+      const input = parseCommerceInput(refreshProductSchema, request.data);
+      const product = await commerceService().refreshProduct(input.productId);
+      logger.info("Paystack product refreshed", { uid, productId: input.productId });
+      return product;
+    } catch (error) { return commerceError(error); }
+  },
+);
+
+export const refreshAllPaystackProducts = onCall(
+  { ...commonOptions, timeoutSeconds: 300, memory: "512MiB", secrets: [PAYSTACK_SECRET_KEY], enforceAppCheck: ENFORCE_APP_CHECK },
+  async (request) => {
+    try {
+      enforceCallableRequestSize(request);
+      enforceOrigin(request);
+      const uid = requireOwner(request);
+      parseCommerceInput(emptySchema, request.data ?? {});
+      const result = await commerceService().sync(uid);
+      logger.info("All Paystack products refreshed", { uid, ...result });
+      return result;
+    } catch (error) { return commerceError(error); }
+  },
+);
 
 export const reserveBookingAndInitializePayment = onCall(
   {

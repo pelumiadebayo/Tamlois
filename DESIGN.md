@@ -2,25 +2,29 @@
 name: "Tamlois Naturals & Trichology Clinic"
 description: "A calm, trust-first natural-hair clinic expressed as an editorial care ledger."
 colors:
-  forest-950: "#0d2d21"
-  forest-900: "#123d2c"
-  forest-800: "#174b35"
-  forest-700: "#1e6144"
-  forest-100: "#dce9df"
-  forest-50: "#eef4ef"
-  paper: "#f7f8f3"
-  cream: "#f1efe4"
-  white: "#ffffff"
-  ink: "#202823"
-  muted: "#647168"
-  line: "#ccd5ce"
-  warm: "#bd7a42"
-  danger: "#a73535"
-  field-border: "#aab7ae"
-  error-bg: "#fff0ec"
-  error-ink: "#7d3028"
-  warm-bg: "#fff0df"
-  warm-ink: "#713f1b"
+  brand-primary: "#174b35"
+  brand-deep: "#0c3022"
+  commerce-primary: "#a95035"
+  commerce-hover: "#8d412d"
+  commerce-pressed: "#713223"
+  accent-ochre: "#d6a23e"
+  surface-product: "#f0c8b5"
+  surface-editorial: "#e7c9cc"
+  surface-botanical: "#dce8dd"
+  surface-botanical-soft: "color-mix(in srgb, #dce8dd 58%, #faf8f2)"
+  surface-page: "#faf8f2"
+  surface-raised: "#ffffff"
+  surface-admin: "#f4f6f3"
+  text-strong: "#29342f"
+  text-muted: "#68746e"
+  border-subtle: "#c5d2c9"
+  border-interactive: "#87988e"
+  state-error: "#8f302f"
+  state-error-surface: "#fff0ec"
+  state-warning: "#713f1b"
+  state-warning-surface: "#fff0df"
+  text-disabled: "#8d9992"
+  surface-disabled: "#f1f3ef"
 typography:
   display:
     fontFamily: "DM Serif Display, Georgia, serif"
@@ -65,79 +69,93 @@ spacing:
   section: "clamp(4rem, 8vw, 7.5rem)"
 components:
   button-primary:
-    backgroundColor: "{colors.forest-800}"
-    textColor: "{colors.white}"
+    backgroundColor: "{colors.brand-primary}"
+    textColor: "{colors.surface-raised}"
     rounded: "{rounded.pill}"
     padding: "12px 18px"
     height: "48px"
   button-primary-hover:
-    backgroundColor: "{colors.forest-950}"
-    textColor: "{colors.white}"
+    backgroundColor: "{colors.brand-deep}"
+    textColor: "{colors.surface-raised}"
+    rounded: "{rounded.pill}"
+  button-commerce:
+    backgroundColor: "{colors.commerce-primary}"
+    textColor: "{colors.surface-raised}"
+    rounded: "{rounded.pill}"
+    padding: "12px 18px"
+    height: "48px"
+  button-commerce-hover:
+    backgroundColor: "{colors.commerce-hover}"
+    textColor: "{colors.surface-raised}"
+    rounded: "{rounded.pill}"
+  button-commerce-active:
+    backgroundColor: "{colors.commerce-pressed}"
+    textColor: "{colors.surface-raised}"
     rounded: "{rounded.pill}"
   button-secondary:
     backgroundColor: "transparent"
-    textColor: "{colors.forest-900}"
+    textColor: "{colors.brand-deep}"
     rounded: "{rounded.pill}"
     padding: "12px 18px"
     height: "48px"
   button-secondary-hover:
-    backgroundColor: "{colors.forest-50}"
-    textColor: "{colors.forest-900}"
+    backgroundColor: "{colors.surface-botanical-soft}"
+    textColor: "{colors.brand-deep}"
     rounded: "{rounded.pill}"
   button-quiet:
     backgroundColor: "transparent"
-    textColor: "{colors.forest-800}"
+    textColor: "{colors.brand-primary}"
     rounded: "{rounded.pill}"
     padding: "12px 4.8px"
     height: "44px"
   input:
-    backgroundColor: "{colors.white}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.surface-raised}"
+    textColor: "{colors.text-strong}"
     rounded: "{rounded.control}"
     padding: "11.5px 13.6px"
     height: "48px"
   surface:
-    backgroundColor: "{colors.white}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.surface-raised}"
+    textColor: "{colors.text-strong}"
     rounded: "{rounded.surface}"
   status:
-    backgroundColor: "{colors.forest-100}"
-    textColor: "{colors.forest-950}"
+    backgroundColor: "{colors.surface-botanical}"
+    textColor: "{colors.brand-deep}"
     rounded: "{rounded.pill}"
     padding: "3.2px 9.92px"
     height: "28px"
   selection-panel:
-    backgroundColor: "{colors.white}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.surface-raised}"
+    textColor: "{colors.text-strong}"
     rounded: "{rounded.surface}"
     padding: "17.6px"
     height: "48px"
   selection-panel-selected:
-    backgroundColor: "{colors.forest-50}"
-    textColor: "{colors.forest-950}"
+    backgroundColor: "{colors.surface-botanical-soft}"
+    textColor: "{colors.brand-deep}"
     rounded: "{rounded.surface}"
   time-slot:
-    backgroundColor: "{colors.white}"
-    textColor: "{colors.forest-950}"
+    backgroundColor: "{colors.surface-raised}"
+    textColor: "{colors.brand-deep}"
     rounded: "{rounded.control}"
     height: "48px"
   time-slot-selected:
-    backgroundColor: "{colors.forest-800}"
-    textColor: "{colors.white}"
+    backgroundColor: "{colors.brand-primary}"
+    textColor: "{colors.surface-raised}"
     rounded: "{rounded.control}"
   notice-info:
-    backgroundColor: "{colors.forest-50}"
-    textColor: "{colors.forest-950}"
+    backgroundColor: "{colors.surface-botanical-soft}"
+    textColor: "{colors.brand-deep}"
     rounded: "{rounded.control}"
     padding: "16px"
   notice-error:
-    backgroundColor: "{colors.error-bg}"
-    textColor: "{colors.error-ink}"
+    backgroundColor: "{colors.state-error-surface}"
+    textColor: "{colors.state-error}"
     rounded: "{rounded.control}"
     padding: "16px"
   notice-warm:
-    backgroundColor: "{colors.warm-bg}"
-    textColor: "{colors.warm-ink}"
+    backgroundColor: "{colors.state-warning-surface}"
+    textColor: "{colors.state-warning}"
     rounded: "{rounded.control}"
     padding: "16px"
 ---
@@ -150,7 +168,7 @@ components:
 
 Tamlois feels like an appointment ledger prepared by a thoughtful clinic: calm enough to lower anxiety, ordered enough to inspire trust, and human enough to welcome questions. Editorial serif statements explain the purpose of care while compact sans-serif controls make each next step practical and unambiguous.
 
-The visual world is natural without becoming rustic. Deep forest ink, warm paper fields, crisp white working surfaces, fine ruled dividers, and direct portraiture create a composed clinic atmosphere. Public pages breathe generously; booking and admin surfaces increase density while preserving the same hierarchy and material language.
+The visual world is natural without becoming rustic. Official forest greens carry care and trust; terracotta distinguishes commerce without displacing the clinic; peach, rose, sage, ivory, and crisp white establish a deliberate editorial rhythm. Fine ruled dividers and direct portraiture keep the atmosphere composed. Public pages breathe generously; booking and admin surfaces increase density while using a deliberately narrower subset of the same system.
 
 Depth is restrained and motion is purposeful. The system relies on tone, rules, spacing, and typography before shadow; movement is brief feedback rather than spectacle. It rejects gradients, glassmorphism, ornamental wellness clichés, excessive decoration, and nested-card clutter.
 
@@ -158,47 +176,53 @@ Depth is restrained and motion is purposeful. The system relies on tone, rules, 
 
 - Trust-first, calm, credible, and welcoming.
 - Editorial reassurance paired with operational clarity.
-- Deep forest, paper, cream, and white surfaces separated by fine rules.
+- Forest-led care, terracotta-led commerce, and semantic peach, rose, sage, ivory, and white fields.
 - Flat ledger structures with selective 12-14px rounding and pill actions.
 - Direct, consent-aware imagery centred on Black women and textured natural hair.
 - Stable editorial promises paired with manually controllable, state-changing care routes.
 
 ## Colors
 
-The palette combines botanical authority with the quiet warmth of paper; green carries identity and action, while cream and pale green establish sections without visual noise.
+The palette combines botanical authority with warm editorial fields. Forest owns brand and care, terracotta owns commerce, and ochre remains a scarce focus or highlight signal; peach, rose, sage, ivory, and white organize content by meaning rather than decoration.
 
 ### Primary
 
-- **Clinic Forest** (`forest-800`): The principal identity and action color for primary buttons, selected controls, number markers, and compact brand fields.
-- **Deep Consultation Forest** (`forest-950`): The strongest heading, announcement, selection, and inverse-surface tone.
-- **Operating Forest** (`forest-700`): Links, category labels, active rules, icons, and focus-adjacent states.
-- **Quiet Botanical** (`forest-100`, `forest-50`): Status fills, selection backgrounds, educational notices, and low-emphasis section fields.
+- **Clinic Forest** (`brand-primary`): The official care and brand color for booking, saving, selected care controls, meaningful links, progress, and important icons.
+- **Deep Consultation Forest** (`brand-deep`): Major headings, navigation text, decisive inverse sections, and the dark footer.
+- **Quiet Botanical** (`surface-botanical`, `surface-botanical-soft`): Education, reassurance, care paths, booking summaries, and selected care backgrounds.
 
 ### Secondary
 
-- **Ledger Cream** (`cream`): A warm sectional surface for services, commerce, and the footer; it prevents long pages from becoming a stack of white cards.
+- **Commerce Terracotta** (`commerce-primary`, `commerce-hover`, `commerce-pressed`): Buy actions, storefront entry, product filters, and product operations. It creates a recognisable shop path while clinic and booking actions remain green.
+- **Product Peach** (`surface-product`): Product-led feature fields, shop introductions, and promotional product panels; pair it with dark forest or charcoal text.
+- **Editorial Rose** (`surface-editorial`): Gallery, founder, client-story, and consent-aware editorial fields; keep it restrained and professional.
 
 ### Tertiary
 
-- **Consent Ochre** (`warm`): A scarce warm note for consent controls, placeholder provenance, and restrained status emphasis, not a competing call-to-action color.
-- **Clinical Danger** (`danger`): Validation and destructive meaning only.
-- **Warm Notice Field** (`warm-bg`, `warm-ink`): Policy provenance, changed-choice notices, and expiring holds.
-- **Error Notice Field** (`error-bg`, `error-ink`): Blocking validation, failed payment, unavailable slots, and expired holds.
+- **Sunlit Ochre** (`accent-ochre`): A scarce keyboard-focus ring, featured badge, small icon, underline, or editorial highlight. It is not a normal action fill or small text color.
+- **Clinical Danger** (`state-error`, `state-error-surface`): Validation and destructive meaning only.
+- **Warm Notice Field** (`state-warning`, `state-warning-surface`): Policy provenance, changed-choice notices, review states, and expiring holds.
 
 ### Neutral
 
-- **Clinic Paper** (`paper`): The default page canvas and translucent navigation base.
-- **Working White** (`white`): Interactive fields, cards, ledger panels, and inverse buttons.
-- **Soft Ink** (`ink`): Primary body and operational copy.
-- **Sage Grey** (`muted`): Supporting explanation, metadata, and secondary copy.
-- **Ruled Line** (`line`): Dividers, field strokes, card edges, and booking progress rails.
-- **Field Stroke** (`field-border`): The slightly firmer default outline used by text inputs, selects, and text areas.
+- **Warm Ivory** (`surface-page`): The default page canvas and translucent navigation base.
+- **Working White** (`surface-raised`): Forms, records, focused cards, and inverse button text.
+- **Quiet Admin Canvas** (`surface-admin`): Dense admin backgrounds behind white work surfaces.
+- **Soft Charcoal** (`text-strong`): Primary body and operational copy; avoid pure black.
+- **Sage Grey** (`text-muted`): Supporting explanation, captions, and metadata where contrast remains sufficient.
+- **Subtle Sage Border** (`border-subtle`): Non-interactive rules, dividers, card edges, and progress rails.
+- **Interactive Sage Border** (`border-interactive`): The firmer control boundary for white inputs, selects, and button-like choices; it preserves visible non-text contrast before focus.
+- **Disabled Pair** (`text-disabled`, `surface-disabled`): Explicit disabled control treatment that stays legible without relying on arbitrary opacity alone.
 
 ### Named Rules
 
 **The Forest Is Structural Rule.** Use deep green for identity, hierarchy, selection, and the next safe action; do not scatter it as decoration.
 
-**The Warm Note Rule.** Warm ochre appears only where provenance, consent, or caution needs a humane distinction from success and navigation states.
+**The Care and Commerce Rule.** Care, booking, saving, and general primary actions use forest; buying, storefront navigation, product filtering, and product operations use terracotta. A screen still has one obvious primary action.
+
+**The Warm Note Rule.** Ochre appears only for visible focus, featured status, or a small editorial highlight; never use it as ordinary body text on a light field.
+
+**The Semantic Field Rule.** Use peach for products, rose for editorial and gallery content, sage for education and reassurance, ivory for the page canvas, and white for focused work. Do not alternate fields mechanically.
 
 ## Typography
 
@@ -227,21 +251,23 @@ The system uses a centred shell capped at 1240px with 1rem gutters on each side.
 
 Desktop compositions pair unequal columns rather than defaulting to symmetrical cards: editorial copy sits beside photography, a ledger list, or a working panel. Repeated collections use two columns for service cards and three for concerns or products where room permits. White space and section-level background changes establish hierarchy before containers do.
 
-The homepage Care Loop is a signature expression of that asymmetric grammar: stable positioning copy occupies the narrower editorial column while a minimum-520px media-and-copy stage carries the changing offering. On mobile, a compact promise and active media stage share the landing viewport, followed by the offering selector and controls in one linear reading order. The Gallery applies a dense 12-column editorial grid, allowing featured records to span eight columns beside four-column records before collapsing to one column below 768px.
+The homepage Care Loop is a signature expression of that asymmetric grammar: stable positioning copy occupies the narrower editorial column while a minimum-520px media-and-copy stage carries the changing offering. Below 900px, including tablet portrait, the split stacks into one column: promise, active stage, actions, horizontal selector, then controls. The Gallery applies a dense 12-column editorial grid, allowing featured records to span eight columns beside four-column records before collapsing to one column below 900px.
 
-At 1024px, primary navigation collapses, the persistent booking summary becomes sticky beside the task, and major split layouts stack below that width. At 768px, card media and content can sit side-by-side; below that point service cards stack, the six-step rail is replaced by a compact current-step line, and the booking summary becomes a collapsible details surface above the form. At 640px, field grids and desktop booking copy collapse while 48px controls, horizontally scrollable calendar dates, and short slot labels remain usable. Dense admin surfaces may add columns at wider breakpoints but retain the same shell and controls.
+Homepage color follows a content-led rhythm: ivory Care Loop, sage care paths, peach products, white concerns, sage services, deep-forest process, rose founder story, white results, sage questions, and a deep-forest close. This sequence is intentional but not a template for mechanically alternating every future page.
+
+At 1024px, primary navigation collapses and the persistent booking summary becomes sticky beside the task. Below 900px the Care Loop stacks. At 768px, card media and content can sit side-by-side; below that point service cards stack, the six-step rail is replaced by a compact current-step line, and the booking summary becomes a collapsible details surface above the form. At 640px, field grids and desktop booking copy collapse while 48px controls, horizontally scrollable calendar dates, and short slot labels remain usable. Dense admin surfaces may add columns at wider breakpoints but retain the same shell and controls.
 
 **The One Container Rule.** Prefer one surface around a complete task or record; divide its contents with rules and spacing instead of adding cards inside cards.
 
 ## Elevation & Depth
 
-The system is flat by default. Paper, cream, pale botanical, white, and deep forest create depth through tonal layering; one-pixel ruled borders provide structural separation. Shadows are reserved for a surface that physically overlaps content, such as the appointment note over the hero image or a modal over the page, plus the Care Loop's singular editorial stage where media and copy behave as one changing object. Sticky navigation uses a lightly translucent paper fill and restrained backdrop blur only to preserve legibility during scroll.
+The system is flat by default. Ivory, sage, peach, rose, white, and deep forest create depth through semantic tonal layering; one-pixel rules provide structural separation. Subtle borders are for passive division, while the darker interactive border preserves visible control boundaries on white. Shadows are reserved for a surface that physically overlaps content, such as the appointment note over the hero image or a modal over the page, plus the Care Loop's singular editorial stage where media and copy behave as one changing object. Sticky navigation uses a lightly translucent ivory fill and restrained backdrop blur only to preserve legibility during scroll.
 
 ### Shadow Vocabulary
 
-- **Hero Note** (`0 18px 55px rgba(13,45,33,.14)`): The small appointment note floating over hero photography.
-- **Modal Lift** (`0 24px 80px rgba(13,45,33,.24)`): Dialog and bottom-sheet separation from a darkened page scrim.
-- **Care Loop Stage** (`0 24px 70px rgba(13,45,33,.14)`): Diffuse separation for the single changing media-and-copy stage; mobile reduces this to `0 18px 48px rgba(13,45,33,.12)`.
+- **Hero Note** (`0 18px 55px rgba(12,48,34,.14)`): The small appointment note floating over hero photography.
+- **Modal Lift** (`0 24px 80px rgba(12,48,34,.24)`): Dialog and bottom-sheet separation from a darkened page scrim.
+- **Care Loop Stage** (`0 24px 70px rgba(12,48,34,.14)`): Diffuse separation for the single changing media-and-copy stage; the stacked form reduces this to `0 18px 48px rgba(12,48,34,.12)`.
 
 ### Named Rules
 
@@ -262,34 +288,43 @@ Components are restrained, tactile, and explicit. Every state should communicate
 ### Buttons
 
 - **Shape:** Fully pill-shaped with a 48px minimum height and compact horizontal padding.
-- **Primary:** Clinic Forest fill with Working White text; use for booking, saving, buying, and the single preferred next action.
-- **Hover / Focus:** Hover deepens to Deep Consultation Forest; press scales to 0.97. The global focus indicator is a 3px warm ring with a 3px offset.
+- **Care Primary:** Clinic Forest fill with Working White text; use for booking, saving, selected care progression, and the preferred non-commerce action.
+- **Commerce Primary:** Commerce Terracotta fill with Working White text; use for buying, storefront entry, product filters, and product synchronization. Hover and press darken through the dedicated commerce states.
+- **Hover / Focus:** Care hover deepens to Deep Consultation Forest; press scales to 0.97. Every button uses the global three-pixel ochre focus ring with a three-pixel offset.
 - **Secondary:** Transparent with a Clinic Forest border and dark green text; hover gains a Quiet Botanical fill.
 - **Quiet:** Text-forward green action with minimal horizontal padding; use for back, cancel, and inline progression where a filled button would overstate the action.
 
 ### Chips
 
-- **Style:** Compact 28px pills use Quiet Botanical with Deep Consultation Forest text and bold 0.72rem labels.
-- **State:** Status communicates mode, availability, or record state. Placeholder badges switch to a pale warm fill and brown text so they cannot be mistaken for verified clinic content.
+- **Style:** Compact 28px pills use Quiet Botanical with Deep Consultation Forest text and bold 0.72rem labels. Featured commerce badges use an ochre fill with deep-forest text.
+- **State:** Status communicates mode, availability, or record state. Placeholder badges use an explicit warm treatment and label so they cannot be mistaken for verified clinic content.
 
 ### Cards / Containers
 
 - **Corner Style:** Gently curved content surfaces (14px).
-- **Background:** Working White for tasks and records; Quiet Botanical or Ledger Cream for grouped sections.
+- **Background:** Working White for tasks and records; sage for care and reassurance; peach for product-led groupings; rose for gallery and editorial groupings.
 - **Shadow Strategy:** Flat at rest; see the Flat Ledger Rule.
-- **Border:** One-pixel Ruled Line around working surfaces.
+- **Border:** One-pixel Subtle Sage Border around passive surfaces; interactive choices and fields use the firmer Interactive Sage Border at rest.
 - **Internal Padding:** Usually 20px on compact cards and 24-32px on major task panels.
 - **Service Card:** Image and details share one border; metadata stays small, actions sit at the end, and no inner card frames are introduced.
 
 ### Inputs / Fields
 
-- **Style:** Working White fill, a muted green-grey one-pixel stroke, 12px radius, and 48px minimum height.
-- **Focus:** Border shifts to Operating Forest with a three-pixel translucent green focus halo; the global warm focus-visible ring remains the keyboard fallback.
+- **Style:** Working White fill, the Interactive Sage Border as a visible one-pixel stroke, 12px radius, and 48px minimum height.
+- **Focus:** Border shifts to Clinic Forest while the global three-pixel ochre focus-visible ring with three-pixel offset provides the keyboard indicator.
 - **Error / Disabled:** Invalid fields set `aria-invalid`, reference a compact red-brown message immediately below the control, and repeat blocking form-level errors in a 12px notice. Disabled actions retain their form and drop to 55% opacity.
 
 ### Navigation
 
-Desktop navigation sits in a 72px sticky paper bar. Manrope labels are small and semibold; the active route uses Clinic Forest plus a two-pixel underline offset from the text. At mobile widths, the booking action becomes a circular icon button and navigation opens as a ruled vertical list with 48px rows.
+Desktop navigation sits in a 72px sticky translucent ivory bar. Manrope labels are small and semibold in Soft Charcoal; the active route shifts to Clinic Forest with a restrained terracotta underline while the dominant booking action stays Clinic Forest. At mobile widths, the booking action becomes a circular green icon button and navigation opens as a solid-ivory ruled list with 48px rows.
+
+### Footer
+
+The footer is a full Deep Consultation Forest surface with ivory or white text and low-contrast white rules. Links remain quiet at rest and use ochre only as a hover emphasis. The dark footer closes the public page rhythm; do not replace it with a pale commerce field.
+
+### Operational Surfaces
+
+Booking uses the restrained care subset: ivory canvas, white tasks, sage summaries and notices, forest selection and progression, ochre focus, and explicit error text. Peach and rose do not become booking selection colors. Admin uses a quiet neutral-sage canvas, white work surfaces, forest navigation and primary operations; only product sync, import, and other clearly commercial actions may use terracotta. Dense admin UI prioritizes scanability over the public site's full editorial color rhythm.
 
 ### Booking Progress
 
@@ -303,7 +338,7 @@ The booking catalogue exposes exactly six main services in canonical order: Scal
 
 ### Selection Panels
 
-Category, service, extras, and payment choices reuse a full-width 14px panel with at least 48px height and 17.6px padding. Resting choices are white with a Ruled Line border; hover shifts the border to Operating Forest. Selected choices add Quiet Botanical fill, an Operating Forest border, and a one-pixel inset selection ring. Use radio or checkbox semantics where the choice belongs to a form; use `aria-pressed` for button-like category and service selection.
+Category, service, extras, and payment choices reuse a full-width 14px panel with at least 48px height and 17.6px padding. Resting choices are white with an Interactive Sage Border; hover shifts the border to Clinic Forest. Selected choices add Quiet Botanical fill, a Clinic Forest border, and a one-pixel inset selection ring. Use radio or checkbox semantics where the choice belongs to a form; use `aria-pressed` for button-like category and service selection.
 
 ### Calendar & Time Slots
 
@@ -321,7 +356,7 @@ The summary is persistent but adaptive. At 1024px and above it is a sticky pale-
 
 The Care Loop is the homepage's signature editorial navigator. Its promise and introductory copy remain stable while media, offering label, headline, description, and actions change together. The canonical route order is **Salon, Trichology, Products, Gallery**; Salon is the default and the order does not change with imagery, campaign emphasis, or content availability. The Gallery route uses the bundled woven natural-hair image at `/gallery-image.jpg`.
 
-Desktop uses an asymmetric split with a vertical, ruled, numbered rail (`01`–`04`) beside one 14px stage. The active row receives a pale botanical wash, dark text, and a two-pixel progress line; a visible position counter and Pause/Play control sit below. Arrow keys move through the roving selector. The stage changes tone by offering but preserves the same media-over-copy structure and action hierarchy.
+Desktop uses an asymmetric split with a vertical, ruled, numbered rail (`01`–`04`) beside one 14px stage. The active row receives a pale botanical wash, dark text, and a two-pixel progress line; a visible position counter and Pause/Play control sit below. Arrow keys move through the roving selector. Care stages remain forest or sage-led, Products moves to peach with a terracotta commerce action, and Gallery moves to rose; the media-over-copy structure and action hierarchy remain stable.
 
 Autoplay advances every 6.5 seconds on desktop and mobile. It pauses on hover where available, keyboard focus, hidden browser tabs, explicit pause, and after manual selection; Play or the next arrow restarts it. Mobile places the compact active stage within the landing viewport before a horizontally scrolling numbered selector and also permits deliberate swipe navigation. Focus, pause, and manual selection are behavioral states, not decorative animation triggers.
 
@@ -333,7 +368,7 @@ Image entry uses a 620ms `clip-path` reveal with slight blur and scale; copy ent
 
 ### Two-Path Decision
 
-The clinical-versus-salon choice is a flat, tone-led decision section rather than a pair of floating cards. It uses one cream field, shared block rules, a single vertical divider on desktop, and equal editorial weight. Each path contains a small uppercase label, serif need statement, short explanation, one filled booking action, and one quiet exploration link. On mobile the divider becomes a horizontal rule and the paths remain in clinical-then-salon order.
+The clinical-versus-salon choice is a flat, tone-led decision section rather than a pair of floating cards. It uses one botanical-sage field, shared block rules, a single vertical divider on desktop, and equal editorial weight. Each path contains a small uppercase label, serif need statement, short explanation, one forest booking action, and one quiet exploration link. On mobile the divider becomes a horizontal rule and the paths remain in clinical-then-salon order.
 
 ### Gallery
 
@@ -360,7 +395,11 @@ Ordinary state transitions use the project ease-out curve (`cubic-bezier(.23, 1,
 - **Do** begin with the concern a client recognises and pair reassurance with a concrete next action.
 - **Do** use large serif headings against generous paper space, then switch to Manrope for every operational detail.
 - **Do** group related steps inside one ruled surface and use tonal section fields to organise long pages.
+- **Do** keep care, booking, saving, and general primary actions forest-led while reserving terracotta for commerce actions and product operations.
+- **Do** assign peach to products, rose to editorial or gallery content, sage to education or reassurance, ivory to the canvas, and white to focused work.
+- **Do** preserve the homepage's content-led rhythm of ivory, sage, peach, white, sage, deep forest, rose, white, sage, and a deep-forest close without turning it into mechanical striping.
 - **Do** preserve 48px control heights, visible focus, clear selected states, and reduced-motion behavior.
+- **Do** use the interactive sage boundary on white controls and reserve the lighter sage line for passive division.
 - **Do** show policy version, slot-hold countdown, and confirmation state at the point where each affects the booking decision.
 - **Do** keep the same booking summary available as a sticky desktop aside and a collapsible mobile surface.
 - **Do** use direct, consent-aware imagery that primarily represents Black women and textured natural hair.
@@ -375,6 +414,8 @@ Ordinary state transitions use the project ease-out curve (`cubic-bezier(.23, 1,
 - **Don't** nest cards inside cards or place every paragraph in a rounded container.
 - **Don't** use shadows on resting content; reserve them for true overlap such as notes, dialogs, and sheets.
 - **Don't** use the serif for controls, admin density, metadata, or body-length instructions.
-- **Don't** use green and warm ochre as competing accents or add a new accent without a semantic role.
+- **Don't** use terracotta for clinic booking, general care progression, destructive states, or unavailable states.
+- **Don't** use peach or rose as booking selection colors or carry the full public editorial palette into dense admin work.
+- **Don't** use ochre for normal body text or as a competing primary action color.
 - **Don't** promise diagnosis, regrowth, guaranteed outcomes, or verification through visual styling.
 - **Don't** present licensed stock, inspiration, or gallery imagery as a Tamlois client result.

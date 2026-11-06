@@ -1,111 +1,74 @@
 import { expect, test } from "@playwright/test";
 
 const storefrontUrl = "https://paystack.shop/tamls";
-const featuredProductUrl =
-  "https://paystack.shop/tamls?product=botanical-scalp-oil-hkxrdj";
-const moisturisingHairMistUrl =
-  "https://paystack.shop/tamls?product=moisturising-hair-mist-qfygyk";
-const scalpCleansingTreatmentUrl =
-  "https://paystack.shop/tamls?product=scalp-cleansing-treatment-mhxror";
+const importedUrl = "https://paystack.shop/tamls?product=e2e-product";
 
-test("shop is a branded, catalogue-free transition to Paystack Storefront", async ({
-  page,
-}) => {
-  await page.goto("/#/shop");
-  await expect(
-    page.getByRole("heading", {
-      name: "One official place to shop",
-    }),
-  ).toBeVisible();
-  const action = page.getByRole("link", {
-    name: /Visit the Tamlois Storefront.*new tab/i,
-  });
-  await expect(action).toHaveAttribute("href", storefrontUrl);
-  await expect(action).toHaveAttribute("target", "_blank");
-  await expect(action).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(page.getByText(/demo clarifying|demo hydration|Botanical scalp oil/i)).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Buy|View product/i })).toHaveCount(0);
-});
-
-test("homepage and navigation share the intentional Storefront journey", async ({
-  page,
-}) => {
+test.beforeEach(async ({ page }) => {
   await page.goto("/#/");
-  await expect(
-    page.getByRole("heading", { name: "Care continues at home" }),
-  ).toBeVisible();
-  await expect(page.getByText("Scalp cleansing treatment")).toBeVisible();
-  await expect(page.getByText("Moisturising hair mist")).toBeVisible();
-  await expect(page.getByText("Botanical scalp oil")).toBeVisible();
-  const featuredProducts = page.getByRole("link", {
-    name: /Shop .* on the official Paystack Storefront.*new tab/i,
-  });
-  await expect(featuredProducts).toHaveCount(3);
-  for (const product of await featuredProducts.all()) {
-    await expect(product).toHaveAttribute("target", "_blank");
-    await expect(product).toHaveAttribute("rel", "noopener noreferrer");
-  }
-  await expect(
-    page.getByRole("link", {
-      name: /Shop Moisturising hair mist on the official Paystack Storefront.*new tab/i,
-    }),
-  ).toHaveAttribute("href", moisturisingHairMistUrl);
-  await expect(
-    page.getByRole("link", {
-      name: /Shop Scalp cleansing treatment on the official Paystack Storefront.*new tab/i,
-    }),
-  ).toHaveAttribute("href", scalpCleansingTreatmentUrl);
-  await expect(
-    page.getByRole("link", {
-      name: /Shop Botanical scalp oil on the official Paystack Storefront.*new tab/i,
-    }),
-  ).toHaveAttribute("href", featuredProductUrl);
-  await page.getByRole("link", { name: "Shop", exact: true }).first().click();
-  await expect(page).toHaveURL(/#\/shop$/);
+  await page.evaluate(() => localStorage.removeItem("tamlois-products-demo-v1"));
 });
 
-test("keyboard activation requests the exact external Storefront safely", async ({
-  context,
-  page,
-}) => {
-  await context.route(storefrontUrl, (route) =>
-    route.fulfill({ status: 200, contentType: "text/html", body: "<title>Tamlois Storefront</title>" }),
-  );
+test("public shop renders products, filters them and uses safe Paystack checkout", async ({ page }) => {
   await page.goto("/#/shop");
-  const action = page.getByRole("link", {
-    name: /Visit the Tamlois Storefront.*new tab/i,
-  });
-  await action.focus();
-  await expect(action).toBeFocused();
-  const popupPromise = page.waitForEvent("popup");
-  await action.press("Enter");
-  const popup = await popupPromise;
-  await expect(popup).toHaveURL(storefrontUrl);
+  await expect(page.getByRole("heading", { name: "Care that continues at home" })).toBeVisible();
+  await expect(page.getByText("Botanical scalp oil")).toBeVisible();
+  await page.getByPlaceholder("Search products").fill("moisturising");
+  await expect(page.getByText("Moisturising hair mist")).toBeVisible();
+  await expect(page.getByText("Botanical scalp oil")).toHaveCount(0);
+  const shopAll = page.getByRole("link", { name: /Shop all on Paystack.*new tab/i });
+  await expect(shopAll).toHaveAttribute("href", storefrontUrl);
+  await expect(shopAll).toHaveAttribute("rel", "noopener noreferrer");
+  const buy = page.getByRole("link", { name: /Buy Moisturising hair mist on Paystack/i });
+  await expect(buy).toHaveAttribute("href", /paystack[.]shop\/tamls[?]product=moisturising-hair-mist/);
 });
 
-test("shop and homepage promotions do not overflow on mobile", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  for (const route of ["/#/", "/#/shop"]) {
-    await page.goto(route);
-    const widths = await page.evaluate(() => ({
-      client: document.documentElement.clientWidth,
-      scroll: document.documentElement.scrollWidth,
-    }));
-    expect(widths.scroll).toBeLessThanOrEqual(widths.client + 1);
-  }
-});
-
-test("admin settings direct retail management to Paystack without product CRUD", async ({
-  page,
-}) => {
+test("owner imports, previews, publishes and preserves an override through sync", async ({ page }) => {
   await page.goto("/#/admin/login");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("link", { name: "Settings" }).click();
-  await expect(page.getByRole("heading", { name: "Paystack Storefront" })).toBeVisible();
-  await expect(page.getByText(/managed in Paystack Storefront/)).toBeVisible();
-  await expect(page.getByRole("link", { name: /Open Paystack Storefront.*new tab/i })).toHaveAttribute(
-    "href",
-    storefrontUrl,
-  );
-  await expect(page.getByRole("button", { name: /Add product|Upload product image|Manage stock/i })).toHaveCount(0);
+  await page.getByRole("link", { name: "Products" }).click();
+  await expect(page.getByText(/Demo data/)).toBeVisible();
+  await page.getByRole("button", { name: "Import product" }).click();
+  await page.getByLabel("Paystack product URL (required)").fill(importedUrl);
+  await page.getByRole("button", { name: "Import and preview" }).click();
+  await expect(page.getByRole("heading", { name: "Product display" })).toBeVisible();
+  await page.getByLabel("Homepage title override").fill("E2E scalp treatment");
+  await page.getByLabel("Visible on website").check();
+  await page.getByLabel("Featured on homepage").check();
+  await page.getByRole("button", { name: "Save display settings" }).click();
+  await expect(page.getByRole("row").filter({ hasText: "E2E scalp treatment" })).toBeVisible();
+  await page.getByRole("button", { name: "Sync Storefront" }).click();
+  await expect(page.getByText("Storefront synchronization completed.")).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "E2E scalp treatment" })).toBeVisible();
+  await page.goto("/#/");
+  await expect(page.getByText("E2E scalp treatment")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Buy E2E scalp treatment on Paystack/i })).toHaveAttribute("href", importedUrl);
+});
+
+test("invalid product links are rejected and hidden products leave public pages", async ({ page }) => {
+  await page.goto("/#/admin/login");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Products" }).click();
+  await page.getByRole("button", { name: "Import product" }).click();
+  await page.getByLabel("Paystack product URL (required)").fill("https://example.com/product");
+  await page.getByRole("button", { name: "Import and preview" }).click();
+  await expect(page.getByRole("dialog", { name: "Import Paystack product" }).getByRole("alert")).toContainText("paystack.shop/tamls");
+  await page.getByRole("button", { name: "Close import dialog" }).click();
+  await page.getByRole("button", { name: "Hide Botanical scalp oil" }).first().click();
+  await page.goto("/#/shop");
+  await expect(page.getByText("Botanical scalp oil")).toHaveCount(0);
+});
+
+test("product administration and public catalogue do not overflow on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/shop");
+  await expect(page.getByRole("heading", { name: "Shop products" })).toBeVisible();
+  let widths = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
+  expect(widths.scroll).toBeLessThanOrEqual(widths.client + 1);
+  await page.goto("/#/admin/login");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Open admin navigation" }).click();
+  await page.getByRole("link", { name: "Products" }).click();
+  await expect(page.getByRole("button", { name: "Import product" })).toBeVisible();
+  widths = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
+  expect(widths.scroll).toBeLessThanOrEqual(widths.client + 1);
 });

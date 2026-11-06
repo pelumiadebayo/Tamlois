@@ -131,6 +131,68 @@ export interface Product {
   variantId?: string;
 }
 
+export type ProductSyncStatus =
+  | "synced"
+  | "manual-review"
+  | "sync-error"
+  | "missing-from-paystack";
+
+/** Safe product data cached for Tamlois pages. Paystack source fields are read-only in the browser. */
+export interface TamloisProduct {
+  id: string;
+  paystackProductId: string;
+  paystackProductCode: string;
+  paystackStorefrontSlug: string;
+  paystackProductUrl: string;
+  sourceName: string;
+  sourceDescription: string;
+  /** Naira, not kobo. */
+  sourcePrice: number;
+  currency: "NGN";
+  sourceImageUrl?: string;
+  sourceAvailable: boolean;
+  sourceQuantity?: number;
+  displayTitle?: string;
+  displaySummary?: string;
+  displayImageUrl?: string;
+  imageAlt: string;
+  category?: string;
+  featured: boolean;
+  visible: boolean;
+  displayOrder: number;
+  syncStatus: ProductSyncStatus;
+  /** Owner-only runtime detail merged from productSyncDetails; never stored in the public cache. */
+  syncError?: string;
+  lastSyncedAt?: Timestamp | string | null;
+  createdAt: Timestamp | string;
+  updatedAt: Timestamp | string;
+}
+
+export interface ProductPresentationInput {
+  displayTitle?: string;
+  displaySummary?: string;
+  displayImageUrl?: string;
+  imageAlt: string;
+  category?: string;
+  featured: boolean;
+  visible: boolean;
+  displayOrder: number;
+}
+
+export interface ProductSyncResult {
+  created: number;
+  updated: number;
+  unchanged: number;
+  flagged: number;
+  completedAt: string;
+}
+
+export interface ProductSyncState extends ProductSyncResult {
+  status: "idle" | "running" | "success" | "error";
+  lastSuccessfulSyncAt?: Timestamp | string | null;
+  lastError?: string;
+}
+
 export type HomeOfferingId = "trichology" | "salon" | "products" | "gallery";
 export interface HomeOffering {
   id: HomeOfferingId;

@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Data model: services and bookingPolicies are public records; bookings
+    // Data model: services, bookingPolicies and visible productsCache records are public; bookings
     // contain private customer data and immutable accepted-policy snapshots;
     // bookingLocks contain only non-sensitive deterministic capacity units.
     // Full-day blockedPeriods may also repeat one bounded, customer-facing
@@ -100,6 +100,53 @@ service cloud.firestore {
         (!('intakeSchemaId' in data) || (data.intakeSchemaId is string && data.intakeSchemaId.size() <= 128)) &&
         (!('photoUploadEnabled' in data) || data.photoUploadEnabled is bool) &&
         (!('featured' in data) || data.featured is bool);
+    }
+
+    function validProduct(data, id) {
+      return data.keys().hasAll([
+          'id', 'paystackProductId', 'paystackProductCode', 'paystackStorefrontSlug',
+          'paystackProductUrl', 'sourceName', 'sourceDescription', 'sourcePrice',
+          'currency', 'sourceAvailable', 'displayTitle', 'displaySummary',
+          'displayImageUrl', 'imageAlt', 'category', 'featured', 'visible',
+          'displayOrder', 'syncStatus', 'createdAt', 'updatedAt'
+        ]) && data.keys().hasOnly([
+          'id', 'paystackProductId', 'paystackProductCode', 'paystackStorefrontSlug',
+          'paystackProductUrl', 'sourceName', 'sourceDescription', 'sourcePrice',
+          'currency', 'sourceImageUrl', 'sourceAvailable', 'sourceQuantity',
+          'displayTitle', 'displaySummary', 'displayImageUrl', 'imageAlt', 'category',
+          'featured', 'visible', 'displayOrder', 'syncStatus', 'lastSyncedAt',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.id == id && data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+        data.paystackProductId is string && data.paystackProductId.size() > 0 && data.paystackProductId.size() <= 128 &&
+        data.paystackProductCode is string && data.paystackProductCode.size() > 0 && data.paystackProductCode.size() <= 128 &&
+        data.paystackStorefrontSlug == 'tamls' &&
+        data.paystackProductUrl is string && data.paystackProductUrl.matches('^https://paystack[.]shop/tamls.*') && data.paystackProductUrl.size() <= 500 &&
+        data.sourceName is string && data.sourceName.size() > 0 && data.sourceName.size() <= 300 &&
+        data.sourceDescription is string && data.sourceDescription.size() <= 5000 &&
+        data.sourcePrice is number && data.sourcePrice >= 0 && data.sourcePrice <= 50000000 && data.currency == 'NGN' &&
+        data.sourceAvailable is bool &&
+        (!('sourceQuantity' in data) || (data.sourceQuantity is number && data.sourceQuantity >= 0)) &&
+        (!('sourceImageUrl' in data) || (data.sourceImageUrl is string && data.sourceImageUrl.matches('^https://.*') && data.sourceImageUrl.size() <= 2048)) &&
+        data.displayTitle is string && data.displayTitle.size() <= 300 &&
+        data.displaySummary is string && data.displaySummary.size() <= 1000 &&
+        data.displayImageUrl is string && data.displayImageUrl.size() <= 2048 &&
+        (data.displayImageUrl == '' || data.displayImageUrl.matches('^https://.*')) &&
+        data.imageAlt is string && data.imageAlt.size() > 0 && data.imageAlt.size() <= 300 &&
+        data.category is string && data.category.size() <= 100 &&
+        data.featured is bool && data.visible is bool &&
+        data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 10000 &&
+        data.syncStatus in ['synced', 'manual-review', 'sync-error', 'missing-from-paystack'] &&
+        data.createdAt is timestamp && data.updatedAt is timestamp &&
+        (!('lastSyncedAt' in data) || data.lastSyncedAt is timestamp);
+    }
+
+    function validProductPresentationUpdate(data, id) {
+      return validProduct(data, id) && validUpdateTimestamps(data) &&
+        data.diff(resource.data).affectedKeys().hasOnly([
+          'displayTitle', 'displaySummary', 'displayImageUrl', 'imageAlt',
+          'category', 'featured', 'visible', 'displayOrder', 'updatedAt'
+        ]);
     }
 
     function validCustomer(data) {
@@ -340,6 +387,16 @@ service cloud.firestore {
         validPaymentSettings(data.payment) &&
         data.updatedAt is timestamp && data.updatedAt == request.time;
     }
+
+    match /productsCache/{id} {
+      allow get, list: if isAdmin() || resource.data.visible == true;
+      // Trusted Admin SDK Functions create source records. Owner clients may
+      // update presentation fields only; Paystack price and stock stay immutable.
+      allow create, delete: if false;
+      allow update: if isAdmin() && validProductPresentationUpdate(request.resource.data, id);
+    }
+    match /commerceSyncState/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /productSyncDetails/{id} { allow read: if isAdmin(); allow write: if false; }
 
     match /services/{id} {
       allow get, list: if isAdmin() || (resource.data.active == true && resource.data.archived == false);

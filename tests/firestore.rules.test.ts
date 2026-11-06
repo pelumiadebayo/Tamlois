@@ -568,6 +568,53 @@ describe("anonymous booking ownership and locks", () => {
   });
 });
 
+describe("Paystack product cache", () => {
+  beforeEach(async () => {
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+      const firestore = context.firestore();
+      await setDoc(doc(firestore, "productsCache", "paystack-101"), productRecord());
+      await setDoc(doc(firestore, "productsCache", "paystack-102"), productRecord({ id: "paystack-102", paystackProductId: "102", paystackProductCode: "PRD_102", visible: false }));
+      await setDoc(doc(firestore, "commerceSyncState", "paystack"), { status: "success", created: 1, updated: 0, unchanged: 0, flagged: 0 });
+    });
+  });
+
+  it("lets signed-out visitors read only visible cached products", async () => {
+    const firestore = testEnvironment.unauthenticatedContext().firestore();
+    await assertSucceeds(getDoc(doc(firestore, "productsCache", "paystack-101")));
+    await assertFails(getDoc(doc(firestore, "productsCache", "paystack-102")));
+    const visible = await assertSucceeds(getDocs(query(collection(firestore, "productsCache"), where("visible", "==", true))));
+    expect(visible.size).toBe(1);
+  });
+
+  it("lets the owner read protected sync state and edit presentation only", async () => {
+    const firestore = testEnvironment.authenticatedContext(ownerUid).firestore();
+    await assertSucceeds(getDoc(doc(firestore, "commerceSyncState", "paystack")));
+    await assertSucceeds(updateDoc(doc(firestore, "productsCache", "paystack-101"), { featured: true, displayTitle: "Owner title", updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(firestore, "productsCache", "paystack-101"), { sourcePrice: 1, updatedAt: serverTimestamp() }));
+  });
+
+  it("denies an ordinary authenticated user protected reads and all writes", async () => {
+    const firestore = testEnvironment.authenticatedContext("ordinary-user").firestore();
+    await assertFails(getDoc(doc(firestore, "commerceSyncState", "paystack")));
+    await assertFails(getDoc(doc(firestore, "productsCache", "paystack-102")));
+    await assertFails(updateDoc(doc(firestore, "productsCache", "paystack-101"), { featured: true, updatedAt: serverTimestamp() }));
+    await assertFails(setDoc(doc(firestore, "productsCache", "new"), productRecord({ id: "new" })));
+  });
+});
+
+function productRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "paystack-101", paystackProductId: "101", paystackProductCode: "PRD_101",
+    paystackStorefrontSlug: "tamls", paystackProductUrl: "https://paystack.shop/tamls?product=botanical-oil",
+    sourceName: "Botanical oil", sourceDescription: "A scalp-care oil.", sourcePrice: 10000,
+    currency: "NGN", sourceAvailable: true, displayTitle: "", displaySummary: "", displayImageUrl: "",
+    imageAlt: "Botanical oil", category: "Scalp care", featured: false, visible: true,
+    displayOrder: 1, syncStatus: "synced", lastSyncedAt: new Date("2026-09-01T09:00:00Z"),
+    createdAt: new Date("2026-09-01T09:00:00Z"), updatedAt: new Date("2026-09-01T09:00:00Z"),
+    ...overrides,
+  };
+}
+
 function createSalonBooking(
   firestore: Firestore,
   uid: string,

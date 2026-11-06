@@ -1,71 +1,61 @@
-# Paystack Storefront setup
+# Paystack Storefront product integration
 
-The official Tamlois retail shop is:
+The official Tamlois retail shop is `https://paystack.shop/tamls`. Paystack is the source of truth for product identity, primary name/description, price, currency, availability and checkout. Firestore is a safe display cache; it is not a second stock or pricing system.
 
-```text
-https://paystack.shop/tamls
-```
+Reference: [Paystack Storefront API](https://paystack.com/docs/api/storefront/) and [Paystack Product API](https://paystack.com/docs/api/product/).
 
-The Tamlois website contains a branded `/shop` landing page and three static homepage promotional cards. The Moisturising Hair Mist card links directly to:
+## Configure and deploy
 
-```text
-https://paystack.shop/tamls?product=moisturising-hair-mist-qfygyk
-```
+The website needs only browser-safe values:
 
-The Scalp Cleansing Treatment card links directly to:
-
-```text
-https://paystack.shop/tamls?product=scalp-cleansing-treatment-mhxror
-```
-
-The Botanical Scalp Oil card links directly to:
-
-```text
-https://paystack.shop/tamls?product=botanical-scalp-oil-hkxrdj
-```
-
-The website does not load, scrape or synchronize a Storefront catalogue at runtime. The homepage card copy is developer-maintained promotional content; Paystack remains authoritative for the product actually offered, its current price and availability.
-
-## Single source of truth
-
-Manage all retail information in Paystack Storefront:
-
-- create, replace and remove products;
-- upload product images;
-- edit names, descriptions and prices;
-- manage variants, availability, stock and discounts;
-- configure delivery options;
-- review, fulfil and reconcile retail orders.
-
-There is no Tamlois product editor, product-image upload workflow, runtime product cache, retail cart or retail-order dashboard. Changes to the three homepage promotional cards are repository changes; live retail changes remain Paystack Storefront changes.
-
-## Website configuration
-
-`src/config/commerce.ts` owns the default Storefront URL and accepts only HTTPS links on `paystack.shop`. The optional browser-safe override is:
-
-```env
+```dotenv
+VITE_COMMERCE_PROVIDER=paystack
 VITE_PAYSTACK_STOREFRONT_URL=https://paystack.shop/tamls
 ```
 
-This URL is public and is not a credential. If the override is absent, the application safely uses the supplied Tamlois URL. If a supplied override is blank, malformed, non-HTTPS or uses another host, the external button is replaced with a temporary-unavailability message and clinic contact action.
+Store the secret in Firebase Secret Manager, never `.env`, a `VITE_*` variable, Firestore or GitHub Pages output:
 
-## Separate Paystack integrations
+```bash
+firebase functions:secrets:set PAYSTACK_SECRET_KEY
+firebase deploy --only functions:importPaystackProduct,functions:syncPaystackStorefrontProducts,functions:refreshPaystackProduct,functions:refreshAllPaystackProducts
+firebase deploy --only firestore:rules,firestore:indexes
+```
 
-Retail Storefront checkout and appointment payments are separate:
+`PAYSTACK_STOREFRONT_SLUG` defaults to `tamls`. If it must be changed, set the Firebase string parameter when prompted during Functions deployment. Use a test secret in a test Firebase project first. Rotate a key by running the secret command again, deploy the four product Functions, verify a sync, then revoke the old key in Paystack.
 
-- retail products and orders use Paystack Storefront;
-- appointments use Firebase Functions, Paystack Transactions, signed webhooks and server-side verification;
-- updating the Storefront URL does not update booking callback URLs, webhook URLs, Secret Manager values, deposits or payment modes;
-- no Paystack secret is needed in the browser for Storefront links.
+Firebase Functions require a billing-enabled project even when usage remains within an allowance. Configure budget alerts before deployment.
 
-## Launch checklist
+## First synchronization
 
-1. Open `https://paystack.shop/tamls` and confirm it resolves to the Tamlois Storefront.
-2. Review all Storefront product copy and avoid treatment, cure or guaranteed-outcome claims.
-3. Confirm current images, prices, variants, stock, discounts and delivery settings in Paystack.
-4. Confirm retail order notifications and fulfilment ownership.
-5. Test each homepage product card plus the `/shop`, footer and admin Storefront links on mobile and desktop.
-6. Confirm the external link opens in a new tab and the original Tamlois page remains usable.
-7. Review Paystack’s standard transaction fees for successful Storefront sales.
+1. Sign in with the configured owner UID.
+2. Open **Admin → Products**.
+3. Select **Sync Storefront**.
+4. Review newly cached products. New sync records are hidden and not featured by default.
+5. Open **Edit**, set category, alt text and any presentation overrides, then enable **Visible on website** and optionally **Featured on homepage**.
 
-No Shopify subscription, collection ID, Storefront access token or product synchronization is required.
+The sync paginates the official Storefront endpoint, resolves full Product records, updates Paystack-controlled fields, preserves Tamlois overrides and marks missing items `missing-from-paystack`. It never automatically deletes cached products. An expiring Firestore lock prevents overlapping full syncs. A failed sync leaves last-known-good public records intact.
+
+To import one item, choose **Import product** and paste an HTTPS URL shaped like `https://paystack.shop/tamls?product=product-slug`. Links from other hosts or Storefronts are rejected. The Function confirms the item is attached to the configured Storefront and uses its deterministic Paystack ID as duplicate protection. Imported items remain hidden until reviewed.
+
+## Field ownership
+
+Edit in Paystack: primary name and description, price, currency, active/stock state, product details and checkout settings. Use **Edit in Paystack**, then refresh that product or run a full sync.
+
+Edit in Tamlois Admin: visible, featured, display order, website category, display-title override, short-summary override, display-image URL and alt text. Resetting overrides returns title, description and image selection to Paystack-derived values.
+
+Public pages read only `productsCache` documents where `visible == true`. Homepage additionally selects `featured == true`; `/shop` supports search, category and featured filters. Checkout always opens the cached Paystack product URL in a new tab. There is no local retail cart or order-management system.
+
+## Image behavior
+
+Cards use: Tamlois image override → safe HTTPS media URL returned by Paystack → `/media/product-fallback.svg`. The current official Product API documentation does not guarantee a product-image field. The normalizer accepts common safe media fields when the actual account response supplies them, but the feature must not be represented as verified until the owner runs a real sync. If admin reports that no Paystack media was returned, add an optional HTTPS display-image URL.
+
+## Troubleshooting
+
+- **Unauthorized:** confirm the signed-in Firebase UID matches `OWNER_UID` in `functions/src/domain.ts`, `ownerUid()` in `firestore.rules`, and `VITE_FIREBASE_ADMIN_UID` for frontend feedback.
+- **Storefront not found:** confirm the secret belongs to the Paystack business that owns `tamls` and the Storefront is active.
+- **Product link cannot be resolved:** confirm it belongs to `tamls` and remains attached to that Storefront. HTML scraping is intentionally not used.
+- **Sync already running:** wait up to five minutes for the lock to expire, then retry.
+- **Old data remains after an API error:** expected last-known-good behavior; admin displays the last error and successful-sync time.
+- **Disable safely:** set `VITE_COMMERCE_PROVIDER=disabled`, rebuild the frontend and leave cached records untouched. Re-enable and sync when ready.
+
+An optional scheduled sync can later call the same service from a scheduled Function, but none is enabled because scheduling can introduce paid infrastructure.
