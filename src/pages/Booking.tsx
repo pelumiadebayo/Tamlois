@@ -155,9 +155,6 @@ function PolicyGate({
     <section className="booking-policy-stage section-space">
       <div className="container-shell grid gap-9 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div>
-          <span className="status">
-            Current booking policies · {policies.length}
-          </span>
           <h1 className="page-title mt-5">Before we reserve clinic time</h1>
           <p className="lede mt-4">
             Please review the current appointment policies. You must accept

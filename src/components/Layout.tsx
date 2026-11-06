@@ -96,7 +96,7 @@ export function Layout() {
             </Link>
             <Link
               to="/booking"
-              className="mobile-booking btn btn-primary px-3"
+              className="mobile-booking btn btn-commerce px-3"
               aria-label="Book an appointment"
             >
               <CalendarDays size={19} />

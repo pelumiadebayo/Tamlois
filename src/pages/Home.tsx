@@ -184,9 +184,6 @@ export default function Home() {
                 >
                   Book trichology care
                 </Link>
-                <Link to="/services?category=trichology">
-                  Explore trichology services <ArrowRight size={16} />
-                </Link>
               </div>
             </article>
             <article>
@@ -199,9 +196,6 @@ export default function Home() {
               <div>
                 <Link to="/booking?category=salon" className="btn btn-primary">
                   Book salon care
-                </Link>
-                <Link to="/services?category=salon">
-                  Explore salon services <ArrowRight size={16} />
                 </Link>
               </div>
             </article>
@@ -301,7 +295,7 @@ export default function Home() {
               Tamlois Trichology Clinic, passionate about healthy hair and scalp
               care.
             </p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <div className="mt-8 grid grid-cols-3 gap-2 sm:gap-4">
               {[
                 [Microscope, "Careful assessment"],
                 [ClipboardCheck, "Clear next steps"],
@@ -311,10 +305,12 @@ export default function Home() {
                 return (
                   <div
                     key={label as string}
-                    className="border-t border-[var(--line)] pt-4"
+                    className="min-w-0 border-t border-[var(--line)] pt-4"
                   >
                     <C size={22} className="text-[var(--forest-700)]" />
-                    <p className="mt-2 text-sm font-bold">{label as string}</p>
+                    <p className="mt-2 text-[0.65rem] font-bold leading-4 sm:text-sm">
+                      {label as string}
+                    </p>
                   </div>
                 );
               })}
