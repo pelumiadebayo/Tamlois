@@ -158,8 +158,8 @@ function PolicyGate({
           <span className="status">
             Current booking policies · {policies.length}
           </span>
-          <h1 className="page-title mt-6">Before we reserve clinic time</h1>
-          <p className="lede mt-5">
+          <h1 className="page-title mt-5">Before we reserve clinic time</h1>
+          <p className="lede mt-4">
             Please review the current appointment policies. You must accept
             every policy shown here before continuing to service selection.
           </p>
@@ -185,7 +185,7 @@ function PolicyGate({
         </div>
         <aside className="h-fit rounded-[14px] bg-[var(--forest-950)] p-6 text-white lg:sticky lg:top-24">
           <ShieldCheck size={28} />
-          <h2 className="mt-5 font-display text-3xl">Your acknowledgement</h2>
+          <h2 className="subsection-title on-dark-title mt-5">Your acknowledgement</h2>
           <p className="mt-3 text-sm leading-6 text-[#dce9df]">
             Consent records the policy version, time and this anonymous booking
             session. It does not create an account.
@@ -540,12 +540,12 @@ function ExtrasStep({
 }) {
   return (
     <section
-      className="mt-10 border-t border-[var(--line)] pt-8"
+      className="mt-8 border-t border-[var(--line)] pt-7"
       aria-labelledby="optional-extras-title"
     >
       <h2
         id="optional-extras-title"
-        className="font-display text-3xl text-[var(--forest-950)]"
+        className="subsection-title"
       >
         Optional extras
       </h2>
@@ -1067,7 +1067,7 @@ function SalonScheduleStep({
           <div className="flex items-start justify-between gap-5">
             <div>
               <span className="status">Salon availability</span>
-              <h3 id="salon-session-title" className="mt-3 font-display text-3xl text-[var(--forest-950)]">
+              <h3 id="salon-session-title" className="subsection-title mt-3">
                 Choose a session
               </h3>
               {date && (
@@ -2324,8 +2324,8 @@ export default function BookingPage() {
       <section className="booking-shell page-hero">
         <div className="container-shell">
           {/* <span className="status">Guest booking · no account needed</span> */}
-          <h1 className="page-title mt-6">Reserve time for your care</h1>
-          <p className="lede mt-5">
+          <h1 className="page-title mt-5">Reserve time for your care</h1>
+          <p className="lede mt-4">
             Choose a category, service and extras, then select live
             availability. No customer account is required.
           </p>
@@ -2601,7 +2601,7 @@ export function BookingConfirmationPage() {
         <section className="section-space">
           <div className="container-shell max-w-3xl">
             <div className="surface p-8 text-center">
-              <h1 className="font-display text-4xl">
+              <h1 className="page-title mx-auto">
                 No booking summary found
               </h1>
               <p className="mt-4 text-[var(--muted)]">
@@ -2629,7 +2629,7 @@ export function BookingConfirmationPage() {
               <span className="grid size-12 place-items-center rounded-full bg-white text-[var(--forest-950)]">
                 <Check />
               </span>
-              <h1 className="mt-7 font-display text-[clamp(2.6rem,6vw,4.7rem)] leading-none">
+              <h1 className="page-title on-dark-title mt-6">
                 {confirmed
                   ? "Booking confirmed"
                   : "Booking request received"}
@@ -2670,7 +2670,7 @@ export function BookingConfirmationPage() {
                 ))}
               </dl>
               <section className="mt-8 rounded-[14px] bg-[var(--forest-50)] p-5">
-                <h2 className="font-display text-3xl text-[var(--forest-950)]">
+                <h2 className="subsection-title">
                   Prepare for your appointment
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">

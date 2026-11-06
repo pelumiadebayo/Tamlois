@@ -86,7 +86,7 @@ export default function App() {
     return (
       <main className="grid min-h-[100dvh] place-items-center bg-[var(--forest-50)] p-5">
         <section className="surface max-w-xl p-8" role="alert">
-          <h1 className="font-display text-4xl text-[var(--forest-950)]">
+          <h1 className="page-title">
             Firebase configuration required
           </h1>
           <p className="mt-4 leading-7 text-[var(--muted)]">

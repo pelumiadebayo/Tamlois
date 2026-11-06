@@ -63,7 +63,7 @@ export function Layout() {
 
   return (
     <div className="min-h-[100dvh]">
-      <header className="site-header sticky top-0 z-40 border-b border-[var(--line)] backdrop-blur-md">
+      <header className="site-header sticky top-0 z-40 border-b border-[var(--color-commerce-primary)] backdrop-blur-md">
         <div className="container-shell flex h-[72px] items-center justify-between gap-5">
           <Brand />
           <nav
@@ -144,7 +144,7 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="site-footer border-t border-white/15 bg-[var(--color-brand-deep)] text-[var(--color-surface-page)]">
-        <div className="container-shell grid gap-12 py-16 md:grid-cols-[1.3fr_.7fr_.8fr]">
+        <div className="container-shell grid gap-9 py-12 md:grid-cols-[1.3fr_.7fr_.8fr]">
           <div>
             <Brand inverse />
             <p className="mt-5 max-w-md text-sm leading-7 text-[var(--color-surface-botanical)]">

@@ -156,14 +156,21 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
       <div className="container-shell care-loop-layout">
         <div className="care-loop-positioning">
           <h1>Understand your scalp. Care for your hair with confidence.</h1>
-          <p>
-            Personalised trichology, healthy-scalp care and professional
-            natural-hair services designed around your individual needs.
+          <p className="care-loop-specialties">
+            <span>Trichology</span>
+            <span className="care-loop-specialties-separator" aria-hidden="true">
+              •
+            </span>
+            <span>Scalp care</span>
+            <span className="care-loop-specialties-separator" aria-hidden="true">
+              •
+            </span>
+            <span>Natural hair salon</span>
           </p>
           <div key={`actions-${active.id}`} className="care-loop-actions">
             <Link
               to={active.primaryCta.href}
-              className="btn btn-commerce"
+              className="btn btn-primary care-loop-primary"
               onClick={() =>
                 analytics.track(ctaEvents[active.id], { action: "primary" })
               }

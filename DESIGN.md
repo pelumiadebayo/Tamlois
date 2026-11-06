@@ -34,16 +34,22 @@ typography:
     letterSpacing: "-0.035em"
   headline:
     fontFamily: "DM Serif Display, Georgia, serif"
-    fontSize: "clamp(2.65rem, 7vw, 5.5rem)"
+    fontSize: "clamp(2.1rem, 3vw, 2.85rem)"
     fontWeight: 400
     lineHeight: 0.98
-    letterSpacing: "-0.03em"
+    letterSpacing: "-0.025em"
   title:
     fontFamily: "DM Serif Display, Georgia, serif"
     fontSize: "clamp(2.1rem, 3vw, 2.85rem)"
     fontWeight: 400
     lineHeight: 0.98
     letterSpacing: "-0.025em"
+  subsection:
+    fontFamily: "DM Serif Display, Georgia, serif"
+    fontSize: "clamp(1.5rem, 2vw, 1.85rem)"
+    fontWeight: 400
+    lineHeight: 1.08
+    letterSpacing: "-0.018em"
   body:
     fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1rem"
@@ -54,6 +60,12 @@ typography:
     fontSize: "0.82rem"
     fontWeight: 700
     lineHeight: 1.25
+  specialty-label:
+    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "clamp(0.68rem, 0.9vw, 0.78rem)"
+    fontWeight: 800
+    lineHeight: 1.2
+    letterSpacing: "0.13em"
 rounded:
   sm: "8px"
   control: "12px"

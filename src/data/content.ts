@@ -38,10 +38,6 @@ export const homeOfferings: HomeOffering[] = [
       label: "Book a trichology consultation",
       href: "/booking?category=trichology",
     },
-    secondaryCta: {
-      label: "Explore trichology services",
-      href: "/services?category=trichology",
-    },
     image: {
       src: media.consultation.src,
       alt: "Black woman in a calm hair and scalp consultation setting, licensed placeholder",
@@ -66,10 +62,6 @@ export const homeOfferings: HomeOffering[] = [
       label: "Book a salon service",
       href: "/booking?category=salon",
     },
-    secondaryCta: {
-      label: "Explore salon services",
-      href: "/services?category=salon",
-    },
     image: {
       src: media.hero.src,
       alt: "Nigerian woman with healthy natural textured hair, licensed placeholder",
@@ -91,7 +83,6 @@ export const homeOfferings: HomeOffering[] = [
     description:
       "Visit the official Tamlois Storefront for current hair and scalp-care products that support consistent routines at home.",
     primaryCta: { label: "Shop hair and scalp care", href: "/shop" },
-    secondaryCta: { label: "About the official store", href: "/shop" },
     image: {
       src: "https://images.pexels.com/photos/30595022/pexels-photo-30595022.jpeg?auto=compress&cs=tinysrgb&w=1400",
       alt: "Refined hair-care product arrangement, licensed placeholder",
@@ -113,7 +104,6 @@ export const homeOfferings: HomeOffering[] = [
     description:
       "Care made visible, with honest context. Explore care environments and healthy-hair inspiration, including woven African natural-hair styling.",
     primaryCta: { label: "Explore the gallery", href: "/gallery" },
-    secondaryCta: { label: "View client stories", href: "/results" },
     image: {
       src: `${import.meta.env.BASE_URL}gallery/woven-style-765.webp`,
       alt: "Woven natural hairstyle with neatly sectioned twists",

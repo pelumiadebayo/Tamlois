@@ -98,7 +98,7 @@ export function ServicesPage() {
           </div>
           {loading ? (
             <div
-              className="mt-10 grid gap-6 xl:grid-cols-2"
+              className="mt-8 grid gap-6 xl:grid-cols-2"
               aria-label="Loading services"
             >
               {[1, 2, 3, 4].map((item) => (
@@ -109,15 +109,15 @@ export function ServicesPage() {
               ))}
             </div>
           ) : (
-            <div className="mt-10 grid gap-6 xl:grid-cols-2">
+            <div className="mt-8 grid gap-6 xl:grid-cols-2">
               {filtered.map((service) => (
                 <ServiceCard key={service.id} service={service} />
               ))}
             </div>
           )}
           {!loading && !error && filtered.length === 0 && (
-            <div className="surface mt-10 p-10 text-center">
-              <h2 className="font-display text-3xl">
+            <div className="surface mt-8 p-8 text-center">
+              <h2 className="subsection-title">
                 {services.length ? "No matching services" : "No services have been published yet"}
               </h2>
               <p className="mt-3 text-sm text-[var(--muted)]">
@@ -206,18 +206,18 @@ export function ServiceDetailPage() {
         }}
       />
       <section className="border-b border-[var(--line)]">
-        <div className="container-shell grid min-h-[620px] lg:grid-cols-[1fr_.9fr]">
-          <div className="flex flex-col justify-center py-14 pr-0 lg:pr-14">
+        <div className="container-shell grid min-h-[520px] lg:grid-cols-[1fr_.9fr]">
+          <div className="flex flex-col justify-center py-12 pr-0 lg:pr-12">
             <span className="text-sm font-bold text-[var(--forest-700)]">
               {service.category}
             </span>
             <h1 className="page-title mt-4">{service.name}</h1>
-            <p className="lede mt-6">{service.summary}</p>
+            <p className="lede mt-4">{service.summary}</p>
             <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold">
               <span>{currency(service.price)}</span>
               <span>{formatDuration(service.duration)}</span>
             </div>
-            <div className="mt-8">
+            <div className="mt-6">
               <Link
                 to={`/booking?service=${service.id}`}
                 className="btn btn-primary"
@@ -236,14 +236,14 @@ export function ServiceDetailPage() {
         </div>
       </section>
       <section className="section-space">
-        <div className="container-shell grid gap-12 lg:grid-cols-[.8fr_1.2fr]">
+        <div className="container-shell grid gap-9 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <h2 className="section-title">A considered appointment</h2>
-            <p className="mt-6 text-base leading-7 text-[var(--muted)]">
+            <p className="mt-4 text-base leading-7 text-[var(--muted)]">
               {service.description}
             </p>
             {service.variations.length > 0 && (
-              <div className="mt-8">
+              <div className="mt-6">
                 <h3 className="font-bold">Available variations</h3>
                 <div className="mt-3 rule-list">
                   {service.variations.map((variation) => (

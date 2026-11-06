@@ -222,10 +222,10 @@ export default function Home() {
             </div>
             <a href={commerceConfig.storefrontUrl || "/shop"} target="_blank" rel="noopener noreferrer" className="commerce-link inline-flex min-h-11 items-center gap-2 font-bold">Shop all products <ArrowRight size={18} /></a>
           </div>
-          {productState === "loading" && <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Loading featured products">{[1, 2, 3].map((item) => <div key={item} className="aspect-[4/5] animate-pulse rounded-[14px] bg-[var(--forest-100)]" />)}</div>}
-          {productState === "error" && <div className="surface mt-10 p-6" role="alert"><p>Products could not be loaded right now.</p><button className="btn btn-secondary mt-4" onClick={() => void retryProducts()}>Retry</button></div>}
-          {productState === "ready" && featuredProducts.length > 0 && <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">{featuredProducts.map((product) => <ProductCard key={product.id} product={product} sourcePage="home" />)}</div>}
-          {productState === "ready" && featuredProducts.length === 0 && <p className="mt-10 text-sm text-[var(--muted)]">Featured products are being prepared. Visit the official Storefront to see current availability.</p>}
+          {productState === "loading" && <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Loading featured products">{[1, 2, 3].map((item) => <div key={item} className="aspect-[4/5] animate-pulse rounded-[14px] bg-[var(--forest-100)]" />)}</div>}
+          {productState === "error" && <div className="surface mt-8 p-6" role="alert"><p>Products could not be loaded right now.</p><button className="btn btn-secondary mt-4" onClick={() => void retryProducts()}>Retry</button></div>}
+          {productState === "ready" && featuredProducts.length > 0 && <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{featuredProducts.map((product) => <ProductCard key={product.id} product={product} sourcePage="home" />)}</div>}
+          {productState === "ready" && featuredProducts.length === 0 && <p className="mt-8 text-sm text-[var(--muted)]">Featured products are being prepared. Visit the official Storefront to see current availability.</p>}
         </div>
       </section>
 
@@ -234,7 +234,7 @@ export default function Home() {
           <h2 className="section-title">
             Care built around a proper first look
           </h2>
-          <div className="mt-10 grid gap-6 xl:grid-cols-2">
+          <div className="mt-8 grid gap-6 xl:grid-cols-2">
             {featured.map((service) => (
               <ServiceCard key={service.id} service={service} />
             ))}
@@ -246,10 +246,10 @@ export default function Home() {
       </section>
 
       <section className="section-inverse section-space">
-        <div className="container-shell grid gap-12 lg:grid-cols-[.8fr_1.2fr]">
+        <div className="container-shell grid gap-9 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <h2 className="section-title">How care moves forward</h2>
-            <p className="lede mt-5">
+            <p className="lede mt-4">
               One step at a time, with room to pause, ask questions and seek
               medical care when appropriate.
             </p>
@@ -276,7 +276,7 @@ export default function Home() {
       </section>
 
       <section className="section-editorial section-space">
-        <div className="container-shell grid items-center gap-12 lg:grid-cols-[.85fr_1.15fr]">
+        <div className="container-shell grid items-center gap-9 lg:grid-cols-[.85fr_1.15fr]">
           <figure>
             <div className="overflow-hidden rounded-[14px]">
               <img
@@ -326,7 +326,7 @@ export default function Home() {
           <h2 className="section-title">
             Progress needs context, not promises
           </h2>
-          <div className="mt-10 grid gap-8 lg:grid-cols-[1.2fr_.8fr]">
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
             <div className="relative overflow-hidden rounded-[14px]">
               <img
                 src={media.results.src}

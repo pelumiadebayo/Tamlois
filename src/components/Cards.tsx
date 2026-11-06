@@ -144,8 +144,8 @@ export function PageIntro({
     <section className={`page-hero ${toneClass}`}>
       <div className="container-shell">
         <h1 className="page-title">{title}</h1>
-        <p className="lede mt-6">{text}</p>
-        {children && <div className="mt-8">{children}</div>}
+        <p className="lede">{text}</p>
+        {children && <div className="mt-6">{children}</div>}
       </div>
     </section>
   );
@@ -162,7 +162,7 @@ export function EmptyState({
   return (
     <div className="surface grid min-h-64 place-items-center p-8 text-center">
       <div>
-        <h3 className="font-display text-3xl text-[var(--forest-950)]">
+        <h3 className="subsection-title">
           {title}
         </h3>
         <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[var(--muted)]">

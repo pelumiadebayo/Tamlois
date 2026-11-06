@@ -23,7 +23,7 @@ export function ProductLoadState({
   if (state === "loading")
     return (
       <div
-        className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+        className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         role="status"
         aria-label="Loading products"
       >
@@ -91,7 +91,7 @@ export default function ShopPage() {
         description="Explore Tamlois hair and scalp-care products and complete secure checkout through Paystack."
       />
       <section className="section-product section-space">
-        <div className="container-shell grid gap-12 lg:grid-cols-[.78fr_1.22fr] lg:gap-20">
+        <div className="container-shell grid gap-9 lg:grid-cols-[.78fr_1.22fr] lg:gap-14">
           <div>
             <ShieldCheck
               size={30}
@@ -99,10 +99,10 @@ export default function ShopPage() {
               className="text-[var(--forest-700)]"
               aria-hidden="true"
             />
-            <h1 className="mt-6 max-w-xl font-display text-[clamp(2.3rem,5vw,4.25rem)] leading-[.98] tracking-[-.025em] text-[var(--forest-950)]">
+            <h1 className="page-title mt-5">
               Care that continues at home
             </h1>
-            <p className="mt-6 max-w-xl leading-7">
+            <p className="lede mt-4">
               Browse the Tamlois collection here, then complete your purchase
               securely on Paystack.
             </p>
@@ -125,7 +125,7 @@ export default function ShopPage() {
               label="Shop all on Paystack"
               sourcePage="shop"
               sourceSection="intro"
-              className="btn btn-commerce mt-8"
+              className="btn btn-commerce mt-6"
             />
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function ShopPage() {
             />
           )}
           {state === "ready" && filtered.length > 0 && (
-            <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((product) => (
                 <ProductCard
                   key={product.id}
