@@ -34,6 +34,10 @@ import { publicHomeContent } from "../repositories/homeContentRepository";
 import type { HomeOffering } from "../types";
 import { useProducts } from "../hooks/useProducts";
 import { publicProducts } from "../commerce/products";
+import {
+  ChristmasAnnouncement,
+  christmasTheme,
+} from "../components/seasonal";
 
 const concernIcons: Record<string, LucideIcon> = {
   "hair-shedding-and-thinning": TrendingDown,
@@ -139,6 +143,7 @@ export default function Home() {
           openingHours: "Mo-Sa 09:00-18:00",
         }}
       />
+      <ChristmasAnnouncement config={christmasTheme} />
       {announcement && (
         <div
           className="bg-[var(--color-brand-deep)] px-4 py-3 text-center text-sm font-semibold text-white"
@@ -147,7 +152,7 @@ export default function Home() {
           {announcement}
         </div>
       )}
-      <CareLoop offerings={offerings} />
+      <CareLoop offerings={offerings} christmasTheme={christmasTheme} />
       <HomeConcernsSection />
 
       <section
@@ -245,7 +250,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-inverse section-space">
+      {/* <section className="section-inverse section-space">
         <div className="container-shell grid gap-9 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <h2 className="section-title">How care moves forward</h2>
@@ -273,7 +278,7 @@ export default function Home() {
             ))}
           </ol>
         </div>
-      </section>
+      </section> */}
 
       <section className="section-editorial section-space">
         <div className="container-shell grid items-center gap-9 lg:grid-cols-[.85fr_1.15fr]">

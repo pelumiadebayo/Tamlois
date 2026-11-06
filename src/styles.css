@@ -674,7 +674,7 @@ img {
 }
 .care-loop-actions {
   display: flex;
-  flex-wrap: wrap;
+  /* flex-wrap: wrap; */
   align-items: center;
   gap: 0.8rem 1.1rem;
   margin-top: 1.5rem;
@@ -1149,9 +1149,7 @@ img {
   border-radius: 14px;
   background: var(--color-surface-raised);
 }
-.rule-list > * + * {
-  border-top: 1px solid var(--line);
-}
+
 .status {
   display: inline-flex;
   align-items: center;

@@ -11,6 +11,14 @@ import {
 import { Link } from "react-router-dom";
 import { analytics, type AnalyticsEvent } from "../lib/analytics";
 import type { HomeOffering, HomeOfferingId } from "../types";
+import {
+  ChristmasBadge,
+  ChristmasBookingCallout,
+  ChristmasCampaignLabel,
+  ChristmasHeroDecor,
+  ChristmasHeroDivider,
+  type ChristmasThemeConfig,
+} from "./seasonal";
 
 const ROTATION_MS = 6500;
 const INITIAL_OFFERING: HomeOfferingId = "salon";
@@ -47,7 +55,13 @@ function resolveImageSource(source: string) {
   return `${import.meta.env.BASE_URL}${source.slice(1)}`;
 }
 
-export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
+export function CareLoop({
+  offerings,
+  christmasTheme,
+}: {
+  offerings: HomeOffering[];
+  christmasTheme?: ChristmasThemeConfig;
+}) {
   const ordered = useMemo(
     () =>
       OFFERING_ORDER.map((id) =>
@@ -78,6 +92,7 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
     pageVisible &&
     !reducedMotion;
   const active = ordered[activeIndex] || ordered[0];
+  const christmasEnabled = Boolean(christmasTheme?.enabled);
 
   useEffect(() => {
     analytics.track("home_loop_viewed");
@@ -134,7 +149,7 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
 
   return (
     <section
-      className="care-loop"
+      className={`care-loop${christmasEnabled ? " christmas-theme" : ""}`}
       aria-label="Tamlois Care Loop"
       onMouseEnter={() => {
         if (!canHover) return;
@@ -153,8 +168,13 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
           setFocused(false);
       }}
     >
+      {christmasTheme && <ChristmasHeroDecor config={christmasTheme} />}
       <div className="container-shell care-loop-layout">
+        {christmasTheme && <ChristmasHeroDivider config={christmasTheme} />}
         <div className="care-loop-positioning">
+          {christmasTheme && (
+            <ChristmasCampaignLabel config={christmasTheme} />
+          )}
           <h1>Understand your scalp. Care for your hair with confidence.</h1>
           <p className="care-loop-specialties">
             <span>Trichology</span>
@@ -177,6 +197,7 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
             >
               {active.primaryCta.label}
               <ArrowRight size={16} />
+              
             </Link>
             {active.secondaryCta && (
               <Link
@@ -190,6 +211,9 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
               >
                 {active.secondaryCta.label}
               </Link>
+            )}
+            {christmasTheme && (
+              <ChristmasBookingCallout config={christmasTheme} />
             )}
           </div>
           <div
@@ -328,7 +352,16 @@ export function CareLoop({ offerings }: { offerings: HomeOffering[] }) {
           >
             <div className="care-loop-offering-top">
               <div>
-                <p className="care-loop-offering-label">{active.eyebrow}</p>
+                {christmasEnabled ? (
+                  <div className="care-loop-offering-meta">
+                    <p className="care-loop-offering-label">{active.eyebrow}</p>
+                    {christmasTheme && (
+                      <ChristmasBadge config={christmasTheme} />
+                    )}
+                  </div>
+                ) : (
+                  <p className="care-loop-offering-label">{active.eyebrow}</p>
+                )}
                 <h2>{active.title}</h2>
               </div>
               <Link

@@ -7,6 +7,7 @@ import '@fontsource/manrope/600.css';
 import '@fontsource/manrope/700.css';
 import '@fontsource/dm-serif-display/400.css';
 import './styles.css';
+import './components/seasonal/christmasTheme.css';
 import App from './App';
 import { captureUtm } from './lib/analytics';
 

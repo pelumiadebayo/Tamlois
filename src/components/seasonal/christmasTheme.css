@@ -1,0 +1,381 @@
+.christmas-announcement,
+.christmas-theme {
+  --christmas-forest: #0c3022;
+  --christmas-green: #174b35;
+  --christmas-gold: #d6a23e;
+  --christmas-terracotta: #a95035;
+  --christmas-peach: #f0c8b5;
+  --christmas-sage: #dce8dd;
+  --christmas-ivory: #faf8f2;
+}
+
+.christmas-announcement {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  overflow: hidden;
+  background: var(--christmas-forest);
+  padding: 0.45rem 1rem;
+  color: var(--christmas-ivory);
+}
+
+.christmas-announcement p {
+  margin: 0;
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.christmas-announcement-flourish {
+  display: inline-flex;
+  align-items: center;
+}
+
+.christmas-announcement-flourish img {
+  width: 2.75rem;
+  height: 2rem;
+  object-fit: contain;
+}
+
+.christmas-announcement-link {
+  display: inline-flex;
+  min-height: 38px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--christmas-gold) 70%, white);
+  border-radius: 999px;
+  background: var(--christmas-gold);
+  padding: 0.45rem 1rem;
+  color: var(--christmas-forest);
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition:
+    transform 180ms var(--ease-out),
+    background-color 180ms ease;
+}
+
+.christmas-announcement-link:hover {
+  transform: translateY(-1px);
+  background: var(--christmas-gold);
+}
+
+.christmas-announcement-link:focus-visible {
+  outline: 3px solid var(--christmas-ivory);
+  outline-offset: 3px;
+}
+
+.care-loop.christmas-theme {
+  position: relative;
+  isolation: isolate;
+  background: var(--christmas-ivory);
+}
+
+.christmas-theme .care-loop-layout {
+  position: relative;
+  z-index: 1;
+  height: min(790px, calc(100svh - 128px));
+  min-height: 600px;
+}
+
+.christmas-theme .care-loop-positioning,
+.christmas-theme .care-loop-stage {
+  z-index: 1;
+}
+
+.christmas-campaign-label {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--christmas-sage) 78%, white);
+  padding: 0.65rem 1.15rem;
+  color: var(--christmas-green);
+  font-family: "Manrope", Arial, sans-serif;
+  font-size: 0.77rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.christmas-theme .care-loop-positioning > .christmas-campaign-label {
+  margin: 0 0 1.1rem;
+}
+
+.christmas-campaign-bells {
+  width: 1.8rem;
+  height: 1.4rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.christmas-theme .care-loop-specialties-separator {
+  color: var(--christmas-gold);
+}
+
+.christmas-theme .care-loop-primary {
+  position: relative;
+  border: 2px solid var(--christmas-gold);
+  box-shadow: 0 8px 22px rgba(12, 48, 34, 0.1);
+}
+
+.christmas-theme .care-loop-primary:hover {
+  border-color: var(--christmas-gold);
+  box-shadow: 0 10px 26px rgba(12, 48, 34, 0.16);
+}
+
+.christmas-theme .care-loop-primary:focus-visible {
+  outline-color: var(--christmas-gold);
+}
+
+
+.christmas-booking-callout {
+  display: inline-flex;
+  max-width: 250px;
+  align-items: center;
+  gap: 0.75rem;
+  border-left: 1px solid var(--christmas-gold);
+  padding-left: 1rem;
+  color: var(--christmas-forest);
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: 0.98rem;
+  line-height: 1.18;
+}
+
+.christmas-booking-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--christmas-gold);
+}
+
+.care-loop-offering-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.christmas-badge {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  background: var(--christmas-terracotta);
+  clip-path: polygon(0 0, 92% 0, 100% 50%, 92% 100%, 0 100%, 7% 50%);
+  padding: 0.3rem 0.8rem 0.3rem 0.9rem;
+  color: var(--christmas-ivory);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.christmas-theme .care-loop-offering {
+  width: min(420px, calc(100% - 3rem));
+  border-color: rgba(250, 248, 242, 0.9);
+}
+
+.christmas-hero-decor {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.christmas-botanical {
+  position: absolute;
+  height: auto;
+  max-width: none;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.christmas-botanical-top {
+  top: -0.75rem;
+  left: -1rem;
+  width: clamp(175px, 16vw, 275px);
+}
+
+.christmas-botanical-bottom {
+  bottom: -2.75rem;
+  left: -3rem;
+  width: clamp(330px, 30vw, 520px);
+}
+
+.christmas-hero-divider {
+  position: absolute;
+  z-index: 2;
+  top: 10%;
+  bottom: 10%;
+  left: 47.1%;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--christmas-gold) 12%,
+    var(--christmas-gold) 88%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+.christmas-hero-divider > span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 19px;
+  height: 19px;
+  background: var(--christmas-green);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 1100px) {
+  .christmas-botanical-top {
+    left: -1.75rem;
+  }
+
+  .christmas-botanical-bottom {
+    left: -5.5rem;
+  }
+
+  .christmas-hero-divider {
+    display: none;
+  }
+
+  .christmas-booking-callout {
+    max-width: 205px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .christmas-announcement {
+    min-height: 58px;
+    gap: 0.75rem;
+    justify-content: space-between;
+    padding-inline: 0.9rem;
+  }
+
+  .christmas-announcement p {
+    flex: 0 1 auto;
+    font-family: "Manrope", Arial, sans-serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .christmas-announcement-flourish {
+    display: none;
+  }
+
+  .christmas-announcement-link {
+    min-height: 36px;
+    padding-inline: 0.8rem;
+    font-size: 0.7rem;
+  }
+
+  .christmas-theme .care-loop-layout {
+    height: auto;
+    min-height: auto;
+  }
+
+  .christmas-campaign-label {
+    order: 0;
+    gap: 0.45rem;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.68rem;
+  }
+
+  .christmas-theme .care-loop-positioning > .christmas-campaign-label {
+    order: 0;
+    margin-bottom: 0.65rem;
+  }
+
+  .christmas-botanical-top {
+    top: -0.5rem;
+    left: auto;
+    right: -0.5rem;
+    width: 105px;
+    opacity: 0.62;
+    transform: scaleX(-1);
+  }
+
+  .christmas-botanical-bottom {
+    display: none;
+  }
+
+  .christmas-theme .care-loop-offering {
+    width: calc(100% - 1.2rem);
+  }
+
+  .christmas-badge {
+    min-height: 21px;
+    padding: 0.25rem 0.65rem 0.25rem 0.75rem;
+    font-size: 0.68rem;
+  }
+
+  .christmas-theme .care-loop-actions {
+    order: 6;
+    display: flex !important;
+    margin-top: 0.8rem;
+  }
+
+  .christmas-theme .care-loop-controls {
+    order: 7;
+  }
+
+  .christmas-booking-callout {
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    border-top: 1px solid color-mix(in srgb, var(--christmas-gold) 55%, transparent);
+    border-left: 0;
+    padding: 0.7rem 0 0;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .christmas-announcement p {
+    font-size: 0.69rem;
+  }
+
+  .christmas-announcement-link {
+    gap: 0.2rem;
+    padding-inline: 0.65rem;
+  }
+
+  .christmas-campaign-bells {
+    width: 1.6rem;
+    height: 1.2rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .christmas-announcement p {
+    max-width: 25ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .christmas-announcement-link {
+    transition: none;
+  }
+
+  .christmas-announcement-link:hover {
+    transform: none;
+  }
+}

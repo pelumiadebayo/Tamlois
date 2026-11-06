@@ -20,7 +20,8 @@ export type AnalyticsEvent =
   | "product_clicked"
   | "shop_page_viewed"
   | "homepage_storefront_clicked"
-  | "navigation_storefront_clicked";
+  | "navigation_storefront_clicked"
+  | "christmas_announcement_booking_clicked";
 
 export type StorefrontAnalyticsEvent =
   | "homepage_storefront_clicked"

@@ -37,6 +37,18 @@ Firebase Email/Password administration is restricted to the single configured ow
 
 The Care Loop starts with Natural Hair Salon, followed by Trichology Care, Products and Gallery. Gallery uses optimized static WebP assets, typed metadata, responsive source sets and Load More. It has no Firebase collection, storage provider or admin editor. Follow [the gallery workflow](docs/GALLERY_WORKFLOW.md).
 
+### Christmas homepage campaign
+
+The Christmas treatment is an optional presentation layer and is disabled by default. It does not change carousel content, routes, booking logic or Firebase data.
+
+- Local enablement: set `VITE_CHRISTMAS_THEME_ENABLED=true` in `.env.local`, then restart `npm run dev`.
+- Local disablement: set the value to `false` (or remove it), then restart the development server.
+- GitHub Pages: create or update the repository variable `VITE_CHRISTMAS_THEME_ENABLED`, push or rerun the Pages workflow, and allow the site to rebuild and redeploy. Use `true` to enable it and `false` to restore the standard homepage.
+- Campaign wording and links live in `src/components/seasonal/christmasTheme.ts`; reusable campaign components and styles live beside it in `src/components/seasonal/`.
+- Optimized decorative assets live in `public/seasonal/`. They are decorative only and never replace carousel media.
+
+To remove the campaign permanently, first set the variable to `false` and deploy. The seasonal component directory and `public/seasonal/` assets can then be removed together with their two imports in `Home.tsx`/`main.tsx` and the optional `christmasTheme` prop in `CareLoop.tsx`. Run `npm test` and `npm run build` before redeploying.
+
 ## Verification
 
 ```bash
